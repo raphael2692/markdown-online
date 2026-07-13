@@ -136,6 +136,12 @@
           <button type="button" @click="prefixLines('- ')" title="Bullet list" aria-label="Bullet list" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">List</button>
           <button type="button" @click="insertNumberedList()" title="Numbered list" aria-label="Numbered list" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">1.</button>
           <button type="button" @click="prefixLines('> ')" title="Quote" aria-label="Quote" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Quote</button>
+          <button type="button" @click="wrapSelection('`', '`', 'code')" title="Inline code" aria-label="Inline code" class="rounded border border-neutral-300 px-2 py-1 text-xs font-mono hover:bg-neutral-50">Code</button>
+          <button type="button" @click="wrapSelection('~~', '~~', 'strikethrough text')" title="Strikethrough" aria-label="Strikethrough" class="rounded border border-neutral-300 px-2 py-1 text-xs line-through hover:bg-neutral-50">S</button>
+          <button type="button" @click="wrapSelection('![', '](https://)', 'alt text')" title="Image" aria-label="Image" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Image</button>
+          <button type="button" @click="prefixLines('- [ ] ')" title="Task list" aria-label="Task list" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">☑ Task</button>
+          <button type="button" @click="insertTable()" title="Table" aria-label="Table" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Table</button>
+          <button type="button" @click="insertHr()" title="Horizontal rule" aria-label="Horizontal rule" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">HR</button>
 
           <span class="mx-1 h-5 w-px bg-neutral-200" aria-hidden="true"></span>
 
@@ -570,6 +576,29 @@
         },
         insertMath() {
           this.wrapSelection('$$\n', '\n$$', 'E = mc^2');
+        },
+        insertTable() {
+          const ta = this.$refs.mdTextarea;
+          const pos = ta.selectionStart;
+          const lineStart = this.input.lastIndexOf('\n', pos - 1) + 1;
+          const needsBlankBefore = lineStart > 0 && this.input[lineStart - 1] !== '\n';
+          const table = (needsBlankBefore ? '\n\n' : '') +
+            '| Header | Header |\n| --- | --- |\n| Cell | Cell |\n| Cell | Cell |\n';
+          this.input = this.input.slice(0, lineStart) + table + this.input.slice(lineStart);
+          const newPos = lineStart + table.length;
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
+          this.run();
+        },
+        insertHr() {
+          const ta = this.$refs.mdTextarea;
+          const pos = ta.selectionStart;
+          const lineStart = this.input.lastIndexOf('\n', pos - 1) + 1;
+          const needsBlankBefore = lineStart > 0 && this.input[lineStart - 1] !== '\n';
+          const hr = (needsBlankBefore ? '\n\n' : '') + '---\n';
+          this.input = this.input.slice(0, lineStart) + hr + this.input.slice(lineStart);
+          const newPos = lineStart + hr.length;
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
+          this.run();
         },
 
         clearDraft() {
