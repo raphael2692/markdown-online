@@ -1,4 +1,4 @@
-<!-- docs-sync: 0ff72fd -->
+<!-- docs-sync: e79e98e -->
 
 # Changelog
 
@@ -16,6 +16,7 @@
 - GitHub-style syntax highlighting for fenced code blocks (Python and ~35 other common languages) in the live preview on `markdown-to-html` and `markdown-editor`, via vendored highlight.js 11.11.1 — lazy-loaded and preview-only, so Raw HTML, Copy, Download, and Print-to-PDF keep marked's plain `language-*` class untouched (`120944c`)
 - Auto-detection of math/diagram syntax on `markdown-editor` (no manual toggle needed) and a widened widget layout (`90a5f08`)
 - Toolbar buttons for inline code, strikethrough, image, task list, table, and horizontal rule on `markdown-editor`, closing the gap against the rest of GFM that `marked` already rendered but had no one-click insert for (`4e1cafd`)
+- "Stack panels" / "side by side" toggle for both tool widgets' two-pane layout, via a `stacked` flag added to the shared `paneResizer()` mixin and an `.is-stacked` CSS override — lets the output pane sit below the input instead of beside it, overriding the responsive default regardless of viewport width (`e79e98e`)
 
 ### Changed
 - Extracted the draggable split-pane / pane-height / scroll-mirroring logic into a shared `paneResizer()` mixin in `site.js`; both tool widgets now use it instead of each re-implementing it (`40007d2`)

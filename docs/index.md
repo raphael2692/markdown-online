@@ -113,6 +113,14 @@ pattern used elsewhere to avoid a stale async load racing a newer edit.
   `.split-pane-left` / `.pane-height` CSS classes (`site/assets/input.css`)
   on its panes. Add any new two-pane tool widget on top of this mixin
   rather than re-implementing drag-resize or scroll-sync per page.
+  `paneResizer()` also carries a `stacked` boolean (default off), toggled by
+  a "Stack panels" / "Side by side" button shown at the `md` breakpoint
+  above the pane row; the `.is-stacked` CSS class it applies forces
+  `flex-direction: column` and lets the output pane's flex-basis follow its
+  own content instead of `--split`, overriding the responsive side-by-side
+  default regardless of viewport width. The horizontal drag divider hides
+  while stacked (there's no width to drag); the vertical pane-height
+  divider still works either way.
 - **Build**: `build.py` expands the two shared partials
   (`site/partials/header.html`, `site/partials/footer.html`) into every page,
   substitutes site-wide tokens (`__SITE_URL__`, `__SITE_NAME__`,
