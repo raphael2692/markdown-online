@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pines UI</title>
+
+    <!-- x-cloak hides Alpine-controlled elements until Alpine has initialized,
+         preventing the "flash of unstyled content" common with modals/dropdowns. -->
+    <style>[x-cloak]{display:none !important}</style>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Alpine.js core + helper plugins used by some Pines components.
+         Load focus/collapse BEFORE alpinejs (Alpine docs requirement).
+         - focus: enables `x-trap` (used by modals, full-screen menus)
+         - collapse: enables `x-collapse` (used by accordions)
+         If you don't use those components you can drop the plugins. -->
+    <script defer src="https://unpkg.com/@alpinejs/focus@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <main class="flex items-center justify-center min-h-screen p-8">
+        <div class="w-full max-w-3xl">
+            <!-- Paste Pines component snippets here -->
+        </div>
+    </main>
+</body>
+</html>

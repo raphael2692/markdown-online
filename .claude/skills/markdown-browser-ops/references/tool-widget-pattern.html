@@ -1,0 +1,133 @@
+<!--
+  CANONICAL TOOL WIDGET (Alpine.js)
+  Drop inside the page template's <section id="tool"> from seo-tool-pages.
+  Per-tool work: rewrite convert(), the options row, and the placeholder/sample.
+  UI classes follow pines-ui neutral styling; swap components from pines-ui
+  (toast, dropdown, tabs) as needed instead of hand-rolling.
+
+  Handles: debounced live convert, lazy library loading, error display,
+  copy / rich-copy / download actions with toast feedback.
+-->
+
+<div x-data="toolWidget()" x-init="init()" class="rounded-lg border border-neutral-200">
+
+  <!-- panes -->
+  <div class="grid md:grid-cols-2">
+    <div class="p-3 border-b md:border-b-0 md:border-r border-neutral-200">
+      <label for="tw-in" class="text-xs font-medium text-neutral-500 uppercase">Markdown input</label>
+      <textarea id="tw-in" x-model="input" @input.debounce.250ms="run()"
+        spellcheck="false"
+        class="mt-1 w-full h-64 resize-y rounded-md border-neutral-300 font-mono text-sm
+               focus:border-neutral-500 focus:ring-0"
+        placeholder="Paste markdown here…"></textarea>
+    </div>
+    <div class="p-3">
+      <label class="text-xs font-medium text-neutral-500 uppercase">Output</label>
+      <!-- error state -->
+      <p x-show="error" x-cloak class="mt-1 text-sm text-red-600" x-text="error"></p>
+      <!-- text output tools use a readonly textarea; preview tools use x-html
+           on DOMPurify-sanitized content (never raw). Keep whichever applies. -->
+      <textarea readonly x-model="output" x-show="!error"
+        class="mt-1 w-full h-64 resize-y rounded-md border-neutral-300 bg-neutral-50
+               font-mono text-sm"></textarea>
+    </div>
+  </div>
+
+  <!-- options row: tool-specific toggles -->
+  <div class="flex flex-wrap items-center gap-4 border-t border-neutral-200 p-3 text-sm">
+    <label class="flex items-center gap-2">
+      <input type="checkbox" x-model="opts.gfmBreaks" @change="run()"
+             class="rounded border-neutral-300">
+      Line breaks as &lt;br&gt;
+    </label>
+    <!-- more options… -->
+  </div>
+
+  <!-- actions -->
+  <div class="flex flex-wrap gap-2 border-t border-neutral-200 p-3">
+    <button @click="copy()" class="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700">Copy</button>
+    <button @click="copyRich()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Copy for Word / Docs</button>
+    <button @click="downloadOut()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Download</button>
+    <span x-show="toast" x-transition.opacity x-cloak
+          class="ml-auto self-center text-sm text-green-700" x-text="toast"></span>
+  </div>
+</div>
+
+<script>
+function toolWidget() {
+  return {
+    input: '', output: '', error: '', toast: '',
+    opts: { gfmBreaks: false },
+
+    init() {
+      // Self-demonstrating sample so the tool "works" on page load
+      this.input = SAMPLE_INPUT;   // define per page, small + realistic
+      this.run();
+    },
+
+    // ---- lazy loader: heavy libs load on first real use, keyed & cached ----
+    _loaded: {},
+    loadLib(src) {
+      if (!this._loaded[src]) {
+        this._loaded[src] = new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = src; s.onload = res; s.onerror = () => rej(new Error('Failed to load ' + src));
+          document.head.appendChild(s);
+        });
+      }
+      return this._loaded[src];
+    },
+
+    async run() {
+      this.error = '';
+      try {
+        this.output = await this.convert(this.input);
+      } catch (e) {
+        this.error = e.message || 'Conversion failed';
+      }
+    },
+
+    // ===== PER-TOOL: replace this. Example = md → HTML =====
+    async convert(src) {
+      if (!src.trim()) return '';
+      // marked + DOMPurify are page-level deferred scripts; heavier libs:
+      // await this.loadLib('/assets/vendor/html-docx.min.js');
+      return marked.parse(src, { gfm: true, breaks: this.opts.gfmBreaks });
+    },
+    // ========================================================
+
+    flash(msg) { this.toast = msg; setTimeout(() => this.toast = '', 2000); },
+
+    async copy() {
+      await navigator.clipboard.writeText(this.output);
+      this.flash('Copied');
+    },
+
+    async copyRich() {
+      // recipe 3 in conversions.md — rich HTML+plain flavors
+      const ok = await window.copyRich(this.input);
+      this.flash(ok ? 'Copied — paste into Word or Google Docs' : 'Copied as plain text');
+    },
+
+    downloadOut() {
+      // recipe 11 in conversions.md; adjust filename/mime per tool
+      window.downloadFile(this.output, 'output.html', 'text/html;charset=utf-8');
+      this.flash('Downloaded');
+    },
+  };
+}
+</script>
+
+<!--
+  Shared helpers (copyRich, downloadFile) live once in /assets/site.js,
+  loaded deferred on every tool page — implementations in conversions.md
+  recipes 3 and 11.
+
+  PREVIEW VARIANT: pages that show rendered output (md→HTML preview, editor)
+  replace the output textarea with:
+    <div class="prose prose-neutral max-w-none" x-ref="preview"></div>
+  and in run():
+    this.$refs.preview.innerHTML = DOMPurify.sanitize(html);
+  Never bind unsanitized HTML. If using Tailwind typography plugin's `prose`,
+  include it in the CSS build.
+-->

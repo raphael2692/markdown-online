@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<!--
+  CANONICAL TOOL PAGE TEMPLATE
+  Placeholders use {{DOUBLE_BRACES}}. When creating a page, replace every
+  placeholder AND rewrite the prose sections uniquely — the prose here is
+  structural example only, never ship it verbatim on more than one page.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Title: primary keyword first, brand last, <=60 chars -->
+  <title>{{PRIMARY_KEYWORD_TITLE_CASE}} – Free, No Upload | {{SITE_NAME}}</title>
+  <!-- Description: <=155 chars, keyword + "free" + privacy angle -->
+  <meta name="description" content="{{ONE_SENTENCE}} Free {{PRIMARY_KEYWORD}} that runs entirely in your browser — no upload, no signup.">
+  <link rel="canonical" href="https://{{DOMAIN}}/{{SLUG}}/">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{PRIMARY_KEYWORD_TITLE_CASE}} – Free, No Upload">
+  <meta property="og:description" content="{{ONE_SENTENCE}}">
+  <meta property="og:url" content="https://{{DOMAIN}}/{{SLUG}}/">
+  <meta name="twitter:card" content="summary">
+
+  <!-- Purged Tailwind build. If <15KB, inline it here instead for LCP. -->
+  <link rel="stylesheet" href="/assets/site.css">
+  <style>[x-cloak]{display:none !important}</style>
+
+  <!-- Alpine + plugins, deferred. Heavy conversion libs are NOT loaded here —
+       they lazy-load on first widget interaction (see markdown-browser-ops). -->
+  <script defer src="/assets/vendor/alpine-focus.min.js"></script>
+  <script defer src="/assets/vendor/alpine.min.js"></script>
+
+  <!-- JSON-LD: copy exact structures from schema-templates.md -->
+  <script type="application/ld+json">{{SOFTWARE_APPLICATION_JSONLD}}</script>
+  <script type="application/ld+json">{{FAQPAGE_JSONLD}}</script>
+</head>
+<body class="bg-white text-neutral-800 antialiased">
+
+  <!-- Shared header: keep tiny, links to homepage + hub pages only -->
+  <header class="border-b border-neutral-200">
+    <nav class="mx-auto max-w-3xl flex items-center justify-between p-4">
+      <a href="/" class="font-semibold">{{SITE_NAME}}</a>
+      <div class="flex gap-4 text-sm text-neutral-600">
+        <a href="/markdown-to-pdf/">MD → PDF</a>
+        <a href="/markdown-to-word/">MD → Word</a>
+        <a href="/markdown-table-generator/">Tables</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4">
+
+    <!-- H1 contains the primary keyword, naturally phrased -->
+    <h1 class="mt-8 text-3xl font-bold">{{PRIMARY_KEYWORD_TITLE_CASE}}</h1>
+
+    <!-- Value proposition: one sentence, scannable, AI-Overview bait.
+         Always states the privacy differentiator. -->
+    <p class="mt-2 text-lg text-neutral-600">
+      {{ONE_SENTENCE}} Everything runs locally in your browser — your text is
+      never uploaded to a server.
+    </p>
+
+    <!-- ============ THE TOOL WIDGET (above the fold) ============
+         Structure and logic come from markdown-browser-ops
+         (references/tool-widget-pattern.html); components from pines-ui. -->
+    <section id="tool" class="mt-6">
+      {{TOOL_WIDGET}}
+    </section>
+
+    <!-- Ad slot 1: BELOW the tool. Fixed min-height reserves space => zero CLS. -->
+    <div class="ad-slot mt-8" style="min-height:280px" data-slot="{{AD_SLOT_1}}"></div>
+
+    <!-- How to use: real numbered steps, page-specific -->
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">How to convert {{SOURCE}} to {{TARGET}}</h2>
+      <ol class="mt-3 list-decimal pl-6 space-y-2">
+        <li>{{STEP_1}}</li>
+        <li>{{STEP_2}}</li>
+        <li>{{STEP_3}}</li>
+      </ol>
+    </section>
+
+    <!-- Unique prose payload: 2-3 sections, 250-500 words total across them.
+         Topics that work: what exactly gets converted / edge cases /
+         why output may differ from other tools / when NOT to use this tool. -->
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">{{PROSE_HEADING_1}}</h2>
+      <p>{{UNIQUE_PARAGRAPHS}}</p>
+    </section>
+
+    <!-- Ad slot 2: between prose sections -->
+    <div class="ad-slot mt-10" style="min-height:280px" data-slot="{{AD_SLOT_2}}"></div>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">{{PROSE_HEADING_2}}</h2>
+      <p>{{UNIQUE_PARAGRAPHS}}</p>
+    </section>
+
+    <!-- FAQ: 3-5 questions. EVERY question here must appear verbatim in the
+         FAQPage JSON-LD, and vice versa. Use pines-ui `accordion` if desired,
+         but the Q&A text must be present in the HTML source either way. -->
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">Frequently asked questions</h2>
+      <div class="mt-3 space-y-4">
+        <div>
+          <h3 class="font-medium">{{QUESTION_1}}</h3>
+          <p class="text-neutral-600">{{ANSWER_1}}</p>
+        </div>
+        <!-- repeat -->
+      </div>
+    </section>
+
+    <!-- Related tools: hub/spoke internal links, keyword anchor text -->
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">Related tools</h2>
+      <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+        <li><a class="text-indigo-600 hover:underline" href="/{{RELATED_SLUG_1}}/">{{RELATED_KEYWORD_1}}</a></li>
+        <li><a class="text-indigo-600 hover:underline" href="/{{RELATED_SLUG_2}}/">{{RELATED_KEYWORD_2}}</a></li>
+        <li><a class="text-indigo-600 hover:underline" href="/{{RELATED_SLUG_3}}/">{{RELATED_KEYWORD_3}}</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="mt-16 border-t border-neutral-200">
+    <div class="mx-auto max-w-3xl p-4 flex flex-wrap gap-4 text-sm text-neutral-500">
+      <a href="/about/">About</a>
+      <a href="/privacy/">Privacy</a>
+      <a href="{{GITHUB_URL}}">GitHub</a>
+      <span>© {{YEAR}} {{SITE_NAME}} — all processing happens in your browser.</span>
+    </div>
+  </footer>
+
+  <!-- Ad network script: async, last in body -->
+  <!-- <script async src="{{AD_NETWORK_SCRIPT}}"></script> -->
+</body>
+</html>

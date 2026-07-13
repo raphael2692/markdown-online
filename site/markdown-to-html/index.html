@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Markdown to HTML Converter – Free &amp; Private | __SITE_NAME__</title>
+  <meta name="description" content="Free Markdown to HTML converter — paste Markdown, get clean HTML instantly. Runs 100% in your browser: no upload, no signup.">
+  <link rel="canonical" href="__SITE_URL__/markdown-to-html/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Markdown to HTML Converter – Free &amp; Private">
+  <meta property="og:description" content="Paste Markdown, get clean HTML instantly. Runs 100% in your browser — no upload, no signup.">
+  <meta property="og:url" content="__SITE_URL__/markdown-to-html/">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <style>[x-cloak]{display:none !important}</style>
+
+  <script defer src="/assets/vendor/alpine-focus-3.15.12.min.js"></script>
+  <script defer src="/assets/vendor/alpine-collapse-3.15.12.min.js"></script>
+  <script defer src="/assets/vendor/marked-18.0.6.min.js"></script>
+  <script defer src="/assets/vendor/dompurify-3.4.12.min.js"></script>
+  <script defer src="/assets/vendor/alpine-3.15.12.min.js"></script>
+  <script defer src="/assets/site.js"></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Markdown to HTML Converter",
+    "url": "__SITE_URL__/markdown-to-html/",
+    "description": "Free Markdown to HTML converter that runs entirely in the browser — paste Markdown, get clean HTML instantly.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any (web browser)",
+    "browserRequirements": "Requires JavaScript",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is this Markdown to HTML converter free?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. It's free to use, with no signup, and there's no limit on how much Markdown you can convert." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does my Markdown get uploaded anywhere?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. The conversion happens entirely in your browser using JavaScript — your Markdown is never sent to a server." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it support GitHub-Flavored Markdown, like tables and task lists?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Tables, task lists, strikethrough, and autolinks are all supported and enabled by default." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I get a complete HTML document instead of just a fragment?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — toggle \"Full HTML document\" to wrap the output in a complete page with basic styling, ready to save as a standalone file." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I see a rendered preview instead of the raw HTML?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — use the Raw / Rendered switch above the output box. Rendered shows a live, sanitized preview of the markup; Raw shows the literal HTML source." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why might my HTML output differ from GitHub's Markdown renderer?",
+        "acceptedAnswer": { "@type": "Answer", "text": "This tool uses the marked library, which follows the CommonMark and GFM spec closely but isn't byte-for-byte identical to GitHub's own renderer — differences mostly show up in edge cases like nested list indentation or raw HTML passthrough." }
+      }
+    ]
+  }
+  </script>
+</head>
+<body class="bg-white text-neutral-800 antialiased">
+
+  <!--#include partials/header.html-->
+
+  <main class="mx-auto max-w-6xl px-4">
+
+    <h1 class="mt-8 text-3xl font-bold">Markdown to HTML Converter</h1>
+    <p class="mt-2 text-lg text-neutral-600">
+      Paste Markdown, get clean HTML instantly. Everything runs locally in your
+      browser — your text is never uploaded to a server.
+    </p>
+
+    <section id="tool" class="mt-6" x-data="toolWidget()" x-init="init()">
+      <div class="rounded-lg border border-neutral-200">
+        <div x-ref="paneRow" class="flex flex-col md:flex-row"
+          :style="`--split: ${split}%; --pane-height: ${paneHeight}px`" :class="(dragging || draggingV) && 'select-none'">
+          <div class="split-pane-left border-b border-neutral-200 p-3 md:border-b-0 md:border-r">
+            <label for="tw-in" class="text-xs font-medium uppercase text-neutral-500">Markdown input</label>
+            <div class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300 focus-within:border-neutral-500">
+              <div x-ref="mdGutter" aria-hidden="true"
+                class="pointer-events-none absolute inset-y-0 left-0 w-10 select-none overflow-hidden bg-neutral-50 py-2 text-right font-mono text-sm leading-6 text-neutral-400">
+                <template x-for="n in inputLineCount" :key="n">
+                  <div class="pr-2 leading-6" x-text="n"></div>
+                </template>
+              </div>
+              <textarea id="tw-in" x-ref="mdTextarea" x-model="input" @input.debounce.250ms="run()" @scroll="onInputScroll($event)"
+                spellcheck="false"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:ring-0"
+                placeholder="Paste markdown here…"></textarea>
+            </div>
+          </div>
+
+          <div class="hidden shrink-0 cursor-col-resize touch-none items-stretch justify-center border-x border-neutral-200 bg-neutral-100 hover:bg-neutral-200 md:flex md:w-2"
+            :class="dragging && 'bg-neutral-300'"
+            @mousedown="startDrag($event)" @touchstart="startDrag($event)"
+            title="Drag to resize">
+            <div class="my-auto h-8 w-px bg-neutral-400"></div>
+          </div>
+
+          <div class="p-3 md:flex-1">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-medium uppercase text-neutral-500">HTML output</label>
+              <div class="flex rounded-md border border-neutral-300 text-xs">
+                <button type="button" @click="view = 'raw'"
+                  :class="view === 'raw' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                  class="rounded-l-md px-2 py-1">Raw</button>
+                <button type="button" @click="view = 'rendered'"
+                  :class="view === 'rendered' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                  class="rounded-r-md border-l border-neutral-300 px-2 py-1">Rendered</button>
+              </div>
+            </div>
+            <p x-show="error" x-cloak class="mt-1 text-sm text-red-600" x-text="error"></p>
+
+            <div x-show="!error && view === 'raw'"
+              class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300">
+              <div x-ref="outGutter" aria-hidden="true"
+                class="pointer-events-none absolute inset-y-0 left-0 w-10 select-none overflow-hidden bg-neutral-100 py-2 text-right font-mono text-sm leading-6 text-neutral-400">
+                <template x-for="n in outputLineCount" :key="n">
+                  <div class="pr-2 leading-6" x-text="n"></div>
+                </template>
+              </div>
+              <textarea readonly x-ref="outTextarea" x-model="output" @scroll="onOutputScroll($event)"
+                spellcheck="false"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-neutral-50 py-2 pl-12 pr-2 font-mono text-sm leading-6"></textarea>
+            </div>
+
+            <div x-ref="preview" @scroll="onOutputScroll($event)" x-show="!error && view === 'rendered'"
+              class="pane-height md-preview mt-1 w-full overflow-y-auto rounded-md border border-neutral-300 bg-white p-3 text-sm"></div>
+          </div>
+        </div>
+
+        <div class="flex h-3 cursor-row-resize touch-none items-center justify-center border-b border-t border-neutral-200 bg-neutral-100 hover:bg-neutral-200"
+          :class="draggingV && 'bg-neutral-300'"
+          @mousedown="startVDrag($event)" @touchstart="startVDrag($event)"
+          title="Drag to resize height">
+          <div class="h-px w-8 bg-neutral-400"></div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 border-t border-neutral-200 p-3 text-sm">
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="opts.gfmBreaks" @change="run()" class="rounded border-neutral-300">
+            Line breaks as &lt;br&gt;
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="opts.fullDocument" @change="run()" class="rounded border-neutral-300">
+            Full HTML document
+          </label>
+        </div>
+
+        <div class="flex flex-wrap gap-2 border-t border-neutral-200 p-3">
+          <button @click="copy()" class="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700">Copy HTML</button>
+          <button @click="copyRichClick()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Copy for Word / Docs</button>
+          <button @click="downloadOut()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Download HTML</button>
+          <span x-show="toast" x-transition.opacity x-cloak class="ml-auto self-center text-sm text-green-700" x-text="toast"></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot mt-8" style="min-height:280px" data-slot="tool-below"></div>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">How to convert Markdown to HTML</h2>
+      <ol class="mt-3 list-decimal space-y-2 pl-6">
+        <li>Paste your Markdown into the input box on the left — the output updates live as you type.</li>
+        <li>Turn on "Line breaks as &lt;br&gt;" if you want single newlines to become line breaks (off by default, matching GitHub).</li>
+        <li>Switch the output panel between <strong>Raw</strong> (the literal HTML source) and <strong>Rendered</strong> (a live preview) with the toggle above it.</li>
+        <li>Copy the HTML with <strong>Copy HTML</strong>, or use <strong>Copy for Word / Docs</strong> to paste formatted content straight into a document, or <strong>Download HTML</strong> to save it as a file.</li>
+      </ol>
+    </section>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">What this converter actually does</h2>
+      <p>
+        The conversion is handled by <a class="text-indigo-600 hover:underline" href="https://marked.js.org/">marked</a>,
+        a Markdown parser that follows the CommonMark spec with GitHub-Flavored
+        Markdown extensions turned on by default — so tables, task lists,
+        strikethrough, and autolinked URLs all work without any configuration.
+        In <strong>Raw</strong> view, the output box shows the literal HTML
+        marked generates: headings as <code>&lt;h1&gt;</code>–<code>&lt;h6&gt;</code>,
+        fenced code blocks as <code>&lt;pre&gt;&lt;code&gt;</code> with a
+        <code>language-*</code> class, tables as real <code>&lt;table&gt;</code>
+        markup — left exactly as generated (not sanitized), since the point of
+        this tool is to hand you your HTML verbatim so you can inspect or embed
+        it. Switch to <strong>Rendered</strong> to see how that markup actually
+        looks, run through
+        <a class="text-indigo-600 hover:underline" href="https://github.com/cure53/DOMPurify">DOMPurify</a>
+        first so anything unsafe in your Markdown — a stray <code>&lt;script&gt;</code>
+        tag, an <code>onerror</code> handler — is stripped before it touches
+        the page. "Copy for Word / Docs" always uses that same sanitized
+        rendering, regardless of which view is showing, since that copy is
+        meant to be pasted straight into a document rather than read as source.
+      </p>
+    </section>
+
+    <div class="ad-slot mt-10" style="min-height:280px" data-slot="mid-content"></div>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">Common edge cases</h2>
+      <p>
+        A single newline between two lines of text is treated as a plain space,
+        not a line break — that's standard Markdown behavior and matches how
+        GitHub renders READMEs. If you're converting notes written with the
+        "every line is a new line" assumption (common when pasting from chat
+        apps), turn on the line-breaks option above. Nested lists follow
+        indentation: a sub-item needs at least two spaces of indent under its
+        parent to nest correctly, and mixing tabs and spaces can throw off list
+        nesting in ways that are hard to spot by eye. Fenced code blocks are
+        output as plain text with a language class attached — this tool doesn't
+        apply syntax-highlighting colors to the output HTML, since that's a
+        rendering concern for wherever you embed the HTML, not something to
+        bake into the markup itself.
+      </p>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">Frequently asked questions</h2>
+      <div class="mt-3 space-y-4">
+        <div>
+          <h3 class="font-medium">Is this Markdown to HTML converter free?</h3>
+          <p class="text-neutral-600">Yes. It's free to use, with no signup, and there's no limit on how much Markdown you can convert.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Does my Markdown get uploaded anywhere?</h3>
+          <p class="text-neutral-600">No. The conversion happens entirely in your browser using JavaScript — your Markdown is never sent to a server.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Does it support GitHub-Flavored Markdown, like tables and task lists?</h3>
+          <p class="text-neutral-600">Yes. Tables, task lists, strikethrough, and autolinks are all supported and enabled by default.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Can I get a complete HTML document instead of just a fragment?</h3>
+          <p class="text-neutral-600">Yes — toggle "Full HTML document" to wrap the output in a complete page with basic styling, ready to save as a standalone file.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Can I see a rendered preview instead of the raw HTML?</h3>
+          <p class="text-neutral-600">Yes — use the Raw / Rendered switch above the output box. Rendered shows a live, sanitized preview of the markup; Raw shows the literal HTML source.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Why might my HTML output differ from GitHub's Markdown renderer?</h3>
+          <p class="text-neutral-600">This tool uses the marked library, which follows the CommonMark and GFM spec closely but isn't byte-for-byte identical to GitHub's own renderer — differences mostly show up in edge cases like nested list indentation or raw HTML passthrough.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">Related tools</h2>
+      <p class="text-neutral-600">
+        More Markdown converters are on the way. See
+        <a class="text-indigo-600 hover:underline" href="/">all Markdown tools</a> as they ship.
+      </p>
+    </section>
+  </main>
+
+  <!--#include partials/footer.html-->
+
+  <script>
+    const SAMPLE_MD = [
+      '# Sprint Notes',
+      '',
+      "A quick summary of **what's done** and what's *left* this week.",
+      '',
+      '- [x] Set up the repo',
+      '  - includes CI config',
+      '- [ ] Write unit tests',
+      '- [ ] Ship to staging',
+      '',
+      '## Next steps',
+      '',
+      '1. Review the [**open pull request**](https://example.com/pr/42)',
+      '2. Merge to `main` once CI is green',
+      '',
+      '| Task   | Owner |',
+      '| ------ | ----- |',
+      '| Tests  | Alex  |',
+      '| Deploy | Sam   |',
+      '',
+      '> Ping the #eng channel if anything above is unclear.',
+      '',
+      '```js',
+      'console.log("shipped");',
+      '```',
+      '',
+    ].join('\n');
+
+    function toolWidget() {
+      return {
+        input: '', fragment: '', output: '', error: '', toast: '', view: 'raw',
+        opts: { gfmBreaks: false, fullDocument: false },
+        split: 50, dragging: false,
+        paneHeight: 288, draggingV: false,
+        syncingScroll: false,
+
+        get inputLineCount() { return this.input.split('\n').length; },
+        get outputLineCount() { return this.output.split('\n').length; },
+
+        activeOutputEl() {
+          return this.view === 'raw' ? this.$refs.outTextarea : this.$refs.preview;
+        },
+
+        // Mirrors scroll *proportionally* (scrollTop / scrollable range) rather
+        // than 1:1, since the two panes rarely have the same content length.
+        // The syncingScroll guard breaks the feedback loop: mirroring sets the
+        // other pane's scrollTop, which fires its own scroll event, which would
+        // otherwise mirror straight back.
+        mirrorScroll(source, target) {
+          if (!target || this.syncingScroll) return;
+          this.syncingScroll = true;
+          const sMax = source.scrollHeight - source.clientHeight;
+          const tMax = target.scrollHeight - target.clientHeight;
+          target.scrollTop = sMax > 0 ? (source.scrollTop / sMax) * tMax : 0;
+          requestAnimationFrame(() => { this.syncingScroll = false; });
+        },
+
+        onInputScroll(e) {
+          this.$refs.mdGutter.scrollTop = e.target.scrollTop;
+          this.mirrorScroll(e.target, this.activeOutputEl());
+        },
+
+        onOutputScroll(e) {
+          if (this.view === 'raw') this.$refs.outGutter.scrollTop = e.target.scrollTop;
+          this.mirrorScroll(e.target, this.$refs.mdTextarea);
+        },
+
+        init() {
+          this.input = SAMPLE_MD;
+          // $nextTick: x-init on this element can fire before Alpine has
+          // registered the x-ref="preview" child, which run() depends on.
+          this.$nextTick(() => this.run());
+        },
+
+        async run() {
+          this.error = '';
+          try {
+            // `fragment` always renders the preview; `output` is what Copy/Download
+            // HTML use, and additionally wraps in a full document when toggled on.
+            this.fragment = marked.parse(this.input, { gfm: true, breaks: this.opts.gfmBreaks });
+            this.output = this.opts.fullDocument ? this.wrapDocument(this.fragment) : this.fragment;
+            this.$refs.preview.innerHTML = DOMPurify.sanitize(this.fragment);
+          } catch (e) {
+            this.error = e.message || 'Conversion failed';
+          }
+        },
+
+        wrapDocument(html) {
+          return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+            + '<title>Document</title>\n<style>\n'
+            + '  body { font: 16px/1.6 system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }\n'
+            + '  pre { background: #f6f6f6; padding: .75em; overflow-x: auto; }\n'
+            + '  code { font-family: ui-monospace, monospace; }\n'
+            + '  table { border-collapse: collapse; }\n'
+            + '  th, td { border: 1px solid #ccc; padding: .35em .6em; }\n'
+            + '  blockquote { border-left: 3px solid #ccc; margin-left: 0; padding-left: 1em; color: #555; }\n'
+            + '</style>\n</head>\n<body>\n' + html + '\n</body>\n</html>\n';
+        },
+
+        startDrag(e) {
+          e.preventDefault();
+          this.dragging = true;
+          const row = this.$refs.paneRow;
+
+          const onMove = (ev) => {
+            const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+            const rect = row.getBoundingClientRect();
+            const pct = ((clientX - rect.left) / rect.width) * 100;
+            this.split = Math.min(80, Math.max(20, pct));
+          };
+          const onUp = () => {
+            this.dragging = false;
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onUp);
+          };
+
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+          document.addEventListener('touchmove', onMove, { passive: false });
+          document.addEventListener('touchend', onUp);
+        },
+
+        startVDrag(e) {
+          e.preventDefault();
+          this.draggingV = true;
+          const startY = e.touches ? e.touches[0].clientY : e.clientY;
+          const startHeight = this.paneHeight;
+
+          const onMove = (ev) => {
+            const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
+            this.paneHeight = Math.min(600, Math.max(150, startHeight + (clientY - startY)));
+          };
+          const onUp = () => {
+            this.draggingV = false;
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onUp);
+          };
+
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+          document.addEventListener('touchmove', onMove, { passive: false });
+          document.addEventListener('touchend', onUp);
+        },
+
+        flash(msg) { this.toast = msg; setTimeout(() => this.toast = '', 2000); },
+
+        async copy() {
+          await navigator.clipboard.writeText(this.output);
+          this.flash('Copied');
+        },
+
+        async copyRichClick() {
+          const ok = await window.copyRich(this.input);
+          this.flash(ok ? 'Copied — paste into Word or Google Docs' : 'Copied as plain text');
+        },
+
+        downloadOut() {
+          window.downloadFile(this.output, 'converted.html', 'text/html;charset=utf-8');
+          this.flash('Downloaded');
+        },
+      };
+    }
+  </script>
+</body>
+</html>

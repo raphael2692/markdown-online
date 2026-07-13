@@ -1,0 +1,3 @@
+dist/
+.mkdocs-site/
+__pycache__/

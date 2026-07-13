@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My Site{% endblock %}</title>
+
+    {# x-cloak prevents flash of unstyled Alpine content #}
+    <style>[x-cloak]{display:none !important}</style>
+
+    {# Tailwind via CDN — fine for prototyping. For production, build with the Tailwind CLI or django-tailwind. #}
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    {# Alpine + helper plugins. focus/collapse must load BEFORE alpine. #}
+    <script defer src="https://unpkg.com/@alpinejs/focus@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 text-neutral-900">
+    {% block body %}
+    <main class="min-h-screen">
+        {% block content %}{% endblock %}
+    </main>
+    {% endblock %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
