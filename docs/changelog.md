@@ -1,4 +1,4 @@
-<!-- docs-sync: 50b5c7f -->
+<!-- docs-sync: 710b606 -->
 
 # Changelog
 
@@ -27,3 +27,4 @@
 - Both tool widgets failed to render (panes stuck collapsed, no toolbar) because `site.js` — which defines `paneResizer()`, called at `x-data` construction time — loaded after Alpine's core script, which boots synchronously as soon as it runs; reordered the `<script defer>` tags so `site.js` executes first (`da4e649`)
 - `markdown-editor` toolbar's Task button carried a lone emoji icon inconsistent with every other plain-text button, and task-list items rendered a disc bullet alongside the checkbox; toolbar label made plain text and `.md-preview li:has(> input[type="checkbox"])` now suppresses the marker (`0ff72fd`)
 - Default sample Markdown/HTML on both tool widgets dropped a placeholder `![Sample screenshot](data:image/svg+xml,...)` line that added visual noise without demonstrating anything the KaTeX/Mermaid samples didn't already cover (`417a180`)
+- Both tool widgets' right-hand preview pane could be pushed outside its container by wide content (long unbroken tokens, wide tables) because the flex panes lacked `min-width: 0`; added `min-w-0` to both panes, `overflow-wrap: anywhere` on `.md-preview`, and made preview tables scroll internally instead of forcing the layout wider (`710b606`)
