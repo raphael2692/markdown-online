@@ -86,7 +86,8 @@ Mermaid's SVG output survive sanitization instead of being stripped as
 non-standard tags. `wrapDocument()` (the "Full HTML document" / downloaded
 HTML path) inlines KaTeX's CSS with font `url()`s rewritten to an absolute,
 this-origin URL when math is enabled, so a downloaded standalone file still
-renders math correctly even opened outside the site.
+renders math correctly even opened outside the site. It lives in the shared
+`toolActionsMixin()` (see below), not per-page.
 
 ## Syntax highlighting (preview-only, always on)
 
@@ -121,6 +122,13 @@ pattern used elsewhere to avoid a stale async load racing a newer edit.
   default regardless of viewport width. The horizontal drag divider hides
   while stacked (there's no width to drag); the vertical pane-height
   divider still works either way.
+- **Shared toast/copy/export behavior**: both tool widgets also mix in
+  `toolActionsMixin()` (`site/assets/site.js`) for `flash()` (the toast
+  message shown after Copy/Download actions), `copyRichClick()` (wraps
+  `window.copyRich()` for the "Copy for Word / Docs" button), and
+  `wrapDocument()` described above — spread alongside `paneResizer()`:
+  `{ ...paneResizer(), ...toolActionsMixin(), /* page state */ }`. These
+  three were previously copy-pasted identically into both pages.
 - **Build**: `build.py` expands the two shared partials
   (`site/partials/header.html`, `site/partials/footer.html`) into every page,
   substitutes site-wide tokens (`__SITE_URL__`, `__SITE_NAME__`,

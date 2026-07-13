@@ -1,4 +1,4 @@
-<!-- docs-sync: 6b28765 -->
+<!-- docs-sync: 50b5c7f -->
 
 # Changelog
 
@@ -21,7 +21,9 @@
 ### Changed
 - Extracted the draggable split-pane / pane-height / scroll-mirroring logic into a shared `paneResizer()` mixin in `site.js`; both tool widgets now use it instead of each re-implementing it (`40007d2`)
 - Default sample Markdown on `markdown-editor` and `markdown-to-html` now exercises nearly every rendered feature on first load — strikethrough, an inline image (embedded as a data URI, no network request), KaTeX inline/block math, and a Mermaid diagram, alongside the existing headings, lists, task list, table, blockquote, and code fence (`6b28765`)
+- Extracted `flash()`, `copyRichClick()`, and `wrapDocument()` — previously duplicated identically on `markdown-editor` and `markdown-to-html` — into a shared `toolActionsMixin()` in `site.js` (`50b5c7f`)
 
 ### Fixed
 - Both tool widgets failed to render (panes stuck collapsed, no toolbar) because `site.js` — which defines `paneResizer()`, called at `x-data` construction time — loaded after Alpine's core script, which boots synchronously as soon as it runs; reordered the `<script defer>` tags so `site.js` executes first (`da4e649`)
 - `markdown-editor` toolbar's Task button carried a lone emoji icon inconsistent with every other plain-text button, and task-list items rendered a disc bullet alongside the checkbox; toolbar label made plain text and `.md-preview li:has(> input[type="checkbox"])` now suppresses the marker (`0ff72fd`)
+- Default sample Markdown/HTML on both tool widgets dropped a placeholder `![Sample screenshot](data:image/svg+xml,...)` line that added visual noise without demonstrating anything the KaTeX/Mermaid samples didn't already cover (`417a180`)
