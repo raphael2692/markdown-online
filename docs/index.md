@@ -21,12 +21,64 @@ public site.
     word/character/reading-time counts, localStorage autosave with restore
     and an explicit Clear action, and Copy / Copy-for-Word / Download .md /
     Download HTML / Print-to-PDF export.
+  - Both tools share three opt-in Markdown extension toggles — see
+    "Markdown extensions" below.
 - **Site shell**: homepage (`site/index.html`), `about/`, `privacy/`, `404.html`.
 - **Shared assets**: `site/assets/site.css` (built Tailwind output),
-  `site/assets/site.js` (rich-clipboard copy, file download, ad-slot
-  placeholder init, and the `paneResizer()` mixin — see below),
-  `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify — vendored
-  locally, no CDN hotlinking in production).
+  `site/assets/site.js` (the shared `convertMarkdown()`/`sanitizeHtml()`
+  pipeline, rich-clipboard copy, file download, ad-slot placeholder init,
+  and the `paneResizer()` mixin — see below),
+  `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify, KaTeX,
+  Mermaid — vendored locally, no CDN hotlinking in production).
+
+## Markdown extensions (smart typography, math, diagrams)
+
+Both `markdown-to-html` and `markdown-editor` share one conversion pipeline —
+`convertMarkdown(input, opts)` in `site/assets/site.js` — with three opt-in
+checkboxes, all off by default and lazy-loaded only when enabled (Mermaid
+alone is ~3.5MB minified, so nothing downloads it unasked):
+
+- **Smart typography** — `smartyPants()` parses marked's HTML output into an
+  inert `<template>`, walks text nodes only (skipping `pre`/`code`/`script`/
+  `style`/KaTeX's hidden MathML annotation), and swaps straight quotes for
+  curly quotes and `--`/`---` for en/em dashes. It deliberately runs on the
+  parsed DOM rather than a regex over the HTML string: marked's own output
+  HTML-entity-encodes ordinary prose text but leaves raw HTML the author
+  typed directly unescaped (CommonMark raw-HTML passthrough), so the same
+  document can mix both forms — a DOM text-node walk handles both uniformly
+  via the browser's own decoded `.nodeValue`, and can't mistake an attribute
+  value for prose text the way a tag-boundary regex could.
+- **Render math (KaTeX)** — a marked extension (`registerKatexExtension()`)
+  adds `$inline$` / `$$block$$` tokenizers, gated by a module-level
+  `mathEnabled` flag checked inside the tokenizer's `start()`/match function
+  itself (not just the renderer) — marked unshifts extension tokenizers to
+  the front of the list, so gating only at render time would mean the
+  tokenizer claims every `$` regardless of the checkbox. Rendered via
+  `katex.renderToString(tex, {throwOnError:false})`, so malformed math
+  degrades to a visible error span instead of crashing the conversion.
+- **Render diagrams (Mermaid)** — deliberately *not* wired into marked's own
+  renderer/extension system: the vendored marked build's renderer-merge path
+  is synchronous-only, so an async `renderer.code` silently corrupts every
+  code block (a raw Promise string-coerces to `"[object Promise]"`). Instead
+  marked stays fully synchronous — a ` ```mermaid ` fence renders as an
+  ordinary `<pre><code class="language-mermaid">`, like any unrecognized
+  code-fence language — and a standalone async function,
+  `renderMermaidDiagrams()`, post-processes the resulting HTML string
+  afterward: parses it into an inert `<template>`, finds
+  `code.language-mermaid` blocks, calls `mermaid.render()` per diagram, and
+  replaces each with sanitized SVG (or an inline error box on failure, so one
+  bad diagram never breaks the rest of the document).
+
+All three apply consistently everywhere `convertMarkdown()` is used: live
+preview, Raw view / Copy / Download on `markdown-to-html`, and preview / rich
+clipboard copy / Download HTML / Print-to-PDF on `markdown-editor`. A
+`sanitizeHtml()` helper wraps `DOMPurify.sanitize()` with
+`USE_PROFILES: {html, mathMl, svg}` so KaTeX's MathML accessibility tree and
+Mermaid's SVG output survive sanitization instead of being stripped as
+non-standard tags. `wrapDocument()` (the "Full HTML document" / downloaded
+HTML path) inlines KaTeX's CSS with font `url()`s rewritten to an absolute,
+this-origin URL when math is enabled, so a downloaded standalone file still
+renders math correctly even opened outside the site.
 - **Shared widget behavior**: both tool widgets mix in `paneResizer()`
   (defined once in `site/assets/site.js`) for the draggable horizontal
   split (`--split`, a %) and vertical pane height (`--pane-height`, px),
