@@ -303,31 +303,15 @@
 
     function toolWidget() {
       return {
+        ...paneResizer(),
         input: '', fragment: '', output: '', error: '', toast: '', view: 'raw',
         opts: { gfmBreaks: false, fullDocument: false },
-        split: 50, dragging: false,
-        paneHeight: 288, draggingV: false,
-        syncingScroll: false,
 
         get inputLineCount() { return this.input.split('\n').length; },
         get outputLineCount() { return this.output.split('\n').length; },
 
         activeOutputEl() {
           return this.view === 'raw' ? this.$refs.outTextarea : this.$refs.preview;
-        },
-
-        // Mirrors scroll *proportionally* (scrollTop / scrollable range) rather
-        // than 1:1, since the two panes rarely have the same content length.
-        // The syncingScroll guard breaks the feedback loop: mirroring sets the
-        // other pane's scrollTop, which fires its own scroll event, which would
-        // otherwise mirror straight back.
-        mirrorScroll(source, target) {
-          if (!target || this.syncingScroll) return;
-          this.syncingScroll = true;
-          const sMax = source.scrollHeight - source.clientHeight;
-          const tMax = target.scrollHeight - target.clientHeight;
-          target.scrollTop = sMax > 0 ? (source.scrollTop / sMax) * tMax : 0;
-          requestAnimationFrame(() => { this.syncingScroll = false; });
         },
 
         onInputScroll(e) {
@@ -370,55 +354,6 @@
             + '  th, td { border: 1px solid #ccc; padding: .35em .6em; }\n'
             + '  blockquote { border-left: 3px solid #ccc; margin-left: 0; padding-left: 1em; color: #555; }\n'
             + '</style>\n</head>\n<body>\n' + html + '\n</body>\n</html>\n';
-        },
-
-        startDrag(e) {
-          e.preventDefault();
-          this.dragging = true;
-          const row = this.$refs.paneRow;
-
-          const onMove = (ev) => {
-            const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
-            const rect = row.getBoundingClientRect();
-            const pct = ((clientX - rect.left) / rect.width) * 100;
-            this.split = Math.min(80, Math.max(20, pct));
-          };
-          const onUp = () => {
-            this.dragging = false;
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            document.removeEventListener('touchmove', onMove);
-            document.removeEventListener('touchend', onUp);
-          };
-
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onUp);
-          document.addEventListener('touchmove', onMove, { passive: false });
-          document.addEventListener('touchend', onUp);
-        },
-
-        startVDrag(e) {
-          e.preventDefault();
-          this.draggingV = true;
-          const startY = e.touches ? e.touches[0].clientY : e.clientY;
-          const startHeight = this.paneHeight;
-
-          const onMove = (ev) => {
-            const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
-            this.paneHeight = Math.min(600, Math.max(150, startHeight + (clientY - startY)));
-          };
-          const onUp = () => {
-            this.draggingV = false;
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            document.removeEventListener('touchmove', onMove);
-            document.removeEventListener('touchend', onUp);
-          };
-
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onUp);
-          document.addEventListener('touchmove', onMove, { passive: false });
-          document.addEventListener('touchend', onUp);
         },
 
         flash(msg) { this.toast = msg; setTimeout(() => this.toast = '', 2000); },
