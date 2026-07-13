@@ -29,7 +29,7 @@ public site.
   pipeline, rich-clipboard copy, file download, ad-slot placeholder init,
   and the `paneResizer()` mixin — see below),
   `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify, KaTeX,
-  Mermaid — vendored locally, no CDN hotlinking in production).
+  Mermaid, highlight.js — vendored locally, no CDN hotlinking in production).
 
 ## Markdown extensions (smart typography, math, diagrams)
 
@@ -79,6 +79,23 @@ non-standard tags. `wrapDocument()` (the "Full HTML document" / downloaded
 HTML path) inlines KaTeX's CSS with font `url()`s rewritten to an absolute,
 this-origin URL when math is enabled, so a downloaded standalone file still
 renders math correctly even opened outside the site.
+
+## Syntax highlighting (preview-only, always on)
+
+Unlike the three extensions above, code-block syntax highlighting is not a
+checkbox and is not part of `convertMarkdown()`'s output. `ensureHljsLoaded()`
+lazy-loads the vendored highlight.js core bundle (`site/assets/vendor/
+highlightjs-11.11.1/`, ~35 common languages incl. Python bundled in one file)
+plus the GitHub-light stylesheet, kicked off at widget `init()` and awaited
+again after every `run()`. `highlightCodeBlocks(el)` then calls
+`hljs.highlightElement()` on every `pre code` inside the **preview DOM only**
+— never on `fragment`/`output`, so Raw HTML, Copy, Download, and
+Print-to-PDF on both tools keep marked's plain `<pre><code class="language-
+python">` untouched. This is deliberate: both tool pages promise the HTML you
+take with you isn't opinionated about styling, so coloring only ever gets
+painted onto the on-page preview, guarded by the same `_renderGen` counter
+pattern used elsewhere to avoid a stale async load racing a newer edit.
+
 - **Shared widget behavior**: both tool widgets mix in `paneResizer()`
   (defined once in `site/assets/site.js`) for the draggable horizontal
   split (`--split`, a %) and vertical pane height (`--pane-height`, px),
