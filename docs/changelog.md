@@ -1,4 +1,4 @@
-<!-- docs-sync: e79e98e -->
+<!-- docs-sync: 6b28765 -->
 
 # Changelog
 
@@ -20,6 +20,7 @@
 
 ### Changed
 - Extracted the draggable split-pane / pane-height / scroll-mirroring logic into a shared `paneResizer()` mixin in `site.js`; both tool widgets now use it instead of each re-implementing it (`40007d2`)
+- Default sample Markdown on `markdown-editor` and `markdown-to-html` now exercises nearly every rendered feature on first load — strikethrough, an inline image (embedded as a data URI, no network request), KaTeX inline/block math, and a Mermaid diagram, alongside the existing headings, lists, task list, table, blockquote, and code fence (`6b28765`)
 
 ### Fixed
 - Both tool widgets failed to render (panes stuck collapsed, no toolbar) because `site.js` — which defines `paneResizer()`, called at `x-data` construction time — loaded after Alpine's core script, which boots synchronously as soon as it runs; reordered the `<script defer>` tags so `site.js` executes first (`da4e649`)
