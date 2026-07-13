@@ -1,4 +1,4 @@
-<!-- docs-sync: 4e1cafd -->
+<!-- docs-sync: 0ff72fd -->
 
 # Changelog
 
@@ -22,3 +22,4 @@
 
 ### Fixed
 - Both tool widgets failed to render (panes stuck collapsed, no toolbar) because `site.js` — which defines `paneResizer()`, called at `x-data` construction time — loaded after Alpine's core script, which boots synchronously as soon as it runs; reordered the `<script defer>` tags so `site.js` executes first (`da4e649`)
+- `markdown-editor` toolbar's Task button carried a lone emoji icon inconsistent with every other plain-text button, and task-list items rendered a disc bullet alongside the checkbox; toolbar label made plain text and `.md-preview li:has(> input[type="checkbox"])` now suppresses the marker (`0ff72fd`)
