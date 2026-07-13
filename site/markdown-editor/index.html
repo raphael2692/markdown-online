@@ -71,6 +71,16 @@
         "@type": "Question",
         "name": "What keyboard shortcuts does the editor support?",
         "acceptedAnswer": { "@type": "Answer", "text": "Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, and Ctrl/Cmd+K for a link, alongside toolbar buttons for headings, lists, quotes, and code." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I write math equations or diagrams?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Turn on \"Render math\" for KaTeX-powered $inline$ and $$block$$ LaTeX, or \"Render diagrams\" for Mermaid-powered ```mermaid flowcharts and sequence diagrams — both apply to the preview, rich copy, HTML download, and Print / Save as PDF." }
+      },
+      {
+        "@type": "Question",
+        "name": "What does \"Smart typography\" do?",
+        "acceptedAnswer": { "@type": "Answer", "text": "It converts straight quotes into curly quotes and --/--- into en/em dashes — useful for polished writing, off by default so the raw Markdown you typed stays exactly as-is." }
       }
     ]
   }
@@ -103,6 +113,21 @@
               class="rounded-r-md border-l border-neutral-300 px-2 py-1">Preview</button>
           </div>
           <span class="text-xs text-neutral-500" x-text="`${wordCount} words · ${charCount} characters · ~${readingTime} min read`"></span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 border-b border-neutral-200 p-3 text-sm">
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="opts.smartypants" @change="run()" class="rounded border-neutral-300">
+            Smart typography
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" @change="onMathToggle($event)" class="rounded border-neutral-300">
+            Render math (KaTeX)
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" @change="onMermaidToggle($event)" class="rounded border-neutral-300">
+            Render diagrams (Mermaid)
+          </label>
         </div>
 
         <div x-show="view !== 'preview'" class="flex flex-wrap gap-1 border-b border-neutral-200 p-2">
@@ -206,6 +231,20 @@
         before it touches the page, so pasted content with a stray
         <code>&lt;script&gt;</code> tag renders inert rather than executing.
       </p>
+      <p>
+        Three optional toggles above the toolbar extend the preview.
+        <strong>Smart typography</strong> turns straight quotes into curly
+        quotes and <code>--</code>/<code>---</code> into en/em dashes.
+        <strong>Render math</strong> loads
+        <a class="text-indigo-600 hover:underline" href="https://katex.org/">KaTeX</a>
+        so <code>$inline$</code> and <code>$$block$$</code> LaTeX renders as
+        typeset equations. <strong>Render diagrams</strong> loads
+        <a class="text-indigo-600 hover:underline" href="https://mermaid.js.org/">Mermaid</a>
+        so fenced <code>```mermaid</code> blocks render as flowcharts and
+        sequence diagrams. All three are off by default, apply to the preview,
+        the rich copy, the HTML download, and Print / Save as PDF alike, and
+        only download their (larger) supporting libraries once switched on.
+      </p>
     </section>
 
     <div class="ad-slot mt-10" style="min-height:280px" data-slot="mid-content"></div>
@@ -269,6 +308,14 @@
           <h3 class="font-medium">What keyboard shortcuts does the editor support?</h3>
           <p class="text-neutral-600">Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, and Ctrl/Cmd+K for a link, alongside toolbar buttons for headings, lists, quotes, and code.</p>
         </div>
+        <div>
+          <h3 class="font-medium">Can I write math equations or diagrams?</h3>
+          <p class="text-neutral-600">Yes. Turn on "Render math" for KaTeX-powered <code>$inline$</code> and <code>$$block$$</code> LaTeX, or "Render diagrams" for Mermaid-powered <code>```mermaid</code> flowcharts and sequence diagrams — both apply to the preview, rich copy, HTML download, and Print / Save as PDF.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">What does "Smart typography" do?</h3>
+          <p class="text-neutral-600">It converts straight quotes into curly quotes and <code>--</code>/<code>---</code> into en/em dashes — useful for polished writing, off by default so the raw Markdown you typed stays exactly as-is.</p>
+        </div>
       </div>
     </section>
 
@@ -318,7 +365,8 @@
         ...paneResizer(),
         input: '', fragment: '', error: '', toast: '',
         view: 'split', restored: false, savedAt: '',
-        _saveTimer: null,
+        _saveTimer: null, _renderGen: 0,
+        opts: { smartypants: false, math: false, mermaid: false },
 
         get wordCount() { return (this.input.match(/\S+/g) || []).length; },
         get charCount() { return this.input.length; },
@@ -352,12 +400,46 @@
 
         async run() {
           this.error = '';
+          const myGen = ++this._renderGen;
           try {
-            this.fragment = marked.parse(this.input, { gfm: true });
-            this.$refs.preview.innerHTML = DOMPurify.sanitize(this.fragment);
+            const html = await convertMarkdown(this.input, this.opts);
+            if (myGen !== this._renderGen) return; // a newer run() already superseded this one
+            this.fragment = html;
+            this.$refs.preview.innerHTML = sanitizeHtml(this.fragment);
           } catch (e) {
+            if (myGen !== this._renderGen) return;
             this.error = e.message || 'Preview failed';
           }
+        },
+
+        async onMathToggle(e) {
+          const on = e.target.checked;
+          if (on) {
+            try {
+              await ensureKatexLoaded();
+            } catch (err) {
+              e.target.checked = false;
+              this.error = 'Could not load KaTeX — check your connection and try again.';
+              return;
+            }
+          }
+          this.opts.math = on;
+          this.run();
+        },
+
+        async onMermaidToggle(e) {
+          const on = e.target.checked;
+          if (on) {
+            try {
+              await ensureMermaidLoaded();
+            } catch (err) {
+              e.target.checked = false;
+              this.error = 'Could not load Mermaid — check your connection and try again.';
+              return;
+            }
+          }
+          this.opts.mermaid = on;
+          this.run();
         },
 
         onInputScroll(e) {
@@ -435,7 +517,7 @@
           this.flash('Copied');
         },
         async copyRichClick() {
-          const ok = await window.copyRich(this.input);
+          const ok = await window.copyRich(this.input, this.opts);
           this.flash(ok ? 'Copied — paste into Word or Google Docs' : 'Copied as plain text');
         },
         downloadMd() {
@@ -447,6 +529,9 @@
           this.flash('Downloaded');
         },
         wrapDocument(html) {
+          // getKatexCssText() already rewrites font url()s to an absolute,
+          // this-origin URL — resolves correctly even opened outside this page.
+          const katexCss = this.opts.math ? `<style>\n${getKatexCssText()}\n</style>\n` : '';
           return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
             + '<title>Document</title>\n<style>\n'
             + '  body { font: 16px/1.6 system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }\n'
@@ -455,31 +540,40 @@
             + '  table { border-collapse: collapse; }\n'
             + '  th, td { border: 1px solid #ccc; padding: .35em .6em; }\n'
             + '  blockquote { border-left: 3px solid #ccc; margin-left: 0; padding-left: 1em; color: #555; }\n'
-            + '</style>\n</head>\n<body>\n' + html + '\n</body>\n</html>\n';
+            + '</style>\n' + katexCss + '</head>\n<body>\n' + html + '\n</body>\n</html>\n';
         },
-        printPdf() {
-          const html = DOMPurify.sanitize(marked.parse(this.input, { gfm: true }));
-          const doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title><style>'
-            + '@page { size: A4; margin: 2cm; }'
-            + "body { font: 11pt/1.55 Georgia, 'Times New Roman', serif; color:#1a1a1a; }"
-            + 'h1,h2,h3 { font-family: Helvetica, Arial, sans-serif; line-height:1.25; break-after: avoid; }'
-            + 'pre { background:#f6f6f6; padding:.75em; font:9pt/1.4 ui-monospace,monospace; white-space:pre-wrap; word-wrap:break-word; break-inside: avoid; }'
-            + 'code { font-family: ui-monospace, monospace; font-size:.9em; }'
-            + 'table { border-collapse: collapse; width:100%; break-inside: avoid; }'
-            + 'th,td { border:1px solid #999; padding:.35em .6em; text-align:left; }'
-            + 'blockquote { border-left:3px solid #ccc; margin-left:0; padding-left:1em; color:#555; }'
-            + 'img { max-width:100%; }'
-            + '</style></head><body>' + html + '</body></html>';
-          const f = document.createElement('iframe');
-          f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
-          document.body.appendChild(f);
-          f.srcdoc = doc;
-          f.onload = () => {
-            f.contentWindow.focus();
-            f.contentWindow.print();
-            setTimeout(() => f.remove(), 60000);
-          };
-          this.flash('Opening print dialog…');
+        async printPdf() {
+          this.error = '';
+          try {
+            const html = sanitizeHtml(await convertMarkdown(this.input, this.opts));
+            const doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title><style>'
+              + '@page { size: A4; margin: 2cm; }'
+              + "body { font: 11pt/1.55 Georgia, 'Times New Roman', serif; color:#1a1a1a; }"
+              + 'h1,h2,h3 { font-family: Helvetica, Arial, sans-serif; line-height:1.25; break-after: avoid; }'
+              + 'pre { background:#f6f6f6; padding:.75em; font:9pt/1.4 ui-monospace,monospace; white-space:pre-wrap; word-wrap:break-word; break-inside: avoid; }'
+              + 'code { font-family: ui-monospace, monospace; font-size:.9em; }'
+              + 'table { border-collapse: collapse; width:100%; break-inside: avoid; }'
+              + 'th,td { border:1px solid #999; padding:.35em .6em; text-align:left; }'
+              + 'blockquote { border-left:3px solid #ccc; margin-left:0; padding-left:1em; color:#555; }'
+              + 'img { max-width:100%; }'
+              + '.mermaid-diagram { overflow-x:auto; }'
+              + '.mermaid-diagram svg { max-width:100%; height:auto; }'
+              + '.mermaid-error { background:#fef2f2; color:#b91c1c; padding:.75em; border-radius:.375em; }'
+              + (this.opts.math ? getKatexCssText() : '')
+              + '</style></head><body>' + html + '</body></html>';
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+            document.body.appendChild(f);
+            f.srcdoc = doc;
+            f.onload = () => {
+              f.contentWindow.focus();
+              f.contentWindow.print();
+              setTimeout(() => f.remove(), 60000);
+            };
+            this.flash('Opening print dialog…');
+          } catch (e) {
+            this.error = e.message || 'Could not prepare the PDF — try again.';
+          }
         },
       };
     }

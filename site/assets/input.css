@@ -89,3 +89,19 @@
 }
 .md-preview a { color: #4f46e5; text-decoration: underline; }
 .md-preview img { max-width: 100%; }
+.md-preview .mermaid-diagram {
+  margin-top: 0;
+  margin-bottom: 1em;
+  overflow-x: auto;
+}
+.md-preview .mermaid-diagram svg { max-width: 100%; height: auto; }
+.md-preview .mermaid-error {
+  margin-top: 0;
+  margin-bottom: 1em;
+  padding: 0.75em;
+  border-radius: 0.375em;
+  background: #fef2f2;
+  color: #b91c1c;
+  overflow-x: auto;
+}
+.md-preview .katex-display { overflow-x: auto; overflow-y: hidden; }

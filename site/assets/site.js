@@ -94,10 +94,231 @@ function paneResizer(opts) {
 }
 window.paneResizer = paneResizer;
 
-async function copyRich(markdown) {
-  const html = DOMPurify.sanitize(marked.parse(markdown, { gfm: true }));
-  const wrapped = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt">${html}</div>`;
+// ---------------------------------------------------------------------
+// Markdown extensions: smart typography, KaTeX math, Mermaid diagrams.
+// All three are opt-in (tool widgets gate them behind checkboxes) and
+// lazy-loaded — see ensureKatexLoaded()/ensureMermaidLoaded() below.
+// ---------------------------------------------------------------------
+
+// Simplified SmartyPants: straight quotes -> curly, --/--- -> en/em dash.
+// Writes literal Unicode characters (not HTML-entity strings): this runs on
+// a DOM Text node's .nodeValue, which browsers never interpret as markup —
+// entity text like "&#8220;" would round-trip back out through innerHTML as
+// the literal six characters "&#8220;", not a rendered curly quote. Every
+// page on this site already declares UTF-8, and the ClipboardItem/Blob
+// writes elsewhere in this file are explicit about charset, so plain
+// Unicode characters are both correct here and simpler than entities.
+function smartyTransform(text) {
+  return text
+    .replace(/---/g, '—')
+    .replace(/--/g, '–')
+    .replace(/(^|[\s([{<])"/g, '$1“')
+    .replace(/"/g, '”')
+    .replace(/(^|[\s([{<])'/g, '$1‘')
+    .replace(/'/g, '’');
+}
+
+// Runs on marked's HTML *output*, not the raw markdown source: marked itself
+// HTML-entity-encodes straight quotes in ordinary prose text nodes (e.g.
+// "don't" becomes "don&#39;t" in its own output), while raw HTML the author
+// typed directly is passed through unescaped per CommonMark — so the same
+// document can mix both forms. Parsing into an inert <template> and walking
+// only text nodes (skipping code/pre/script/style and KaTeX's hidden MathML
+// annotation) handles both forms uniformly via the browser's own decoded
+// .nodeValue, and can never mistake an attribute value for prose text.
+function smartyPants(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const walker = document.createTreeWalker(tpl.content, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      return n.parentElement && n.parentElement.closest('pre, code, script, style, .katex-mathml, annotation')
+        ? NodeFilter.FILTER_REJECT
+        : NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    n.nodeValue = smartyTransform(n.nodeValue);
+  }
+  return tpl.innerHTML;
+}
+
+// KaTeX integration: a marked extension gated by `mathEnabled`, which
+// convertMarkdown() sets immediately before every marked.parse() call. The
+// gate lives in the tokenizers themselves (not just the renderer) — marked
+// unshifts extension tokenizers to the front of the tokenizer list, so an
+// always-on tokenizer would claim every "$" before marked's own codespan/
+// escaping logic ever saw it, regardless of any flag checked only later at
+// render time. Returning `undefined` when disabled makes marked handle "$"
+// exactly as if this extension were never registered.
+let mathEnabled = false;
+let katexRegistered = false;
+
+function katexRender(tex, displayMode) {
   try {
+    return katex.renderToString(tex, { throwOnError: false, displayMode });
+  } catch (e) {
+    return DOMPurify.sanitize(displayMode ? `$$${tex}$$` : `$${tex}$`);
+  }
+}
+
+function registerKatexExtension() {
+  if (katexRegistered) return;
+  katexRegistered = true;
+  marked.use({
+    extensions: [
+      {
+        name: 'mathBlock',
+        level: 'block',
+        start(src) { return mathEnabled ? src.indexOf('$$') : undefined; },
+        tokenizer(src) {
+          if (!mathEnabled) return undefined;
+          const m = /^\$\$([\s\S]+?)\$\$/.exec(src);
+          if (m) return { type: 'mathBlock', raw: m[0], text: m[1].trim() };
+        },
+        renderer(token) { return `<p>${katexRender(token.text, true)}</p>`; },
+      },
+      {
+        name: 'mathInline',
+        level: 'inline',
+        start(src) { return mathEnabled ? src.indexOf('$') : undefined; },
+        tokenizer(src) {
+          if (!mathEnabled) return undefined;
+          // GitHub-style: no $$ (block math handles that), \$ escapes a literal dollar.
+          const m = /^\$(?!\$)((?:\\\$|[^\n$])+?)\$(?!\$)/.exec(src);
+          if (m) return { type: 'mathInline', raw: m[0], text: m[1].replace(/\\\$/g, '$') };
+        },
+        renderer(token) { return katexRender(token.text, false); },
+      },
+    ],
+  });
+}
+
+// Mermaid integration deliberately does NOT hook into marked's renderer/
+// extension system: marked.use({renderer:{...}}) merges renderer overrides
+// with a synchronous-only wrapper (confirmed against the vendored build),
+// so an async renderer.code silently corrupts every code block on the page
+// (a raw Promise string-coerces to "[object Promise]"). Instead, marked
+// stays fully synchronous and emits an ordinary
+// <pre><code class="language-mermaid">, exactly like any other fenced code
+// block with an unrecognized language — then this standalone async function
+// post-processes the resulting HTML string.
+let mermaidSeq = 0;
+
+async function renderMermaidDiagrams(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const blocks = tpl.content.querySelectorAll('code.language-mermaid');
+  for (const code of blocks) {
+    const id = 'mermaid-diagram-' + (++mermaidSeq);
+    const pre = code.closest('pre');
+    try {
+      const { svg } = await mermaid.render(id, code.textContent);
+      const div = document.createElement('div');
+      div.className = 'mermaid-diagram';
+      // Sanitized here, at generation time, not just later in the shared
+      // sanitizeHtml() pass — this is third-party-library output, not the
+      // user's authored markdown, so it gets the same protection on every
+      // output channel (Raw/Copy/Download included), not just the preview.
+      div.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
+      pre.replaceWith(div);
+    } catch (e) {
+      pre.outerHTML = `<pre class="mermaid-error">Diagram error: ${DOMPurify.sanitize(e.message || String(e))}</pre>`;
+    }
+  }
+  return tpl.innerHTML;
+}
+
+// Single shared conversion pipeline used by every tool widget and by
+// copyRich(), so the markdown -> HTML rules stay identical everywhere
+// instead of being reimplemented at each call site.
+async function convertMarkdown(input, opts) {
+  opts = opts || {};
+  mathEnabled = !!opts.math;
+  let html = marked.parse(input, { gfm: true, breaks: !!opts.gfmBreaks });
+  if (opts.smartypants) html = smartyPants(html);
+  if (opts.mermaid) html = await renderMermaidDiagrams(html);
+  return html;
+}
+window.convertMarkdown = convertMarkdown;
+
+function sanitizeHtml(html) {
+  // mathMl: KaTeX's accessibility tree (<math>/<semantics>/<annotation>...).
+  // svg: Mermaid diagrams. `style` (load-bearing for KaTeX's inline-
+  // positioned spans) is already allowed by DOMPurify's default profile.
+  return DOMPurify.sanitize(html, { USE_PROFILES: { html: true, mathMl: true, svg: true } });
+}
+window.sanitizeHtml = sanitizeHtml;
+
+// ---- lazy loading ----
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+function loadStylesheet(href) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`link[href="${href}"]`)) { resolve(); return; }
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = href;
+    l.onload = () => resolve();
+    l.onerror = () => reject(new Error(`Failed to load ${href}`));
+    document.head.appendChild(l);
+  });
+}
+
+let katexReadyPromise = null;
+let katexCssText = '';
+
+function ensureKatexLoaded() {
+  if (!katexReadyPromise) {
+    katexReadyPromise = Promise.all([
+      loadScript('/assets/vendor/katex-0.17.0/katex.min.js'),
+      loadStylesheet('/assets/vendor/katex-0.17.0/katex.min.css'),
+      // Cached text is only ever spliced into *other* documents (a downloaded
+      // standalone HTML file, or the print-to-PDF iframe) whose base URL isn't
+      // this page's own — so font url(fonts/...) references are rewritten to
+      // an absolute, this-origin URL rather than left relative (which would
+      // resolve against the wrong base and silently fall back to no font).
+      fetch('/assets/vendor/katex-0.17.0/katex.min.css').then((r) => r.text()).then((t) => {
+        katexCssText = t.replace(/url\(fonts\//g, `url(${location.origin}/assets/vendor/katex-0.17.0/fonts/`);
+      }),
+    ]).then(() => registerKatexExtension())
+      // A failed attempt (network blip) must not permanently wedge the
+      // feature off for the rest of the page session — clear the cache so
+      // the next checkbox toggle retries the actual network request.
+      .catch((e) => { katexReadyPromise = null; throw e; });
+  }
+  return katexReadyPromise;
+}
+window.ensureKatexLoaded = ensureKatexLoaded;
+window.getKatexCssText = () => katexCssText;
+
+let mermaidReadyPromise = null;
+
+function ensureMermaidLoaded() {
+  if (!mermaidReadyPromise) {
+    mermaidReadyPromise = loadScript('/assets/vendor/mermaid-11.16.0.min.js').then(() => {
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+    }).catch((e) => { mermaidReadyPromise = null; throw e; });
+  }
+  return mermaidReadyPromise;
+}
+window.ensureMermaidLoaded = ensureMermaidLoaded;
+
+// ---- rich clipboard ----
+
+async function copyRich(markdown, opts) {
+  try {
+    const html = sanitizeHtml(await convertMarkdown(markdown, opts));
+    const wrapped = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt">${html}</div>`;
     await navigator.clipboard.write([new ClipboardItem({
       'text/html': new Blob([wrapped], { type: 'text/html' }),
       'text/plain': new Blob([markdown], { type: 'text/plain' }),
