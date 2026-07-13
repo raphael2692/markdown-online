@@ -117,6 +117,11 @@
               :class="view === 'preview' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
               class="rounded-r-md border-l border-neutral-300 px-2 py-1">Preview</button>
           </div>
+          <button type="button" x-show="view === 'split'" @click="stacked = !stacked"
+            class="hidden rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 md:inline-flex"
+            :title="stacked ? 'Switch to side-by-side layout' : 'Stack panels vertically'">
+            <span x-text="stacked ? 'Side by side' : 'Stack panels'"></span>
+          </button>
           <span class="text-xs text-neutral-500" x-text="`${wordCount} words · ${charCount} characters · ~${readingTime} min read`"></span>
         </div>
 
@@ -207,7 +212,8 @@
         </div>
 
         <div x-ref="paneRow" :style="`--split: ${split}%; --pane-height: ${paneHeight}px`"
-          class="flex flex-col md:flex-row" :class="(dragging || draggingV) && 'select-none'">
+          class="flex flex-col md:flex-row"
+          :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
           <div x-show="view !== 'preview'" class="border-b border-neutral-200 p-3 md:border-b-0 md:border-r"
             :class="view === 'split' ? 'split-pane-left' : 'md:w-full'">
             <label for="tw-in" class="sr-only">Markdown input</label>
@@ -226,7 +232,7 @@
             </div>
           </div>
 
-          <div x-show="view === 'split'"
+          <div x-show="view === 'split' && !stacked"
             class="hidden shrink-0 cursor-col-resize touch-none items-stretch justify-center border-x border-neutral-200 bg-neutral-100 hover:bg-neutral-200 md:flex md:w-2"
             :class="dragging && 'bg-neutral-300'"
             @mousedown="startDrag($event)" @touchstart="startDrag($event)"

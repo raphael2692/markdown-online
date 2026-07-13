@@ -27,6 +27,10 @@ function paneResizer(opts) {
     paneHeight: opts.paneHeight || 288,
     draggingV: false,
     syncingScroll: false,
+    // User-toggled layout override: stacks the right pane below the left
+    // one (via the .is-stacked CSS hook) instead of side by side, regardless
+    // of viewport width.
+    stacked: opts.stacked || false,
 
     // Mirrors scroll *proportionally* (scrollTop / scrollable range) rather
     // than 1:1, since the two panes rarely have the same content length.

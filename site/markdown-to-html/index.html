@@ -110,8 +110,16 @@
 
     <section id="tool" class="mt-6" x-data="toolWidget()" x-init="init()">
       <div class="rounded-lg border border-neutral-200">
+        <div class="hidden items-center justify-end border-b border-neutral-200 p-2 md:flex">
+          <button type="button" @click="stacked = !stacked"
+            class="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50"
+            :title="stacked ? 'Switch to side-by-side layout' : 'Stack panels vertically'">
+            <span x-text="stacked ? 'Side by side' : 'Stack panels'"></span>
+          </button>
+        </div>
         <div x-ref="paneRow" class="flex flex-col md:flex-row"
-          :style="`--split: ${split}%; --pane-height: ${paneHeight}px`" :class="(dragging || draggingV) && 'select-none'">
+          :style="`--split: ${split}%; --pane-height: ${paneHeight}px`"
+          :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
           <div class="split-pane-left border-b border-neutral-200 p-3 md:border-b-0 md:border-r">
             <label for="tw-in" class="text-xs font-medium uppercase text-neutral-500">Markdown input</label>
             <div class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300 focus-within:border-neutral-500">
@@ -128,7 +136,8 @@
             </div>
           </div>
 
-          <div class="hidden shrink-0 cursor-col-resize touch-none items-stretch justify-center border-x border-neutral-200 bg-neutral-100 hover:bg-neutral-200 md:flex md:w-2"
+          <div x-show="!stacked"
+            class="hidden shrink-0 cursor-col-resize touch-none items-stretch justify-center border-x border-neutral-200 bg-neutral-100 hover:bg-neutral-200 md:flex md:w-2"
             :class="dragging && 'bg-neutral-300'"
             @mousedown="startDrag($event)" @touchstart="startDrag($event)"
             title="Drag to resize">

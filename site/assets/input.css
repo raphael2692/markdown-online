@@ -21,6 +21,15 @@
   }
 }
 
+/* User toggle to stack the right pane below the left one instead of side
+   by side, overriding the md:flex-row layout regardless of viewport width. */
+.is-stacked {
+  flex-direction: column !important;
+}
+.is-stacked .split-pane-left {
+  flex: 1 1 auto !important;
+}
+
 /* Shared pane height, set once on a stable ancestor (not the x-show'd
    elements themselves — Alpine's string :style binding overwrites the whole
    style attribute on every reactive update, which would wipe out the
