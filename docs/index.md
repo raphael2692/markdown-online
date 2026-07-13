@@ -15,16 +15,27 @@ public site.
     gutters, a Raw/Rendered toggle, and Copy / Copy-for-Word / Download.
   - `site/markdown-editor/index.html` (`/markdown-editor/`) — online
     Markdown editor for "markdown editor online" / "markdown preview
-    online": Write/Split/Preview toggle, a formatting toolbar (headings,
-    bold, italic, links, lists, quotes, code) with keyboard shortcuts,
+    online": Write/Split/Preview toggle, a resizable split-pane widget with
+    a line-number gutter, a formatting toolbar (headings, bold, italic,
+    links, lists, quotes, code) with keyboard shortcuts,
     word/character/reading-time counts, localStorage autosave with restore
     and an explicit Clear action, and Copy / Copy-for-Word / Download .md /
     Download HTML / Print-to-PDF export.
 - **Site shell**: homepage (`site/index.html`), `about/`, `privacy/`, `404.html`.
 - **Shared assets**: `site/assets/site.css` (built Tailwind output),
   `site/assets/site.js` (rich-clipboard copy, file download, ad-slot
-  placeholder init), `site/assets/vendor/` (pinned Alpine.js, marked,
-  DOMPurify — vendored locally, no CDN hotlinking in production).
+  placeholder init, and the `paneResizer()` mixin — see below),
+  `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify — vendored
+  locally, no CDN hotlinking in production).
+- **Shared widget behavior**: both tool widgets mix in `paneResizer()`
+  (defined once in `site/assets/site.js`) for the draggable horizontal
+  split (`--split`, a %) and vertical pane height (`--pane-height`, px),
+  plus the proportional scroll-mirroring between panes. A page's
+  `toolWidget()` spreads it in — `{ ...paneResizer(), /* page state */ }` —
+  and needs `x-ref="paneRow"` on the flex-row ancestor plus the
+  `.split-pane-left` / `.pane-height` CSS classes (`site/assets/input.css`)
+  on its panes. Add any new two-pane tool widget on top of this mixin
+  rather than re-implementing drag-resize or scroll-sync per page.
 - **Build**: `build.py` expands the two shared partials
   (`site/partials/header.html`, `site/partials/footer.html`) into every page,
   substitutes site-wide tokens (`__SITE_URL__`, `__SITE_NAME__`,
