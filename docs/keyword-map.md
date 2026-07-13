@@ -11,7 +11,7 @@ Statuses: `todo | built | live`. This file is versioned with the repo — update
 | markdown-to-html | markdown to html | md to html converter | devs embedding content | **built** |
 | markdown-to-pdf | markdown to pdf | md to pdf, convert markdown to pdf | convert a doc | todo |
 | markdown-to-word | markdown to word | markdown to docx, md to doc | paste into Word workflows | todo |
-| markdown-editor | markdown editor online | markdown preview online | write + preview | todo |
+| markdown-editor | markdown editor online | markdown preview online | write + preview | **built** |
 | markdown-table-generator | markdown table generator | table to markdown, md table maker | build/paste tables | todo |
 
 ## Tier 2 — Long tail with clear tool intent (build these first)

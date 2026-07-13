@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Markdown Editor Online – Free &amp; Private | __SITE_NAME__</title>
+  <meta name="description" content="Free online Markdown editor with a live preview. Write Markdown, format with the toolbar, and see it render instantly — no upload, no signup.">
+  <link rel="canonical" href="__SITE_URL__/markdown-editor/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Markdown Editor Online – Free &amp; Private">
+  <meta property="og:description" content="Write Markdown with a live preview. Runs 100% in your browser — no upload, no signup, autosaves locally.">
+  <meta property="og:url" content="__SITE_URL__/markdown-editor/">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <style>[x-cloak]{display:none !important}</style>
+
+  <script defer src="/assets/vendor/alpine-focus-3.15.12.min.js"></script>
+  <script defer src="/assets/vendor/alpine-collapse-3.15.12.min.js"></script>
+  <script defer src="/assets/vendor/marked-18.0.6.min.js"></script>
+  <script defer src="/assets/vendor/dompurify-3.4.12.min.js"></script>
+  <script defer src="/assets/vendor/alpine-3.15.12.min.js"></script>
+  <script defer src="/assets/site.js"></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Markdown Editor Online",
+    "url": "__SITE_URL__/markdown-editor/",
+    "description": "A free online Markdown editor with a live preview — write Markdown, format with the toolbar, and see rendered output instantly. Runs entirely in the browser.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any (web browser)",
+    "browserRequirements": "Requires JavaScript",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is this Markdown editor free to use?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. It's free, with no signup and no limit on how much you write." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does my writing get uploaded to a server?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. The editor and preview run entirely in your browser using JavaScript. The only place your draft is stored is your browser's own local storage — it never touches a server." }
+      },
+      {
+        "@type": "Question",
+        "name": "Will I lose my draft if I close the tab or refresh the page?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. Your draft autosaves to local storage about half a second after you stop typing, and reloads automatically the next time you open this page in the same browser. Use the Clear button to remove it explicitly." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I export what I write as Word, PDF, or HTML?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Use \"Copy for Word / Docs\" to paste formatted content straight into a document, \"Download HTML\" for a standalone file, or \"Print / Save as PDF\" to generate a PDF through your browser's print dialog." }
+      },
+      {
+        "@type": "Question",
+        "name": "What keyboard shortcuts does the editor support?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, and Ctrl/Cmd+K for a link, alongside toolbar buttons for headings, lists, quotes, and code." }
+      }
+    ]
+  }
+  </script>
+</head>
+<body class="bg-white text-neutral-800 antialiased">
+
+  <!--#include partials/header.html-->
+
+  <main class="mx-auto max-w-6xl px-4">
+
+    <h1 class="mt-8 text-3xl font-bold">Markdown Editor Online</h1>
+    <p class="mt-2 text-lg text-neutral-600">
+      Write Markdown and watch it render live, side by side. Everything runs
+      locally in your browser — your draft is never uploaded to a server.
+    </p>
+
+    <section id="tool" class="mt-6" x-data="toolWidget()" x-init="init()">
+      <div class="rounded-lg border border-neutral-200">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 p-3">
+          <div class="flex rounded-md border border-neutral-300 text-xs">
+            <button type="button" @click="view = 'write'"
+              :class="view === 'write' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+              class="rounded-l-md px-2 py-1">Write</button>
+            <button type="button" @click="view = 'split'"
+              :class="view === 'split' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+              class="border-l border-neutral-300 px-2 py-1">Split</button>
+            <button type="button" @click="view = 'preview'"
+              :class="view === 'preview' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+              class="rounded-r-md border-l border-neutral-300 px-2 py-1">Preview</button>
+          </div>
+          <span class="text-xs text-neutral-500" x-text="`${wordCount} words · ${charCount} characters · ~${readingTime} min read`"></span>
+        </div>
+
+        <div x-show="view !== 'preview'" class="flex flex-wrap gap-1 border-b border-neutral-200 p-2">
+          <button type="button" @click="prefixCurrentLine('## ')" title="Heading" aria-label="Heading" class="rounded border border-neutral-300 px-2 py-1 text-xs font-semibold hover:bg-neutral-50">H</button>
+          <button type="button" @click="wrapSelection('**', '**', 'bold text')" title="Bold (Ctrl/Cmd+B)" aria-label="Bold" class="rounded border border-neutral-300 px-2 py-1 text-xs font-bold hover:bg-neutral-50">B</button>
+          <button type="button" @click="wrapSelection('*', '*', 'italic text')" title="Italic (Ctrl/Cmd+I)" aria-label="Italic" class="rounded border border-neutral-300 px-2 py-1 text-xs italic hover:bg-neutral-50">I</button>
+          <button type="button" @click="wrapSelection('[', '](https://)', 'link text')" title="Link (Ctrl/Cmd+K)" aria-label="Link" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Link</button>
+          <button type="button" @click="prefixLines('- ')" title="Bullet list" aria-label="Bullet list" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">List</button>
+          <button type="button" @click="insertNumberedList()" title="Numbered list" aria-label="Numbered list" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">1.</button>
+          <button type="button" @click="prefixLines('> ')" title="Quote" aria-label="Quote" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Quote</button>
+          <button type="button" @click="wrapSelection('`', '`', 'code')" title="Inline code" aria-label="Inline code" class="rounded border border-neutral-300 px-2 py-1 text-xs font-mono hover:bg-neutral-50">Code</button>
+        </div>
+
+        <div class="flex flex-col md:flex-row">
+          <div x-show="view !== 'preview'" class="border-b border-neutral-200 p-3 md:border-b-0 md:border-r"
+            :class="view === 'split' ? 'md:w-1/2' : 'md:w-full'">
+            <label for="tw-in" class="sr-only">Markdown input</label>
+            <textarea id="tw-in" x-ref="mdTextarea" x-model="input"
+              @input.debounce.250ms="run()" @keydown="onKeydown($event)" @scroll="onInputScroll($event)"
+              spellcheck="true"
+              class="h-96 w-full resize-none overflow-auto rounded-md border border-neutral-300 p-3 font-mono text-sm leading-6 focus:border-neutral-500 focus:ring-0"
+              placeholder="Start writing Markdown…"></textarea>
+          </div>
+
+          <div x-show="view !== 'write'" class="p-3" :class="view === 'split' ? 'md:w-1/2' : 'md:w-full'">
+            <label class="sr-only">Rendered preview</label>
+            <div x-ref="preview" @scroll="onPreviewScroll($event)"
+              class="md-preview h-96 w-full overflow-y-auto rounded-md border border-neutral-300 bg-white p-3 text-sm"></div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 border-t border-neutral-200 p-3 text-xs text-neutral-500">
+          <span x-show="restored" x-cloak>Draft restored from your last visit.</span>
+          <span x-show="savedAt" x-cloak x-text="'Saved ' + savedAt"></span>
+          <button type="button" @click="clearDraft()" class="ml-auto rounded-md border border-neutral-300 px-2 py-1 hover:bg-neutral-50">Clear</button>
+        </div>
+
+        <div class="flex flex-wrap gap-2 border-t border-neutral-200 p-3">
+          <button @click="copyMarkdown()" class="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700">Copy Markdown</button>
+          <button @click="copyRichClick()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Copy for Word / Docs</button>
+          <button @click="downloadMd()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Download .md</button>
+          <button @click="downloadHtml()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Download HTML</button>
+          <button @click="printPdf()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Print / Save as PDF</button>
+          <span x-show="toast" x-transition.opacity x-cloak class="ml-auto self-center text-sm text-green-700" x-text="toast"></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot mt-8" style="min-height:280px" data-slot="tool-below"></div>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">How to use the Markdown editor</h2>
+      <ol class="mt-3 list-decimal space-y-2 pl-6">
+        <li>Start typing in the Write pane — the Preview pane updates as you go, so you always see exactly how the final Markdown will render.</li>
+        <li>Use the toolbar, or shortcuts like Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, and Ctrl/Cmd+K for a link, to insert formatting without memorizing syntax.</li>
+        <li>Switch to Write-only or Preview-only with the toggle above the toolbar when you want the full width for typing or for reviewing the rendered result.</li>
+        <li>When you're done, copy the Markdown, copy a rich version for Word or Google Docs, download it as a <code>.md</code> or <code>.html</code> file, or print it straight to PDF.</li>
+      </ol>
+    </section>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">A live preview without losing the syntax</h2>
+      <p>
+        This editor pairs a plain-text Markdown pane with a preview rendered by
+        <a class="text-indigo-600 hover:underline" href="https://marked.js.org/">marked</a>,
+        the same GitHub-Flavored Markdown parser used across this site, so tables,
+        task lists, strikethrough, and autolinked URLs all render correctly by
+        default — no configuration needed. The two panes scroll together in
+        Split view, so a heading near the top of a long draft stays lined up
+        with its rendered counterpart instead of drifting apart as you write.
+        The toolbar exists for anyone who doesn't want to remember that a link
+        is <code>[text](url)</code> or that a quote needs a <code>&gt;</code>
+        at the start of the line — select some text, click a button, and the
+        syntax is inserted around it (or a sensible placeholder, if nothing is
+        selected). The preview is always sanitized with
+        <a class="text-indigo-600 hover:underline" href="https://github.com/cure53/DOMPurify">DOMPurify</a>
+        before it touches the page, so pasted content with a stray
+        <code>&lt;script&gt;</code> tag renders inert rather than executing.
+      </p>
+    </section>
+
+    <div class="ad-slot mt-10" style="min-height:280px" data-slot="mid-content"></div>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">Your draft is saved locally — nothing is uploaded</h2>
+      <p>
+        About half a second after you stop typing, the editor saves your
+        current text to your browser's local storage and picks it back up
+        automatically the next time you open this page in the same browser —
+        so an accidental tab close or refresh doesn't cost you a paragraph.
+        That save never leaves your machine: there's no account, no server
+        copy, and no sync across devices, which is a real trade-off against
+        cloud editors — if you need the same draft on your phone and your
+        laptop, this isn't that tool. What you get in exchange is a genuine
+        privacy guarantee for anything you'd rather not send to a third
+        party, like an unpublished draft or notes pasted from an internal
+        doc. Hit <strong>Clear</strong> at any time to wipe both the editor
+        and the saved copy; otherwise it just sits in that one browser until
+        you overwrite it by writing something new.
+      </p>
+    </section>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">Formatting quirks worth knowing</h2>
+      <p>
+        Lists need a blank line before and after them to render as a proper
+        list rather than getting absorbed into the surrounding paragraph, and
+        a nested item needs at least two spaces of indent under its parent.
+        A literal asterisk or underscore — say, describing a variable named
+        <code>*args</code> — needs a backslash in front of it
+        (<code>\*args</code>) or it gets read as emphasis. Fenced code blocks
+        with a language tag after the triple backticks (<code>```js</code>)
+        get a <code>language-*</code> class in the output, but this editor's
+        preview doesn't apply syntax-highlighting colors to it — that's a
+        rendering choice for wherever the Markdown ends up, not something
+        baked into this tool.
+      </p>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">Frequently asked questions</h2>
+      <div class="mt-3 space-y-4">
+        <div>
+          <h3 class="font-medium">Is this Markdown editor free to use?</h3>
+          <p class="text-neutral-600">Yes. It's free, with no signup and no limit on how much you write.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Does my writing get uploaded to a server?</h3>
+          <p class="text-neutral-600">No. The editor and preview run entirely in your browser using JavaScript. The only place your draft is stored is your browser's own local storage — it never touches a server.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Will I lose my draft if I close the tab or refresh the page?</h3>
+          <p class="text-neutral-600">No. Your draft autosaves to local storage about half a second after you stop typing, and reloads automatically the next time you open this page in the same browser. Use the Clear button to remove it explicitly.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Can I export what I write as Word, PDF, or HTML?</h3>
+          <p class="text-neutral-600">Yes. Use "Copy for Word / Docs" to paste formatted content straight into a document, "Download HTML" for a standalone file, or "Print / Save as PDF" to generate a PDF through your browser's print dialog.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">What keyboard shortcuts does the editor support?</h3>
+          <p class="text-neutral-600">Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, and Ctrl/Cmd+K for a link, alongside toolbar buttons for headings, lists, quotes, and code.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">Related tools</h2>
+      <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+        <li><a class="text-indigo-600 hover:underline" href="/markdown-to-html/">Markdown to HTML converter</a></li>
+      </ul>
+      <p class="mt-2 text-neutral-600">
+        More Markdown tools are on the way. See
+        <a class="text-indigo-600 hover:underline" href="/">all Markdown tools</a> as they ship.
+      </p>
+    </section>
+  </main>
+
+  <!--#include partials/footer.html-->
+
+  <script>
+    const SAMPLE_MD = [
+      '# Draft: Weekly Update',
+      '',
+      "A quick note before Friday's review — **please skim before the call**.",
+      '',
+      '## Highlights',
+      '',
+      '- Shipped the *new* onboarding flow',
+      '- Fixed the checkout bug reported last week',
+      '- Started scoping the [Q3 roadmap](https://example.com/roadmap)',
+      '',
+      '## Open questions',
+      '',
+      '1. Do we need sign-off from legal before launch?',
+      '2. Who owns the migration doc?',
+      '',
+      '> If anything above needs more detail, reply inline and I\'ll expand it.',
+      '',
+      '```js',
+      "console.log('draft saved locally, not on a server');",
+      '```',
+      '',
+    ].join('\n');
+
+    const STORAGE_KEY = 'markdown-editor-draft-v1';
+
+    function toolWidget() {
+      return {
+        input: '', fragment: '', error: '', toast: '',
+        view: 'split', restored: false, savedAt: '',
+        syncingScroll: false, _saveTimer: null,
+
+        get wordCount() { return (this.input.match(/\S+/g) || []).length; },
+        get charCount() { return this.input.length; },
+        get readingTime() { return Math.max(1, Math.round(this.wordCount / 200)); },
+
+        init() {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            this.input = saved;
+            this.restored = true;
+          } else {
+            this.input = SAMPLE_MD;
+          }
+          this.$watch('input', (val) => {
+            clearTimeout(this._saveTimer);
+            this._saveTimer = setTimeout(() => {
+              if (val.trim()) {
+                localStorage.setItem(STORAGE_KEY, val);
+                this.savedAt = new Date().toLocaleTimeString();
+              } else {
+                localStorage.removeItem(STORAGE_KEY);
+                this.savedAt = '';
+              }
+            }, 500);
+          });
+          // $nextTick: x-init can fire before Alpine registers x-ref="preview",
+          // which run() writes into.
+          this.$nextTick(() => this.run());
+        },
+
+        async run() {
+          this.error = '';
+          try {
+            this.fragment = marked.parse(this.input, { gfm: true });
+            this.$refs.preview.innerHTML = DOMPurify.sanitize(this.fragment);
+          } catch (e) {
+            this.error = e.message || 'Preview failed';
+          }
+        },
+
+        mirrorScroll(source, target) {
+          if (!target || this.syncingScroll) return;
+          this.syncingScroll = true;
+          const sMax = source.scrollHeight - source.clientHeight;
+          const tMax = target.scrollHeight - target.clientHeight;
+          target.scrollTop = sMax > 0 ? (source.scrollTop / sMax) * tMax : 0;
+          requestAnimationFrame(() => { this.syncingScroll = false; });
+        },
+        onInputScroll(e) {
+          if (this.view === 'split') this.mirrorScroll(e.target, this.$refs.preview);
+        },
+        onPreviewScroll(e) {
+          if (this.view === 'split') this.mirrorScroll(e.target, this.$refs.mdTextarea);
+        },
+
+        // ---- toolbar formatting helpers ----
+        wrapSelection(prefix, suffix, placeholder) {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const selected = this.input.slice(start, end) || placeholder;
+          this.input = this.input.slice(0, start) + prefix + selected + suffix + this.input.slice(end);
+          const newStart = start + prefix.length;
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newStart, newStart + selected.length); });
+          this.run();
+        },
+        prefixCurrentLine(marker) {
+          const ta = this.$refs.mdTextarea;
+          const pos = ta.selectionStart;
+          const lineStart = this.input.lastIndexOf('\n', pos - 1) + 1;
+          this.input = this.input.slice(0, lineStart) + marker + this.input.slice(lineStart);
+          const newPos = pos + marker.length;
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
+          this.run();
+        },
+        prefixLines(marker) {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const lineStart = this.input.lastIndexOf('\n', start - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', end);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const block = this.input.slice(lineStart, lineEnd)
+            .split('\n').map((l) => marker + l).join('\n');
+          this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(lineStart, lineStart + block.length); });
+          this.run();
+        },
+        insertNumberedList() {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const lineStart = this.input.lastIndexOf('\n', start - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', end);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const block = this.input.slice(lineStart, lineEnd)
+            .split('\n').map((l, i) => `${i + 1}. ${l}`).join('\n');
+          this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(lineStart, lineStart + block.length); });
+          this.run();
+        },
+        onKeydown(e) {
+          const mod = e.ctrlKey || e.metaKey;
+          if (!mod) return;
+          if (e.key === 'b') { e.preventDefault(); this.wrapSelection('**', '**', 'bold text'); }
+          else if (e.key === 'i') { e.preventDefault(); this.wrapSelection('*', '*', 'italic text'); }
+          else if (e.key === 'k') { e.preventDefault(); this.wrapSelection('[', '](https://)', 'link text'); }
+        },
+
+        clearDraft() {
+          if (!confirm("Clear the editor and delete your saved draft? This can't be undone.")) return;
+          this.input = '';
+          localStorage.removeItem(STORAGE_KEY);
+          this.savedAt = '';
+          this.restored = false;
+          this.run();
+        },
+
+        flash(msg) { this.toast = msg; setTimeout(() => this.toast = '', 2000); },
+
+        async copyMarkdown() {
+          await navigator.clipboard.writeText(this.input);
+          this.flash('Copied');
+        },
+        async copyRichClick() {
+          const ok = await window.copyRich(this.input);
+          this.flash(ok ? 'Copied — paste into Word or Google Docs' : 'Copied as plain text');
+        },
+        downloadMd() {
+          window.downloadFile(this.input, 'document.md', 'text/markdown;charset=utf-8');
+          this.flash('Downloaded');
+        },
+        downloadHtml() {
+          window.downloadFile(this.wrapDocument(this.fragment), 'document.html', 'text/html;charset=utf-8');
+          this.flash('Downloaded');
+        },
+        wrapDocument(html) {
+          return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+            + '<title>Document</title>\n<style>\n'
+            + '  body { font: 16px/1.6 system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }\n'
+            + '  pre { background: #f6f6f6; padding: .75em; overflow-x: auto; }\n'
+            + '  code { font-family: ui-monospace, monospace; }\n'
+            + '  table { border-collapse: collapse; }\n'
+            + '  th, td { border: 1px solid #ccc; padding: .35em .6em; }\n'
+            + '  blockquote { border-left: 3px solid #ccc; margin-left: 0; padding-left: 1em; color: #555; }\n'
+            + '</style>\n</head>\n<body>\n' + html + '\n</body>\n</html>\n';
+        },
+        printPdf() {
+          const html = DOMPurify.sanitize(marked.parse(this.input, { gfm: true }));
+          const doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title><style>'
+            + '@page { size: A4; margin: 2cm; }'
+            + "body { font: 11pt/1.55 Georgia, 'Times New Roman', serif; color:#1a1a1a; }"
+            + 'h1,h2,h3 { font-family: Helvetica, Arial, sans-serif; line-height:1.25; break-after: avoid; }'
+            + 'pre { background:#f6f6f6; padding:.75em; font:9pt/1.4 ui-monospace,monospace; white-space:pre-wrap; word-wrap:break-word; break-inside: avoid; }'
+            + 'code { font-family: ui-monospace, monospace; font-size:.9em; }'
+            + 'table { border-collapse: collapse; width:100%; break-inside: avoid; }'
+            + 'th,td { border:1px solid #999; padding:.35em .6em; text-align:left; }'
+            + 'blockquote { border-left:3px solid #ccc; margin-left:0; padding-left:1em; color:#555; }'
+            + 'img { max-width:100%; }'
+            + '</style></head><body>' + html + '</body></html>';
+          const f = document.createElement('iframe');
+          f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+          document.body.appendChild(f);
+          f.srcdoc = doc;
+          f.onload = () => {
+            f.contentWindow.focus();
+            f.contentWindow.print();
+            setTimeout(() => f.remove(), 60000);
+          };
+          this.flash('Opening print dialog…');
+        },
+      };
+    }
+  </script>
+</body>
+</html>
