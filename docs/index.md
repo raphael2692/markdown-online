@@ -16,12 +16,14 @@ public site.
   - `site/markdown-editor/index.html` (`/markdown-editor/`) — online
     Markdown editor for "markdown editor online" / "markdown preview
     online": Write/Split/Preview toggle, a resizable split-pane widget with
-    a line-number gutter, a formatting toolbar (headings, bold, italic,
-    links, lists, quotes, code) with keyboard shortcuts,
-    word/character/reading-time counts, localStorage autosave with restore
-    and an explicit Clear action, and Copy / Copy-for-Word / Download .md /
-    Download HTML / Print-to-PDF export.
-  - Both tools share three opt-in Markdown extension toggles — see
+    a line-number gutter, a formatting toolbar (heading, bold, italic,
+    link, bullet/numbered list, quote, inline code, strikethrough, image,
+    task list, table, horizontal rule, a code-block language picker, a
+    Mermaid diagram-type picker, and a math insert) with keyboard
+    shortcuts, word/character/reading-time counts, localStorage autosave
+    with restore and an explicit Clear action, and Copy / Copy-for-Word /
+    Download .md / Download HTML / Print-to-PDF export.
+  - Both tools share the Markdown extensions pipeline — see
     "Markdown extensions" below.
 - **Site shell**: homepage (`site/index.html`), `about/`, `privacy/`, `404.html`.
 - **Shared assets**: `site/assets/site.css` (built Tailwind output),
@@ -34,9 +36,15 @@ public site.
 ## Markdown extensions (smart typography, math, diagrams)
 
 Both `markdown-to-html` and `markdown-editor` share one conversion pipeline —
-`convertMarkdown(input, opts)` in `site/assets/site.js` — with three opt-in
-checkboxes, all off by default and lazy-loaded only when enabled (Mermaid
-alone is ~3.5MB minified, so nothing downloads it unasked):
+`convertMarkdown(input, opts)` in `site/assets/site.js`. Smart typography is
+the one remaining manual checkbox (a style preference, not something
+detectable in the text); math and diagrams auto-enable themselves —
+`autoEnableRichFeatures()` scans the input for `$inline$`/`$$block$$` math or
+a ` ```mermaid ` fence and lazy-loads KaTeX/Mermaid the moment that syntax
+appears, rather than requiring the user to flip a checkbox first (Mermaid
+alone is ~3.5MB minified, so nothing downloads it unasked). Once auto-enabled
+for a session, a feature stays on even if the triggering syntax is later
+deleted.
 
 - **Smart typography** — `smartyPants()` parses marked's HTML output into an
   inert `<template>`, walks text nodes only (skipping `pre`/`code`/`script`/
@@ -53,7 +61,7 @@ alone is ~3.5MB minified, so nothing downloads it unasked):
   `mathEnabled` flag checked inside the tokenizer's `start()`/match function
   itself (not just the renderer) — marked unshifts extension tokenizers to
   the front of the list, so gating only at render time would mean the
-  tokenizer claims every `$` regardless of the checkbox. Rendered via
+  tokenizer claims every `$` regardless of whether math is enabled. Rendered via
   `katex.renderToString(tex, {throwOnError:false})`, so malformed math
   degrades to a visible error span instead of crashing the conversion.
 - **Render diagrams (Mermaid)** — deliberately *not* wired into marked's own
