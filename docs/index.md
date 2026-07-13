@@ -7,10 +7,19 @@ public site.
 
 ## What exists right now
 
-- **One live tool page**: `site/markdown-to-html/index.html` (served at
-  `/markdown-to-html/`) — the Tier-1 hub page for the Markdown → HTML
-  converter. Full page anatomy (meta/canonical/JSON-LD, tool widget, FAQ,
-  prose), per the `seo-tool-pages` skill's template.
+- **Two live tool pages**, both Tier-1 hubs with full page anatomy
+  (meta/canonical/JSON-LD, tool widget, FAQ, prose) per the `seo-tool-pages`
+  skill's template:
+  - `site/markdown-to-html/index.html` (`/markdown-to-html/`) — Markdown →
+    HTML converter: resizable split-pane widget with synced line-number
+    gutters, a Raw/Rendered toggle, and Copy / Copy-for-Word / Download.
+  - `site/markdown-editor/index.html` (`/markdown-editor/`) — online
+    Markdown editor for "markdown editor online" / "markdown preview
+    online": Write/Split/Preview toggle, a formatting toolbar (headings,
+    bold, italic, links, lists, quotes, code) with keyboard shortcuts,
+    word/character/reading-time counts, localStorage autosave with restore
+    and an explicit Clear action, and Copy / Copy-for-Word / Download .md /
+    Download HTML / Print-to-PDF export.
 - **Site shell**: homepage (`site/index.html`), `about/`, `privacy/`, `404.html`.
 - **Shared assets**: `site/assets/site.css` (built Tailwind output),
   `site/assets/site.js` (rich-clipboard copy, file download, ad-slot
@@ -31,9 +40,9 @@ public site.
   (fixed `min-height`, zero CLS) but only show a static "Advertisement"
   placeholder — per the `seo-tool-pages` skill, ads wait until the site has
   ~10 real pages and some organic traffic.
-- **Internal linking is thin** — there's only one tool page, so "Related
-  tools" on it just points back to the homepage. This fills in as more Tier-2/3
-  pages ship per the keyword map.
+- **Internal linking is thin** — with only two tool pages, "Related tools"
+  mostly points back to the homepage (the editor links to the HTML
+  converter). This fills in as more Tier-2/3 pages ship per the keyword map.
 - **No GitHub repo URL yet** — `__GITHUB_URL__` is a placeholder in `build.py`.
 
 ## Where things live
