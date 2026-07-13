@@ -120,7 +120,7 @@
         <div x-ref="paneRow" class="flex flex-col md:flex-row"
           :style="`--split: ${split}%; --pane-height: ${paneHeight}px`"
           :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
-          <div class="split-pane-left border-b border-neutral-200 p-3 md:border-b-0 md:border-r">
+          <div class="split-pane-left min-w-0 border-b border-neutral-200 p-3 md:border-b-0 md:border-r">
             <label for="tw-in" class="text-xs font-medium uppercase text-neutral-500">Markdown input</label>
             <div class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300 focus-within:border-neutral-500">
               <div x-ref="mdGutter" aria-hidden="true"
@@ -144,7 +144,7 @@
             <div class="my-auto h-8 w-px bg-neutral-400"></div>
           </div>
 
-          <div class="p-3 md:flex-1">
+          <div class="min-w-0 p-3 md:flex-1">
             <div class="flex items-center justify-between">
               <label class="text-xs font-medium uppercase text-neutral-500">HTML output</label>
               <div class="flex rounded-md border border-neutral-300 text-xs">

@@ -42,6 +42,7 @@
    Typography plugin, which the standalone (no-Node) CLI build can't resolve. */
 .md-preview {
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .md-preview > :first-child {
   margin-top: 0;
@@ -84,7 +85,7 @@
   overflow-x: auto;
 }
 .md-preview pre code { background: none; padding: 0; }
-.md-preview table { border-collapse: collapse; width: 100%; }
+.md-preview table { display: block; overflow-x: auto; border-collapse: collapse; width: max-content; max-width: 100%; }
 .md-preview th,
 .md-preview td {
   border: 1px solid #d4d4d4;
