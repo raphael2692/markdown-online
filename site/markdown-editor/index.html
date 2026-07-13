@@ -75,7 +75,7 @@
       {
         "@type": "Question",
         "name": "Can I write math equations or diagrams?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Turn on \"Render math\" for KaTeX-powered $inline$ and $$block$$ LaTeX, or \"Render diagrams\" for Mermaid-powered ```mermaid flowcharts and sequence diagrams — both apply to the preview, rich copy, HTML download, and Print / Save as PDF." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Write KaTeX-powered $inline$ and $$block$$ LaTeX, or Mermaid-powered ```mermaid flowcharts and sequence diagrams — the toolbar has Code block, Diagram, and Math buttons to insert them, or just type the syntax directly. Both render automatically in the preview, rich copy, HTML download, and Print / Save as PDF, with no toggle to switch on first." }
       },
       {
         "@type": "Question",
@@ -95,7 +95,7 @@
 
   <!--#include partials/header.html-->
 
-  <main class="mx-auto max-w-6xl px-4">
+  <main class="mx-auto max-w-7xl px-4">
 
     <h1 class="mt-8 text-3xl font-bold">Markdown Editor Online</h1>
     <p class="mt-2 text-lg text-neutral-600">
@@ -125,17 +125,10 @@
             <input type="checkbox" x-model="opts.smartypants" @change="run()" class="rounded border-neutral-300">
             Smart typography
           </label>
-          <label class="flex items-center gap-2">
-            <input type="checkbox" @change="onMathToggle($event)" class="rounded border-neutral-300">
-            Render math (KaTeX)
-          </label>
-          <label class="flex items-center gap-2">
-            <input type="checkbox" @change="onMermaidToggle($event)" class="rounded border-neutral-300">
-            Render diagrams (Mermaid)
-          </label>
+          <span class="text-xs text-neutral-500">Math and diagrams render automatically as soon as you insert or type them.</span>
         </div>
 
-        <div x-show="view !== 'preview'" class="flex flex-wrap gap-1 border-b border-neutral-200 p-2">
+        <div x-show="view !== 'preview'" class="flex flex-wrap items-center gap-1 border-b border-neutral-200 p-2">
           <button type="button" @click="prefixCurrentLine('## ')" title="Heading" aria-label="Heading" class="rounded border border-neutral-300 px-2 py-1 text-xs font-semibold hover:bg-neutral-50">H</button>
           <button type="button" @click="wrapSelection('**', '**', 'bold text')" title="Bold (Ctrl/Cmd+B)" aria-label="Bold" class="rounded border border-neutral-300 px-2 py-1 text-xs font-bold hover:bg-neutral-50">B</button>
           <button type="button" @click="wrapSelection('*', '*', 'italic text')" title="Italic (Ctrl/Cmd+I)" aria-label="Italic" class="rounded border border-neutral-300 px-2 py-1 text-xs italic hover:bg-neutral-50">I</button>
@@ -143,7 +136,68 @@
           <button type="button" @click="prefixLines('- ')" title="Bullet list" aria-label="Bullet list" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">List</button>
           <button type="button" @click="insertNumberedList()" title="Numbered list" aria-label="Numbered list" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">1.</button>
           <button type="button" @click="prefixLines('> ')" title="Quote" aria-label="Quote" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Quote</button>
-          <button type="button" @click="wrapSelection('`', '`', 'code')" title="Inline code" aria-label="Inline code" class="rounded border border-neutral-300 px-2 py-1 text-xs font-mono hover:bg-neutral-50">Code</button>
+
+          <span class="mx-1 h-5 w-px bg-neutral-200" aria-hidden="true"></span>
+
+          <select @change="insertCodeBlock($event.target.value); $event.target.selectedIndex = 0"
+            title="Insert code block" aria-label="Insert code block"
+            class="rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50">
+            <option value="">Code block</option>
+            <optgroup label="Popular">
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="python">Python</option>
+              <option value="bash">Bash</option>
+              <option value="json">JSON</option>
+              <option value="html">HTML</option>
+              <option value="css">CSS</option>
+              <option value="sql">SQL</option>
+            </optgroup>
+            <optgroup label="More languages">
+              <option value="c">C</option>
+              <option value="cpp">C++</option>
+              <option value="csharp">C#</option>
+              <option value="diff">Diff</option>
+              <option value="go">Go</option>
+              <option value="graphql">GraphQL</option>
+              <option value="ini">INI / TOML</option>
+              <option value="java">Java</option>
+              <option value="kotlin">Kotlin</option>
+              <option value="less">Less</option>
+              <option value="lua">Lua</option>
+              <option value="makefile">Makefile</option>
+              <option value="markdown">Markdown</option>
+              <option value="objectivec">Objective-C</option>
+              <option value="perl">Perl</option>
+              <option value="php">PHP</option>
+              <option value="r">R</option>
+              <option value="ruby">Ruby</option>
+              <option value="rust">Rust</option>
+              <option value="scss">SCSS</option>
+              <option value="swift">Swift</option>
+              <option value="vbnet">VB.NET</option>
+              <option value="wasm">WebAssembly</option>
+              <option value="xml">XML</option>
+              <option value="yaml">YAML</option>
+              <option value="plaintext">Plain text</option>
+            </optgroup>
+          </select>
+
+          <select @change="insertDiagram($event.target.value); $event.target.value = ''"
+            title="Insert diagram" aria-label="Insert diagram"
+            class="rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50">
+            <option value="" disabled selected>Diagram ▾</option>
+            <option value="flowchart">Flowchart</option>
+            <option value="sequence">Sequence diagram</option>
+            <option value="class">Class diagram</option>
+            <option value="state">State diagram</option>
+            <option value="er">Entity relationship</option>
+            <option value="gantt">Gantt chart</option>
+            <option value="pie">Pie chart</option>
+            <option value="mindmap">Mind map</option>
+          </select>
+
+          <button type="button" @click="insertMath()" title="Insert math (KaTeX)" aria-label="Insert math" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">∑ Math</button>
         </div>
 
         <div x-ref="paneRow" :style="`--split: ${split}%; --pane-height: ${paneHeight}px`"
@@ -237,18 +291,23 @@
         <code>&lt;script&gt;</code> tag renders inert rather than executing.
       </p>
       <p>
-        Three optional toggles above the toolbar extend the preview.
-        <strong>Smart typography</strong> turns straight quotes into curly
-        quotes and <code>--</code>/<code>---</code> into en/em dashes.
-        <strong>Render math</strong> loads
+        The toolbar's <strong>Code block</strong> menu inserts a fenced block
+        in any of 30-plus languages — highlight some code first and it wraps
+        the selection, or pick a language with nothing selected and it drops
+        in a placeholder. <strong>Diagram</strong> inserts a starter
+        <code>```mermaid</code> block for a flowchart, sequence diagram, and
+        similar, and <strong>∑ Math</strong> inserts a <code>$$block$$</code>
+        LaTeX equation. There's nothing to switch on first: as soon as the
+        page sees <code>$inline$</code>/<code>$$block$$</code> math or a
+        <code>```mermaid</code> fence anywhere in your draft, it quietly loads
         <a class="text-indigo-600 hover:underline" href="https://katex.org/">KaTeX</a>
-        so <code>$inline$</code> and <code>$$block$$</code> LaTeX renders as
-        typeset equations. <strong>Render diagrams</strong> loads
+        or
         <a class="text-indigo-600 hover:underline" href="https://mermaid.js.org/">Mermaid</a>
-        so fenced <code>```mermaid</code> blocks render as flowcharts and
-        sequence diagrams. All three are off by default, apply to the preview,
-        the rich copy, the HTML download, and Print / Save as PDF alike, and
-        only download their (larger) supporting libraries once switched on.
+        and renders it — in the preview, the rich copy, the HTML download,
+        and Print / Save as PDF alike. <strong>Smart typography</strong> is
+        the one remaining manual toggle, since it's a style preference rather
+        than something detectable in the text: it turns straight quotes into
+        curly quotes and <code>--</code>/<code>---</code> into en/em dashes.
       </p>
     </section>
 
@@ -317,7 +376,7 @@
         </div>
         <div>
           <h3 class="font-medium">Can I write math equations or diagrams?</h3>
-          <p class="text-neutral-600">Yes. Turn on "Render math" for KaTeX-powered <code>$inline$</code> and <code>$$block$$</code> LaTeX, or "Render diagrams" for Mermaid-powered <code>```mermaid</code> flowcharts and sequence diagrams — both apply to the preview, rich copy, HTML download, and Print / Save as PDF.</p>
+          <p class="text-neutral-600">Yes. Write KaTeX-powered <code>$inline$</code> and <code>$$block$$</code> LaTeX, or Mermaid-powered <code>```mermaid</code> flowcharts and sequence diagrams — the toolbar's Code block, Diagram, and Math buttons insert them, or just type the syntax directly. Both render automatically in the preview, rich copy, HTML download, and Print / Save as PDF, with no toggle to switch on first.</p>
         </div>
         <div>
           <h3 class="font-medium">What does "Smart typography" do?</h3>
@@ -371,9 +430,20 @@
 
     const STORAGE_KEY = 'markdown-editor-draft-v1';
 
+    const MERMAID_TEMPLATES = {
+      flowchart: 'graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Do thing]\n  B -->|No| D[Skip]',
+      sequence: 'sequenceDiagram\n  participant A as Client\n  participant B as Server\n  A->>B: Request\n  B-->>A: Response',
+      class: 'classDiagram\n  class Animal {\n    +String name\n    +makeSound()\n  }\n  Animal <|-- Dog',
+      state: 'stateDiagram-v2\n  [*] --> Idle\n  Idle --> Running: start\n  Running --> Idle: stop\n  Running --> [*]',
+      er: 'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  ORDER ||--|{ LINE_ITEM : contains',
+      gantt: 'gantt\n  title Project plan\n  section Phase 1\n  Design :a1, 2026-01-01, 5d\n  Build :after a1, 7d',
+      pie: 'pie title Traffic sources\n  "Organic search" : 45\n  "Direct" : 30\n  "Referral" : 25',
+      mindmap: 'mindmap\n  root((Project))\n    Idea A\n    Idea B\n      Sub-idea',
+    };
+
     function toolWidget() {
       return {
-        ...paneResizer(),
+        ...paneResizer({ split: 33, paneHeight: 480 }),
         input: '', fragment: '', error: '', toast: '',
         view: 'split', restored: false, savedAt: '',
         _saveTimer: null, _renderGen: 0,
@@ -414,6 +484,9 @@
           this.error = '';
           const myGen = ++this._renderGen;
           try {
+            const loadErrors = await autoEnableRichFeatures(this.input, this.opts);
+            if (myGen !== this._renderGen) return;
+            if (loadErrors.length) this.error = loadErrors.join(' ');
             const html = await convertMarkdown(this.input, this.opts);
             if (myGen !== this._renderGen) return; // a newer run() already superseded this one
             this.fragment = html;
@@ -427,36 +500,6 @@
             if (myGen !== this._renderGen) return;
             this.error = e.message || 'Preview failed';
           }
-        },
-
-        async onMathToggle(e) {
-          const on = e.target.checked;
-          if (on) {
-            try {
-              await ensureKatexLoaded();
-            } catch (err) {
-              e.target.checked = false;
-              this.error = 'Could not load KaTeX — check your connection and try again.';
-              return;
-            }
-          }
-          this.opts.math = on;
-          this.run();
-        },
-
-        async onMermaidToggle(e) {
-          const on = e.target.checked;
-          if (on) {
-            try {
-              await ensureMermaidLoaded();
-            } catch (err) {
-              e.target.checked = false;
-              this.error = 'Could not load Mermaid — check your connection and try again.';
-              return;
-            }
-          }
-          this.opts.mermaid = on;
-          this.run();
         },
 
         onInputScroll(e) {
@@ -516,6 +559,17 @@
           if (e.key === 'b') { e.preventDefault(); this.wrapSelection('**', '**', 'bold text'); }
           else if (e.key === 'i') { e.preventDefault(); this.wrapSelection('*', '*', 'italic text'); }
           else if (e.key === 'k') { e.preventDefault(); this.wrapSelection('[', '](https://)', 'link text'); }
+        },
+
+        insertCodeBlock(lang) {
+          this.wrapSelection('```' + lang + '\n', '\n```', 'code');
+        },
+        insertDiagram(type) {
+          if (!type) return;
+          this.wrapSelection('```mermaid\n', '\n```', MERMAID_TEMPLATES[type] || MERMAID_TEMPLATES.flowchart);
+        },
+        insertMath() {
+          this.wrapSelection('$$\n', '\n$$', 'E = mc^2');
         },
 
         clearDraft() {

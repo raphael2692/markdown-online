@@ -313,6 +313,35 @@ function ensureMermaidLoaded() {
 }
 window.ensureMermaidLoaded = ensureMermaidLoaded;
 
+// Rich features (math, diagrams) turn on automatically the moment their
+// syntax appears in the document, rather than behind a manual checkbox the
+// user has to remember to flip first. Once enabled they stay enabled for the
+// rest of the session, even if the triggering syntax is later deleted.
+const MATH_RE = /\$\$[^$]+\$\$|\$[^\s$][^$]*\$/;
+const MERMAID_RE = /```mermaid\b/;
+
+async function autoEnableRichFeatures(input, opts) {
+  const errors = [];
+  if (MATH_RE.test(input) && !opts.math) {
+    try {
+      await ensureKatexLoaded();
+      opts.math = true;
+    } catch (e) {
+      errors.push('Could not load KaTeX — check your connection and try again.');
+    }
+  }
+  if (MERMAID_RE.test(input) && !opts.mermaid) {
+    try {
+      await ensureMermaidLoaded();
+      opts.mermaid = true;
+    } catch (e) {
+      errors.push('Could not load Mermaid — check your connection and try again.');
+    }
+  }
+  return errors;
+}
+window.autoEnableRichFeatures = autoEnableRichFeatures;
+
 // Syntax highlighting is a preview-only enhancement (unlike KaTeX/Mermaid,
 // it's not gated behind a checkbox): the raw/copied/downloaded HTML keeps
 // marked's plain `language-*` class untouched, since that's the whole point

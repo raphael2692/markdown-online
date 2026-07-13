@@ -80,7 +80,7 @@
       {
         "@type": "Question",
         "name": "Can I render math equations or diagrams?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Turn on \"Render math\" for KaTeX-powered $inline$ and $$block$$ LaTeX, or \"Render diagrams\" for Mermaid-powered ```mermaid flowcharts and sequence diagrams. Both are off by default and load their libraries only when enabled." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Paste in KaTeX-powered $inline$ or $$block$$ LaTeX, or a Mermaid-powered ```mermaid flowchart or sequence diagram, and it renders automatically — no toggle needed, and the supporting library only loads once its syntax is actually detected." }
       },
       {
         "@type": "Question",
@@ -100,7 +100,7 @@
 
   <!--#include partials/header.html-->
 
-  <main class="mx-auto max-w-6xl px-4">
+  <main class="mx-auto max-w-7xl px-4">
 
     <h1 class="mt-8 text-3xl font-bold">Markdown to HTML Converter</h1>
     <p class="mt-2 text-lg text-neutral-600">
@@ -187,14 +187,7 @@
             <input type="checkbox" x-model="opts.smartypants" @change="run()" class="rounded border-neutral-300">
             Smart typography (curly quotes, dashes)
           </label>
-          <label class="flex items-center gap-2">
-            <input type="checkbox" @change="onMathToggle($event)" class="rounded border-neutral-300">
-            Render math (KaTeX)
-          </label>
-          <label class="flex items-center gap-2">
-            <input type="checkbox" @change="onMermaidToggle($event)" class="rounded border-neutral-300">
-            Render diagrams (Mermaid)
-          </label>
+          <span class="text-xs text-neutral-500">Math and diagrams render automatically when detected in your input.</span>
         </div>
 
         <div class="flex flex-wrap gap-2 border-t border-neutral-200 p-3">
@@ -241,18 +234,18 @@
         meant to be pasted straight into a document rather than read as source.
       </p>
       <p>
-        Three optional toggles extend the conversion beyond plain CommonMark/GFM.
-        <strong>Smart typography</strong> turns straight quotes into curly quotes
-        and <code>--</code>/<code>---</code> into en/em dashes.
-        <strong>Render math</strong> loads
+        <strong>Smart typography</strong> is the one manual toggle beyond
+        plain CommonMark/GFM — it turns straight quotes into curly quotes and
+        <code>--</code>/<code>---</code> into en/em dashes. Math and diagrams
+        need no toggle at all: paste in <code>$inline$</code> or
+        <code>$$block$$</code> LaTeX and the converter quietly loads
         <a class="text-indigo-600 hover:underline" href="https://katex.org/">KaTeX</a>
-        so <code>$inline$</code> and <code>$$block$$</code> LaTeX renders as real
-        typeset equations. <strong>Render diagrams</strong> loads
+        to typeset it, or paste a fenced <code>```mermaid</code> block and it
+        loads
         <a class="text-indigo-600 hover:underline" href="https://mermaid.js.org/">Mermaid</a>
-        so fenced <code>```mermaid</code> code blocks render as flowcharts,
-        sequence diagrams, and the like. All three are off by default and only
-        download their (larger) supporting libraries once you turn them on —
-        everything still runs locally in your browser.
+        to render it as a flowchart, sequence diagram, or the like — each
+        library only downloads the moment its syntax actually shows up,
+        and everything still runs locally in your browser.
       </p>
     </section>
 
@@ -308,7 +301,7 @@
         </div>
         <div>
           <h3 class="font-medium">Can I render math equations or diagrams?</h3>
-          <p class="text-neutral-600">Yes. Turn on "Render math" for KaTeX-powered <code>$inline$</code> and <code>$$block$$</code> LaTeX, or "Render diagrams" for Mermaid-powered <code>```mermaid</code> flowcharts and sequence diagrams. Both are off by default and load their libraries only when enabled.</p>
+          <p class="text-neutral-600">Yes. Paste in KaTeX-powered <code>$inline$</code> or <code>$$block$$</code> LaTeX, or a Mermaid-powered <code>```mermaid</code> flowchart or sequence diagram, and it renders automatically — no toggle needed, and the supporting library only loads once its syntax is actually detected.</p>
         </div>
         <div>
           <h3 class="font-medium">What does "Smart typography" do?</h3>
@@ -364,7 +357,7 @@
 
     function toolWidget() {
       return {
-        ...paneResizer(),
+        ...paneResizer({ split: 33, paneHeight: 480 }),
         input: '', fragment: '', output: '', error: '', toast: '', view: 'raw',
         opts: { gfmBreaks: false, fullDocument: false, smartypants: false, math: false, mermaid: false },
         _renderGen: 0,
@@ -398,6 +391,9 @@
           this.error = '';
           const myGen = ++this._renderGen;
           try {
+            const loadErrors = await autoEnableRichFeatures(this.input, this.opts);
+            if (myGen !== this._renderGen) return;
+            if (loadErrors.length) this.error = loadErrors.join(' ');
             // `fragment` always renders the preview; `output` is what Copy/Download
             // HTML use, and additionally wraps in a full document when toggled on.
             const html = await convertMarkdown(this.input, this.opts);
@@ -414,36 +410,6 @@
             if (myGen !== this._renderGen) return;
             this.error = e.message || 'Conversion failed';
           }
-        },
-
-        async onMathToggle(e) {
-          const on = e.target.checked;
-          if (on) {
-            try {
-              await ensureKatexLoaded();
-            } catch (err) {
-              e.target.checked = false;
-              this.error = 'Could not load KaTeX — check your connection and try again.';
-              return;
-            }
-          }
-          this.opts.math = on;
-          this.run();
-        },
-
-        async onMermaidToggle(e) {
-          const on = e.target.checked;
-          if (on) {
-            try {
-              await ensureMermaidLoaded();
-            } catch (err) {
-              e.target.checked = false;
-              this.error = 'Could not load Mermaid — check your connection and try again.';
-              return;
-            }
-          }
-          this.opts.mermaid = on;
-          this.run();
         },
 
         wrapDocument(html) {
