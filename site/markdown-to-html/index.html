@@ -86,6 +86,11 @@
         "@type": "Question",
         "name": "What does \"Smart typography\" do?",
         "acceptedAnswer": { "@type": "Answer", "text": "It converts straight quotes into curly quotes and --/--- into en/em dashes, the same typographic conventions SmartyPants popularized — useful for polished prose, off by default so the HTML stays byte-for-byte predictable." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does the preview syntax-highlight code blocks, like Python?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Fenced code blocks with a language tag — ```python, ```js, and around 35 other common languages — are colored in the Rendered preview, GitHub-style. The Raw HTML output, Copy, and Download stay plain markup with just a language-* class, since the coloring is a preview convenience, not something baked into the HTML you take with you." }
       }
     ]
   }
@@ -263,11 +268,14 @@
         apps), turn on the line-breaks option above. Nested lists follow
         indentation: a sub-item needs at least two spaces of indent under its
         parent to nest correctly, and mixing tabs and spaces can throw off list
-        nesting in ways that are hard to spot by eye. Fenced code blocks are
-        output as plain text with a language class attached — this tool doesn't
-        apply syntax-highlighting colors to the output HTML, since that's a
-        rendering concern for wherever you embed the HTML, not something to
-        bake into the markup itself.
+        nesting in ways that are hard to spot by eye. Fenced code blocks with a
+        language tag (<code>```python</code>, <code>```js</code>, and around
+        35 other common languages) get syntax-highlighting colors in the
+        <strong>Rendered</strong> preview, GitHub-style. The <strong>Raw</strong>
+        HTML output stays exactly what marked generates — a plain
+        <code>&lt;pre&gt;&lt;code class="language-python"&gt;</code> with no
+        colors baked in — since that's meant to be embedded wherever you're
+        pasting the HTML, which may have its own highlighting theme.
       </p>
     </section>
 
@@ -306,6 +314,10 @@
           <h3 class="font-medium">What does "Smart typography" do?</h3>
           <p class="text-neutral-600">It converts straight quotes into curly quotes and <code>--</code>/<code>---</code> into en/em dashes, the same typographic conventions SmartyPants popularized — useful for polished prose, off by default so the HTML stays byte-for-byte predictable.</p>
         </div>
+        <div>
+          <h3 class="font-medium">Does the preview syntax-highlight code blocks, like Python?</h3>
+          <p class="text-neutral-600">Yes. Fenced code blocks with a language tag — <code>```python</code>, <code>```js</code>, and around 35 other common languages — are colored in the Rendered preview, GitHub-style. The Raw HTML output, Copy, and Download stay plain markup with just a <code>language-*</code> class, since the coloring is a preview convenience, not something baked into the HTML you take with you.</p>
+        </div>
       </div>
     </section>
 
@@ -343,8 +355,9 @@
       '',
       '> Ping the #eng channel if anything above is unclear.',
       '',
-      '```js',
-      'console.log("shipped");',
+      '```python',
+      'def deploy(build_id):',
+      '    print(f"shipping {build_id}")',
       '```',
       '',
     ].join('\n');
@@ -375,6 +388,7 @@
 
         init() {
           this.input = SAMPLE_MD;
+          ensureHljsLoaded().catch(() => {}); // best-effort; run() re-checks readiness itself
           // $nextTick: x-init on this element can fire before Alpine has
           // registered the x-ref="preview" child, which run() depends on.
           this.$nextTick(() => this.run());
@@ -391,6 +405,11 @@
             this.fragment = html;
             this.output = this.opts.fullDocument ? this.wrapDocument(this.fragment) : this.fragment;
             this.$refs.preview.innerHTML = sanitizeHtml(this.fragment);
+            // Colors the preview only — `fragment`/`output` (Raw view, Copy, Download)
+            // keep marked's plain `language-*` class untouched.
+            ensureHljsLoaded().then(() => {
+              if (myGen === this._renderGen) highlightCodeBlocks(this.$refs.preview);
+            }).catch(() => {});
           } catch (e) {
             if (myGen !== this._renderGen) return;
             this.error = e.message || 'Conversion failed';

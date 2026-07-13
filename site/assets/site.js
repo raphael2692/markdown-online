@@ -313,6 +313,35 @@ function ensureMermaidLoaded() {
 }
 window.ensureMermaidLoaded = ensureMermaidLoaded;
 
+// Syntax highlighting is a preview-only enhancement (unlike KaTeX/Mermaid,
+// it's not gated behind a checkbox): the raw/copied/downloaded HTML keeps
+// marked's plain `language-*` class untouched, since that's the whole point
+// of this tool per its own on-page claims — colors only ever get painted
+// onto the live preview DOM, never into `fragment`/`output`. Bundled build
+// covers ~35 common languages (incl. python) in one file, so there's no
+// per-language registration step.
+let hljsReadyPromise = null;
+
+function ensureHljsLoaded() {
+  if (!hljsReadyPromise) {
+    hljsReadyPromise = Promise.all([
+      loadScript('/assets/vendor/highlightjs-11.11.1/highlight.min.js'),
+      loadStylesheet('/assets/vendor/highlightjs-11.11.1/github.min.css'),
+    ]).catch((e) => { hljsReadyPromise = null; throw e; });
+  }
+  return hljsReadyPromise;
+}
+window.ensureHljsLoaded = ensureHljsLoaded;
+
+// Call after replacing a preview element's innerHTML. Assumes hljs is
+// already loaded (call ensureHljsLoaded() first) — kept synchronous so
+// callers can gate it behind their own render-generation guard right up
+// to the point of use.
+function highlightCodeBlocks(el) {
+  el.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
+}
+window.highlightCodeBlocks = highlightCodeBlocks;
+
 // ---- rich clipboard ----
 
 async function copyRich(markdown, opts) {

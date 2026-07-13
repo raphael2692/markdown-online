@@ -81,6 +81,11 @@
         "@type": "Question",
         "name": "What does \"Smart typography\" do?",
         "acceptedAnswer": { "@type": "Answer", "text": "It converts straight quotes into curly quotes and --/--- into en/em dashes — useful for polished writing, off by default so the raw Markdown you typed stays exactly as-is." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does the preview syntax-highlight code blocks, like Python?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Fenced code blocks with a language tag — ```python, ```js, and around 35 other common languages — are colored in the preview, GitHub-style. The Markdown you write, plus the downloaded HTML, rich copy, and printed PDF, stay plain markup with just a language-* class." }
       }
     ]
   }
@@ -277,11 +282,13 @@
         A literal asterisk or underscore — say, describing a variable named
         <code>*args</code> — needs a backslash in front of it
         (<code>\*args</code>) or it gets read as emphasis. Fenced code blocks
-        with a language tag after the triple backticks (<code>```js</code>)
-        get a <code>language-*</code> class in the output, but this editor's
-        preview doesn't apply syntax-highlighting colors to it — that's a
-        rendering choice for wherever the Markdown ends up, not something
-        baked into this tool.
+        with a language tag after the triple backticks (<code>```python</code>,
+        <code>```js</code>, and around 35 other common languages) get
+        syntax-highlighting colors in the preview, GitHub-style — the
+        exported Markdown, downloaded HTML, rich copy, and printed PDF stay
+        as plain <code>language-*</code>-tagged markup, since the coloring is
+        a preview convenience rather than something baked into what you take
+        with you.
       </p>
     </section>
 
@@ -315,6 +322,10 @@
         <div>
           <h3 class="font-medium">What does "Smart typography" do?</h3>
           <p class="text-neutral-600">It converts straight quotes into curly quotes and <code>--</code>/<code>---</code> into en/em dashes — useful for polished writing, off by default so the raw Markdown you typed stays exactly as-is.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Does the preview syntax-highlight code blocks, like Python?</h3>
+          <p class="text-neutral-600">Yes. Fenced code blocks with a language tag — <code>```python</code>, <code>```js</code>, and around 35 other common languages — are colored in the preview, GitHub-style. The Markdown you write, plus the downloaded HTML, rich copy, and printed PDF, stay plain markup with just a <code>language-*</code> class.</p>
         </div>
       </div>
     </section>
@@ -393,6 +404,7 @@
               }
             }, 500);
           });
+          ensureHljsLoaded().catch(() => {}); // best-effort; run() re-checks readiness itself
           // $nextTick: x-init can fire before Alpine registers x-ref="preview",
           // which run() writes into.
           this.$nextTick(() => this.run());
@@ -406,6 +418,11 @@
             if (myGen !== this._renderGen) return; // a newer run() already superseded this one
             this.fragment = html;
             this.$refs.preview.innerHTML = sanitizeHtml(this.fragment);
+            // Colors the preview only — Copy/Download/Print HTML keep marked's
+            // plain `language-*` class untouched.
+            ensureHljsLoaded().then(() => {
+              if (myGen === this._renderGen) highlightCodeBlocks(this.$refs.preview);
+            }).catch(() => {});
           } catch (e) {
             if (myGen !== this._renderGen) return;
             this.error = e.message || 'Preview failed';
