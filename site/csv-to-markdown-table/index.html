@@ -110,10 +110,10 @@
           :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
           <div class="split-pane-left min-w-0 border-b border-neutral-200 p-3 md:border-b-0 md:border-r">
             <label for="tw-in" class="text-xs font-medium uppercase text-neutral-500" x-text="mode === 'csv' ? 'CSV input' : 'JSON input'"></label>
-            <div class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300 focus-within:border-neutral-500">
+            <div class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300">
               <textarea id="tw-in" x-ref="inTextarea" x-model="input" @input.debounce.250ms="onInput()"
                 spellcheck="false"
-                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent p-2 font-mono text-sm leading-6 focus:ring-0"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent p-2 font-mono text-sm leading-6 focus:outline-none focus:ring-0"
                 :placeholder="mode === 'csv' ? 'Paste CSV here…' : 'Paste a JSON array of objects here…'"></textarea>
             </div>
           </div>

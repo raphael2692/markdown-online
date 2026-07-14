@@ -227,7 +227,7 @@
           <div x-show="view !== 'preview'" class="min-w-0 border-b border-neutral-200 p-3 md:border-b-0 md:border-r"
             :class="view === 'split' ? 'split-pane-left' : 'md:w-full'">
             <label for="tw-in" class="sr-only">Markdown input</label>
-            <div class="pane-height relative w-full overflow-hidden rounded-md border border-neutral-300 focus-within:border-neutral-500">
+            <div class="pane-height relative w-full overflow-hidden rounded-md border border-neutral-300">
               <div x-ref="mdGutter" aria-hidden="true"
                 class="pointer-events-none absolute inset-y-0 left-0 w-10 select-none overflow-hidden bg-neutral-50 py-2 text-right font-mono text-sm leading-6 text-neutral-400">
                 <template x-for="n in inputLineCount" :key="n">
@@ -237,7 +237,7 @@
               <textarea id="tw-in" x-ref="mdTextarea" x-model="input"
                 @input.debounce.250ms="run()" @keydown="onKeydown($event)" @scroll="onInputScroll($event)"
                 @click="updateHeadingLevel()" @keyup="updateHeadingLevel()" @select="updateHeadingLevel()"
-                spellcheck="true"
+                spellcheck="true" wrap="off"
                 class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:outline-none focus:ring-0"
                 placeholder="Start writing Markdown…"></textarea>
             </div>

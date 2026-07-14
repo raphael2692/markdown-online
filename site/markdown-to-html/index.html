@@ -122,7 +122,7 @@
           :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
           <div class="split-pane-left min-w-0 border-b border-neutral-200 p-3 md:border-b-0 md:border-r">
             <label for="tw-in" class="text-xs font-medium uppercase text-neutral-500">Markdown input</label>
-            <div class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300 focus-within:border-neutral-500">
+            <div class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300">
               <div x-ref="mdGutter" aria-hidden="true"
                 class="pointer-events-none absolute inset-y-0 left-0 w-10 select-none overflow-hidden bg-neutral-50 py-2 text-right font-mono text-sm leading-6 text-neutral-400">
                 <template x-for="n in inputLineCount" :key="n">
@@ -130,8 +130,8 @@
                 </template>
               </div>
               <textarea id="tw-in" x-ref="mdTextarea" x-model="input" @input.debounce.250ms="run()" @scroll="onInputScroll($event)"
-                spellcheck="false"
-                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:ring-0"
+                spellcheck="false" wrap="off"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:outline-none focus:ring-0"
                 placeholder="Paste markdown here…"></textarea>
             </div>
           </div>
@@ -167,8 +167,8 @@
                 </template>
               </div>
               <textarea readonly x-ref="outTextarea" x-model="output" @scroll="onOutputScroll($event)"
-                spellcheck="false"
-                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-neutral-50 py-2 pl-12 pr-2 font-mono text-sm leading-6"></textarea>
+                spellcheck="false" wrap="off"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-neutral-50 py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:outline-none focus:ring-0"></textarea>
             </div>
 
             <div x-ref="preview" @scroll="onOutputScroll($event)" x-show="!error && view === 'rendered'"
