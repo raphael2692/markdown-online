@@ -134,7 +134,17 @@
         </div>
 
         <div x-show="view !== 'preview'" class="flex flex-wrap items-center gap-1 border-b border-neutral-200 p-2">
-          <button type="button" @click="prefixCurrentLine('## ')" title="Heading" aria-label="Heading" class="rounded border border-neutral-300 px-2 py-1 text-xs font-semibold hover:bg-neutral-50">H</button>
+          <select :value="currentHeadingLevel" @change="setHeading($event.target.value ? parseInt($event.target.value, 10) : 0)"
+            title="Paragraph style" aria-label="Paragraph style"
+            class="rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50">
+            <option value="">Paragraph</option>
+            <option value="1">Heading 1</option>
+            <option value="2">Heading 2</option>
+            <option value="3">Heading 3</option>
+            <option value="4">Heading 4</option>
+            <option value="5">Heading 5</option>
+            <option value="6">Heading 6</option>
+          </select>
           <button type="button" @click="wrapSelection('**', '**', 'bold text')" title="Bold (Ctrl/Cmd+B)" aria-label="Bold" class="rounded border border-neutral-300 px-2 py-1 text-xs font-bold hover:bg-neutral-50">B</button>
           <button type="button" @click="wrapSelection('*', '*', 'italic text')" title="Italic (Ctrl/Cmd+I)" aria-label="Italic" class="rounded border border-neutral-300 px-2 py-1 text-xs italic hover:bg-neutral-50">I</button>
           <button type="button" @click="wrapSelection('[', '](https://)', 'link text')" title="Link (Ctrl/Cmd+K)" aria-label="Link" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Link</button>
@@ -226,6 +236,7 @@
               </div>
               <textarea id="tw-in" x-ref="mdTextarea" x-model="input"
                 @input.debounce.250ms="run()" @keydown="onKeydown($event)" @scroll="onInputScroll($event)"
+                @click="updateHeadingLevel()" @keyup="updateHeadingLevel()" @select="updateHeadingLevel()"
                 spellcheck="true"
                 class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:ring-0"
                 placeholder="Start writing Markdown…"></textarea>
@@ -495,6 +506,7 @@
         view: 'split', restored: false, savedAt: '',
         _saveTimer: null, _renderGen: 0,
         opts: { smartypants: false, math: false, mermaid: false },
+        currentHeadingLevel: '',
 
         get wordCount() { return (this.input.match(/\S+/g) || []).length; },
         get charCount() { return this.input.length; },
@@ -567,14 +579,33 @@
           this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newStart, newStart + selected.length); });
           this.run();
         },
-        prefixCurrentLine(marker) {
+        setHeading(level) {
           const ta = this.$refs.mdTextarea;
           const pos = ta.selectionStart;
           const lineStart = this.input.lastIndexOf('\n', pos - 1) + 1;
-          this.input = this.input.slice(0, lineStart) + marker + this.input.slice(lineStart);
-          const newPos = pos + marker.length;
-          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
+          let lineEnd = this.input.indexOf('\n', pos);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const line = this.input.slice(lineStart, lineEnd);
+          const stripped = line.replace(/^#{1,6}\s+/, '');
+          const marker = level ? '#'.repeat(level) + ' ' : '';
+          const newLine = marker + stripped;
+          this.input = this.input.slice(0, lineStart) + newLine + this.input.slice(lineEnd);
+          const newPos = lineStart + newLine.length;
+          this.$nextTick(() => {
+            ta.focus();
+            ta.setSelectionRange(newPos, newPos);
+            this.updateHeadingLevel();
+          });
           this.run();
+        },
+        updateHeadingLevel() {
+          const ta = this.$refs.mdTextarea;
+          const pos = ta.selectionStart;
+          const lineStart = this.input.lastIndexOf('\n', pos - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', pos);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const match = this.input.slice(lineStart, lineEnd).match(/^(#{1,6})\s+/);
+          this.currentHeadingLevel = match ? String(match[1].length) : '';
         },
         prefixLines(marker) {
           const ta = this.$refs.mdTextarea;
