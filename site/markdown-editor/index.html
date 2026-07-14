@@ -238,7 +238,7 @@
                 @input.debounce.250ms="run()" @keydown="onKeydown($event)" @scroll="onInputScroll($event)"
                 @click="updateHeadingLevel()" @keyup="updateHeadingLevel()" @select="updateHeadingLevel()"
                 spellcheck="true"
-                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:ring-0"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:outline-none focus:ring-0"
                 placeholder="Start writing Markdown…"></textarea>
             </div>
           </div>
