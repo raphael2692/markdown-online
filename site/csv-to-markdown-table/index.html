@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>CSV to Markdown Table – Free, No Upload | __SITE_NAME__</title>
+  <meta name="description" content="Free CSV to Markdown table converter — paste CSV or JSON, get a clean, aligned Markdown table instantly. Runs 100% in your browser: no upload, no signup.">
+  <link rel="canonical" href="__SITE_URL__/csv-to-markdown-table/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CSV to Markdown Table Converter – Free, No Upload">
+  <meta property="og:description" content="Paste CSV or JSON, get a clean, aligned Markdown table instantly. Runs 100% in your browser — no upload, no signup.">
+  <meta property="og:url" content="__SITE_URL__/csv-to-markdown-table/">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <style>[x-cloak]{display:none !important}</style>
+
+  <script defer src="/assets/vendor/alpine-focus-3.15.12.min.js"></script>
+  <script defer src="/assets/vendor/marked-18.0.6.min.js"></script>
+  <script defer src="/assets/vendor/dompurify-3.4.12.min.js"></script>
+  <!-- site.js must load before Alpine core: toolWidget() calls paneResizer()
+       at x-data construction time, and Alpine boots synchronously the
+       instant its own deferred script runs — so paneResizer must already
+       be defined by then. -->
+  <script defer src="/assets/site.js"></script>
+  <script defer src="/assets/vendor/alpine-3.15.12.min.js"></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "CSV to Markdown Table Converter",
+    "url": "__SITE_URL__/csv-to-markdown-table/",
+    "description": "Free CSV to Markdown table converter that runs entirely in the browser — paste CSV or JSON, get a clean, aligned Markdown table instantly.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any (web browser)",
+    "browserRequirements": "Requires JavaScript",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is this CSV to Markdown table converter free?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. It's free to use, with no signup, and there's no limit on how many rows you can convert." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does my CSV or JSON data get uploaded anywhere?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. Parsing and table generation happen entirely in your browser using JavaScript — your data is never sent to a server." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I convert JSON as well as CSV?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — switch to the JSON tab and paste an array of objects. The union of all keys across the array becomes the table's columns, so it still works if some objects are missing a field." }
+      },
+      {
+        "@type": "Question",
+        "name": "What happens to commas, quotes, or line breaks inside a cell?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Quoted CSV fields (values wrapped in double quotes, including ones containing commas) are parsed correctly rather than split apart. Inside the generated table, any pipe character is escaped to \\| and line breaks are converted to <br> so they can't break the table structure." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I control column alignment or skip the header row?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — the alignment dropdown sets left, center, or right alignment for every column using standard Markdown colon syntax, and the \"First row is header\" checkbox lets you tell the converter whether your CSV's first line is column names or the first data row." }
+      }
+    ]
+  }
+  </script>
+</head>
+<body class="bg-white text-neutral-800 antialiased">
+
+  <!--#include partials/header.html-->
+
+  <main class="mx-auto max-w-7xl px-4">
+
+    <h1 class="mt-8 text-3xl font-bold">CSV to Markdown Table Converter</h1>
+    <p class="mt-2 text-lg text-neutral-600">
+      Paste CSV or JSON, get a clean, aligned Markdown table instantly.
+      Everything runs locally in your browser — your data is never uploaded
+      to a server.
+    </p>
+
+    <section id="tool" class="mt-6" x-data="toolWidget()" x-init="init()">
+      <div class="rounded-lg border border-neutral-200">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 p-2">
+          <div class="flex rounded-md border border-neutral-300 text-xs">
+            <button type="button" @click="switchMode('csv')"
+              :class="mode === 'csv' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+              class="rounded-l-md px-2 py-1">CSV</button>
+            <button type="button" @click="switchMode('json')"
+              :class="mode === 'json' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+              class="rounded-r-md border-l border-neutral-300 px-2 py-1">JSON</button>
+          </div>
+          <button type="button" @click="stacked = !stacked"
+            class="hidden rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 md:inline-block"
+            :title="stacked ? 'Switch to side-by-side layout' : 'Stack panels vertically'">
+            <span x-text="stacked ? 'Side by side' : 'Stack panels'"></span>
+          </button>
+        </div>
+        <div x-ref="paneRow" class="flex flex-col md:flex-row"
+          :style="`--split: ${split}%; --pane-height: ${paneHeight}px`"
+          :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
+          <div class="split-pane-left min-w-0 border-b border-neutral-200 p-3 md:border-b-0 md:border-r">
+            <label for="tw-in" class="text-xs font-medium uppercase text-neutral-500" x-text="mode === 'csv' ? 'CSV input' : 'JSON input'"></label>
+            <div class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300 focus-within:border-neutral-500">
+              <textarea id="tw-in" x-ref="inTextarea" x-model="input" @input.debounce.250ms="onInput()"
+                spellcheck="false"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent p-2 font-mono text-sm leading-6 focus:ring-0"
+                :placeholder="mode === 'csv' ? 'Paste CSV here…' : 'Paste a JSON array of objects here…'"></textarea>
+            </div>
+          </div>
+
+          <div x-show="!stacked"
+            class="hidden shrink-0 cursor-col-resize touch-none items-stretch justify-center border-x border-neutral-200 bg-neutral-100 hover:bg-neutral-200 md:flex md:w-2"
+            :class="dragging && 'bg-neutral-300'"
+            @mousedown="startDrag($event)" @touchstart="startDrag($event)"
+            title="Drag to resize">
+            <div class="my-auto h-8 w-px bg-neutral-400"></div>
+          </div>
+
+          <div class="min-w-0 p-3 md:flex-1">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-medium uppercase text-neutral-500">Markdown output</label>
+              <div class="flex rounded-md border border-neutral-300 text-xs">
+                <button type="button" @click="view = 'raw'"
+                  :class="view === 'raw' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                  class="rounded-l-md px-2 py-1">Raw</button>
+                <button type="button" @click="view = 'rendered'"
+                  :class="view === 'rendered' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                  class="rounded-r-md border-l border-neutral-300 px-2 py-1">Rendered</button>
+              </div>
+            </div>
+            <p x-show="error" x-cloak class="mt-1 text-sm text-red-600" x-text="error"></p>
+
+            <div x-show="!error && view === 'raw'" class="pane-height mt-1 w-full overflow-hidden rounded-md border border-neutral-300">
+              <textarea readonly x-ref="outTextarea" x-model="output"
+                spellcheck="false"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-neutral-50 p-2 font-mono text-sm leading-6"></textarea>
+            </div>
+
+            <div x-ref="preview" x-show="!error && view === 'rendered'"
+              class="pane-height md-preview mt-1 w-full overflow-y-auto rounded-md border border-neutral-300 bg-white p-3 text-sm"></div>
+          </div>
+        </div>
+
+        <div class="flex h-3 cursor-row-resize touch-none items-center justify-center border-b border-t border-neutral-200 bg-neutral-100 hover:bg-neutral-200"
+          :class="draggingV && 'bg-neutral-300'"
+          @mousedown="startVDrag($event)" @touchstart="startVDrag($event)"
+          title="Drag to resize height">
+          <div class="h-px w-8 bg-neutral-400"></div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 border-t border-neutral-200 p-3 text-sm">
+          <label class="flex items-center gap-2">
+            Alignment
+            <select x-model="opts.align" @change="run()" class="rounded-md border-neutral-300 text-sm">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </label>
+          <label x-show="mode === 'csv'" class="flex items-center gap-2">
+            <input type="checkbox" x-model="opts.header" @change="run()" class="rounded border-neutral-300">
+            First row is header
+          </label>
+        </div>
+
+        <div class="flex flex-wrap gap-2 border-t border-neutral-200 p-3">
+          <button @click="copy()" class="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700">Copy Markdown</button>
+          <button @click="downloadOut()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Download .md</button>
+          <button @click="copyRichOutput()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Copy for Word/Docs</button>
+          <span x-show="toast" x-transition.opacity x-cloak class="ml-auto self-center text-sm text-green-700" x-text="toast"></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot mt-8" style="min-height:280px" data-slot="tool-below"></div>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">How to convert CSV to a Markdown table</h2>
+      <ol class="mt-3 list-decimal space-y-2 pl-6">
+        <li>Paste your CSV into the input box — or click <strong>JSON</strong> to paste an array of objects instead.</li>
+        <li>Toggle <strong>First row is header</strong> if your CSV's first line is data rather than column names, and pick left, center, or right <strong>Alignment</strong>.</li>
+        <li>Switch the output panel between <strong>Raw</strong> (the literal Markdown source) and <strong>Rendered</strong> (a live preview) to sanity-check the result.</li>
+        <li>Use <strong>Copy Markdown</strong> for a README or docs page, <strong>Download .md</strong> to save a file, or <strong>Copy for Word/Docs</strong> to paste a real formatted table into Word or Google Docs.</li>
+      </ol>
+    </section>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">What this converter actually does</h2>
+      <p>
+        CSV parsing is handled by
+        <a class="text-indigo-600 hover:underline" href="https://www.papaparse.com/">PapaParse</a>,
+        which correctly handles quoted fields — so a value like
+        <code>"Smith, John"</code> stays one cell instead of splitting on its
+        internal comma. JSON input is treated as an array of objects: the
+        converter takes the union of every key across all objects as the
+        column list, so the table still lines up even if some rows are
+        missing a field — those cells are just left blank. Every column is
+        padded to a fixed width rather than left ragged, which is the detail
+        most quick table generators skip, and the alignment dropdown writes
+        the standard <code>:---</code> / <code>:---:</code> / <code>---:</code>
+        colon syntax into the separator row so renderers that respect
+        Markdown table alignment (GitHub, most static site generators) show
+        the columns aligned the way you picked.
+      </p>
+    </section>
+
+    <div class="ad-slot mt-10" style="min-height:280px" data-slot="mid-content"></div>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">CSV quirks and edge cases</h2>
+      <p>
+        A pipe character (<code>|</code>) inside a cell would normally break
+        a Markdown table's column boundaries, so it's automatically escaped
+        to <code>\|</code>; line breaks inside a quoted CSV field are
+        converted to <code>&lt;br&gt;</code>, since Markdown tables can't
+        contain literal newlines within a row. Rows with fewer columns than
+        the header are padded with empty cells rather than shifting the rest
+        of the row out of alignment. If your source is a spreadsheet export,
+        watch for a leading byte-order-mark (BOM) or a semicolon delimiter
+        from a European-locale export — PapaParse detects standard comma and
+        tab delimiters automatically, but an unusual delimiter can cause the
+        whole file to parse as a single column, which shows up immediately
+        as a one-column table in the preview.
+      </p>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">Frequently asked questions</h2>
+      <div class="mt-3 space-y-4">
+        <div>
+          <h3 class="font-medium">Is this CSV to Markdown table converter free?</h3>
+          <p class="text-neutral-600">Yes. It's free to use, with no signup, and there's no limit on how many rows you can convert.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Does my CSV or JSON data get uploaded anywhere?</h3>
+          <p class="text-neutral-600">No. Parsing and table generation happen entirely in your browser using JavaScript — your data is never sent to a server.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Can I convert JSON as well as CSV?</h3>
+          <p class="text-neutral-600">Yes — switch to the JSON tab and paste an array of objects. The union of all keys across the array becomes the table's columns, so it still works if some objects are missing a field.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">What happens to commas, quotes, or line breaks inside a cell?</h3>
+          <p class="text-neutral-600">Quoted CSV fields (values wrapped in double quotes, including ones containing commas) are parsed correctly rather than split apart. Inside the generated table, any pipe character is escaped to \| and line breaks are converted to &lt;br&gt; so they can't break the table structure.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Can I control column alignment or skip the header row?</h3>
+          <p class="text-neutral-600">Yes — the alignment dropdown sets left, center, or right alignment for every column using standard Markdown colon syntax, and the "First row is header" checkbox lets you tell the converter whether your CSV's first line is column names or the first data row.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">Related tools</h2>
+      <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+        <li><a class="text-indigo-600 hover:underline" href="/markdown-editor/">Markdown editor online</a></li>
+        <li><a class="text-indigo-600 hover:underline" href="/markdown-to-html/">Markdown to HTML converter</a></li>
+        <li><a class="text-indigo-600 hover:underline" href="/html-to-markdown/">HTML to Markdown converter</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <!--#include partials/footer.html-->
+
+  <script>
+    const SAMPLE_CSV = [
+      'Task,Owner,Status',
+      '"Set up the repo, incl. CI",Alex,Done',
+      'Write unit tests,Sam,In progress',
+      'Deploy to staging,Jordan,Todo',
+    ].join('\n');
+
+    const SAMPLE_JSON = JSON.stringify([
+      { Task: 'Set up the repo', Owner: 'Alex', Status: 'Done' },
+      { Task: 'Write unit tests', Owner: 'Sam', Status: 'In progress' },
+      { Task: 'Deploy to staging', Owner: 'Jordan', Priority: 'High' },
+    ], null, 2);
+
+    function toolWidget() {
+      return {
+        ...paneResizer({ split: 45, paneHeight: 320 }),
+        ...toolActionsMixin(),
+        mode: 'csv', input: '', output: '', error: '', toast: '', view: 'raw', edited: false,
+        opts: { align: 'left', header: true },
+        _renderGen: 0,
+
+        init() {
+          this.input = SAMPLE_CSV;
+          this.$nextTick(() => this.run());
+        },
+
+        switchMode(m) {
+          if (this.mode === m) return;
+          if (!this.edited) this.input = m === 'csv' ? SAMPLE_CSV : SAMPLE_JSON;
+          this.mode = m;
+          this.run();
+        },
+
+        onInput() {
+          this.edited = true;
+          this.run();
+        },
+
+        async run() {
+          this.error = '';
+          const myGen = ++this._renderGen;
+          try {
+            if (!this.input.trim()) {
+              this.output = '';
+            } else if (this.mode === 'csv') {
+              await ensurePapaParseLoaded();
+              const parsed = Papa.parse(this.input.trim(), { skipEmptyLines: true });
+              if (parsed.errors.length) throw new Error(parsed.errors[0].message);
+              const rows = parsed.data;
+              let header, body;
+              if (this.opts.header) {
+                header = rows[0] || [];
+                body = rows.slice(1);
+              } else {
+                const cols = (rows[0] || []).length;
+                header = Array.from({ length: cols }, (_, i) => `Column ${i + 1}`);
+                body = rows;
+              }
+              this.output = rowsToMdTable(header, body, this.opts.align);
+            } else {
+              const arr = JSON.parse(this.input);
+              if (!Array.isArray(arr)) throw new Error('JSON input must be an array of objects');
+              const cols = [...new Set(arr.flatMap((o) => Object.keys(o)))];
+              const rows = arr.map((o) => cols.map((c) => o[c] ?? ''));
+              this.output = rowsToMdTable(cols, rows, this.opts.align);
+            }
+            if (myGen !== this._renderGen) return;
+            const html = DOMPurify.sanitize(marked.parse(this.output || '', { gfm: true }));
+            this.$refs.preview.innerHTML = html;
+          } catch (e) {
+            if (myGen !== this._renderGen) return;
+            this.error = e.message || 'Conversion failed';
+            this.output = '';
+          }
+        },
+
+        async copy() {
+          await navigator.clipboard.writeText(this.output);
+          this.flash('Copied');
+        },
+
+        downloadOut() {
+          window.downloadFile(this.output, 'table.md', 'text/markdown;charset=utf-8');
+          this.flash('Downloaded');
+        },
+
+        async copyRichOutput() {
+          const ok = await window.copyRich(this.output, {});
+          this.flash(ok ? 'Copied — paste into Word or Google Docs' : 'Copied as plain text');
+        },
+      };
+    }
+  </script>
+</body>
+</html>

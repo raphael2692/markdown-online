@@ -430,6 +430,38 @@ window.autoEnableRichFeatures = autoEnableRichFeatures;
 // onto the live preview DOM, never into `fragment`/`output`. Bundled build
 // covers ~35 common languages (incl. python) in one file, so there's no
 // per-language registration step.
+let papaReadyPromise = null;
+
+function ensurePapaParseLoaded() {
+  if (!papaReadyPromise) {
+    papaReadyPromise = loadScript('/assets/vendor/papaparse-5.4.1.min.js')
+      .catch((e) => { papaReadyPromise = null; throw e; });
+  }
+  return papaReadyPromise;
+}
+window.ensurePapaParseLoaded = ensurePapaParseLoaded;
+
+// Shared by every CSV/JSON/table-source -> Markdown-table tool: pads columns
+// to a fixed width (most generators emit ragged tables) and escapes `|` /
+// newlines so a data value can never break out of its cell.
+function mdTableCell(v) {
+  return String(v == null ? '' : v).replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>');
+}
+
+function rowsToMdTable(header, rows, align) {
+  const esc = mdTableCell;
+  const widths = header.map((h, i) =>
+    Math.max(esc(h).length, ...rows.map((r) => esc(r[i]).length), 3));
+  const line = (cells) => '| ' + cells.map((c, i) => esc(c).padEnd(widths[i])).join(' | ') + ' |';
+  const sep = (w) => {
+    if (align === 'center') return ':' + '-'.repeat(Math.max(w - 2, 1)) + ':';
+    if (align === 'right') return '-'.repeat(Math.max(w - 1, 1)) + ':';
+    return '-'.repeat(w);
+  };
+  return [line(header), '| ' + widths.map(sep).join(' | ') + ' |', ...rows.map(line)].join('\n');
+}
+window.rowsToMdTable = rowsToMdTable;
+
 let hljsReadyPromise = null;
 
 function ensureHljsLoaded() {
