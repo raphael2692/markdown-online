@@ -238,6 +238,49 @@ function registerKatexExtension() {
 // post-processes the resulting HTML string.
 let mermaidSeq = 0;
 
+// Mermaid renders every node/edge label as <foreignObject><div>...</div>
+// (HTML nested inside the SVG, needed for text measurement/wrapping) —
+// but DOMPurify hardcodes emptying anything nested inside a <foreignObject>
+// that's inside an <svg>, as a defense against a known mutation-XSS
+// namespace-confusion technique, with no config flag to disable it. A
+// straight DOMPurify.sanitize(svg, {svg:true}) pass therefore renders every
+// diagram with correct shapes but blank labels — and critically, this bites
+// on *every* sanitize pass, not just the first: convertMarkdown()'s output
+// gets fed through sanitizeHtml() again at each render site (preview,
+// copyRich, download), so even a diagram whose labels survived
+// renderMermaidDiagrams's own pass gets re-emptied the next time the page
+// sanitizes the same HTML unless every pass uses this same two-step dance:
+// clean each label's HTML on its own, outside SVG context (where DOMPurify
+// allows div/span/p normally), empty the foreignObjects before the real
+// SVG-wide pass so it has nothing to wipe, then splice the cleaned label
+// HTML back in.
+function sanitizePreservingForeignObjectLabels(html, config) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const labels = [];
+  tpl.content.querySelectorAll('foreignObject').forEach((fo, i) => {
+    labels.push(DOMPurify.sanitize(fo.innerHTML, { USE_PROFILES: { html: true } }));
+    fo.innerHTML = '';
+    fo.setAttribute('data-fo-index', String(i));
+  });
+  const cfg = Object.assign({}, config, {
+    ADD_TAGS: (config.ADD_TAGS || []).concat('foreignObject'),
+    ADD_ATTR: (config.ADD_ATTR || []).concat('data-fo-index'),
+  });
+  const cleaned = DOMPurify.sanitize(tpl.innerHTML, cfg);
+  const out = document.createElement('template');
+  out.innerHTML = cleaned;
+  out.content.querySelectorAll('foreignObject[data-fo-index]').forEach((fo) => {
+    fo.innerHTML = labels[Number(fo.getAttribute('data-fo-index'))];
+    fo.removeAttribute('data-fo-index');
+  });
+  return out.innerHTML;
+}
+
+function sanitizeMermaidSvg(svg) {
+  return sanitizePreservingForeignObjectLabels(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
+}
+
 async function renderMermaidDiagrams(html) {
   const tpl = document.createElement('template');
   tpl.innerHTML = html;
@@ -253,7 +296,7 @@ async function renderMermaidDiagrams(html) {
       // sanitizeHtml() pass — this is third-party-library output, not the
       // user's authored markdown, so it gets the same protection on every
       // output channel (Raw/Copy/Download included), not just the preview.
-      div.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
+      div.innerHTML = sanitizeMermaidSvg(svg);
       pre.replaceWith(div);
     } catch (e) {
       pre.outerHTML = `<pre class="mermaid-error">Diagram error: ${DOMPurify.sanitize(e.message || String(e))}</pre>`;
@@ -279,7 +322,11 @@ function sanitizeHtml(html) {
   // mathMl: KaTeX's accessibility tree (<math>/<semantics>/<annotation>...).
   // svg: Mermaid diagrams. `style` (load-bearing for KaTeX's inline-
   // positioned spans) is already allowed by DOMPurify's default profile.
-  return DOMPurify.sanitize(html, { USE_PROFILES: { html: true, mathMl: true, svg: true } });
+  // Routed through sanitizePreservingForeignObjectLabels (see comment above
+  // it) rather than a bare DOMPurify.sanitize() call — this function runs
+  // again on already-mermaid-rendered HTML at every preview/copy/download
+  // site, and a plain call would silently re-blank every diagram's labels.
+  return sanitizePreservingForeignObjectLabels(html, { USE_PROFILES: { html: true, mathMl: true, svg: true } });
 }
 window.sanitizeHtml = sanitizeHtml;
 
@@ -407,9 +454,130 @@ window.highlightCodeBlocks = highlightCodeBlocks;
 
 // ---- rich clipboard ----
 
+// Mermaid's node/edge labels live inside <foreignObject><div>...</div></foreignObject>
+// (see sanitizePreservingForeignObjectLabels above). Browsers taint any
+// canvas that an <img> sourced from such an SVG gets drawn onto — even from
+// a same-origin blob: URL — so canvas.toDataURL() throws SecurityError and
+// the rasterization silently fails (copyRich's catch-all swallows it and
+// falls back to a plain-text copy, with no visible error). There's no way
+// to un-taint that canvas, so PNG export needs the foreignObject label gone
+// *before* the image is drawn: this replaces each one with a plain SVG
+// <text>/<tspan>, which canvas can rasterize freely. Only the export path
+// does this — the live preview keeps the real foreignObject markup.
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function flattenForeignObjectLabels(svgEl) {
+  svgEl.querySelectorAll('foreignObject').forEach((fo) => {
+    const width = parseFloat(fo.getAttribute('width')) || 0;
+    const height = parseFloat(fo.getAttribute('height')) || 0;
+    const x = parseFloat(fo.getAttribute('x')) || 0;
+    const y = parseFloat(fo.getAttribute('y')) || 0;
+    let lines = Array.from(fo.querySelectorAll('p')).map((p) => p.textContent);
+    if (!lines.length) {
+      const t = fo.textContent.trim();
+      if (t) lines = [t];
+    }
+    if (!lines.length) { fo.remove(); return; }
+    const fontSize = 16;
+    const lineHeight = fontSize * 1.375;
+    const text = document.createElementNS(SVG_NS, 'text');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('font-family', 'trebuchet ms, verdana, arial, sans-serif');
+    text.setAttribute('font-size', String(fontSize));
+    text.setAttribute('fill', '#333');
+    const startY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2 + fontSize * 0.35;
+    lines.forEach((line, i) => {
+      const tspan = document.createElementNS(SVG_NS, 'tspan');
+      tspan.setAttribute('x', String(x + width / 2));
+      tspan.setAttribute('y', String(startY + i * lineHeight));
+      tspan.textContent = line;
+      text.appendChild(tspan);
+    });
+    fo.replaceWith(text);
+  });
+}
+
+// Word's clipboard-paste HTML importer silently drops inline <svg> — nothing
+// renders, no error — so mermaid diagrams (rendered as SVG for the live
+// preview and downloaded HTML, where they paste/display fine) get rasterized
+// to a PNG <img> data URI just for this path. Detached from the document, an
+// <svg> has no layout box, so intrinsic size comes from its own
+// width/height/viewBox attributes rather than getBoundingClientRect().
+function svgToPngDataUri(svgEl, scale) {
+  scale = scale || 2;
+  return new Promise((resolve, reject) => {
+    const clone = svgEl.cloneNode(true);
+    flattenForeignObjectLabels(clone);
+    const viewBox = clone.getAttribute('viewBox');
+    const viewBoxDims = viewBox ? viewBox.trim().split(/\s+/).map(Number) : null;
+    // viewBox wins over width/height attributes: mermaid sets width="100%"
+    // (no height at all) rather than pixel dimensions, and parseFloat("100%")
+    // silently returns 100 — a plausible-looking number that's actually
+    // meaningless and produces a squished image.
+    let width = viewBoxDims ? viewBoxDims[2] : parseFloat(clone.getAttribute('width'));
+    let height = viewBoxDims ? viewBoxDims[3] : parseFloat(clone.getAttribute('height'));
+    width = width || 600;
+    height = height || 400;
+    clone.setAttribute('width', width);
+    clone.setAttribute('height', height);
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const svgBlob = new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext('2d');
+      // Word pastes onto a white page — filling white avoids a transparent
+      // diagram looking broken against it.
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve({ dataUri: canvas.toDataURL('image/png'), width, height });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('mermaid SVG failed to rasterize')); };
+    img.src = url;
+  });
+}
+
+async function rasterizeMermaidDiagrams(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const svgs = tpl.content.querySelectorAll('.mermaid-diagram svg');
+  for (const svg of svgs) {
+    try {
+      const png = await svgToPngDataUri(svg);
+      const img = document.createElement('img');
+      img.src = png.dataUri;
+      img.width = png.width;
+      img.height = png.height;
+      svg.closest('.mermaid-diagram').replaceWith(img);
+    } catch (e) {
+      // Leave the SVG in place — some targets (Google Docs, browsers) do
+      // render it; worst case matches today's behavior for this one diagram.
+    }
+  }
+  return tpl.innerHTML;
+}
+
+// Word's clipboard-HTML importer maps <del> to a tracked-change deletion
+// (shown as a reviewer comment/strikethrough revision) rather than plain
+// strikethrough styling — it's the same tag Word's own export uses for
+// revision markup. marked emits <del> for ~~strikethrough~~, so swap it for
+// <s> (no revision semantics) on this path only; raw/download HTML keeps
+// <del>, which is the semantically correct tag and round-trips through
+// turndown correctly.
+function neutralizeTrackedChangeTags(html) {
+  return html.replace(/<del(\s[^>]*)?>/gi, '<s$1>').replace(/<\/del>/gi, '</s>');
+}
+
 async function copyRich(markdown, opts) {
   try {
-    const html = sanitizeHtml(await convertMarkdown(markdown, opts));
+    let html = sanitizeHtml(await convertMarkdown(markdown, opts));
+    if (opts && opts.mermaid) html = await rasterizeMermaidDiagrams(html);
+    html = neutralizeTrackedChangeTags(html);
     const wrapped = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt">${html}</div>`;
     await navigator.clipboard.write([new ClipboardItem({
       'text/html': new Blob([wrapped], { type: 'text/html' }),
