@@ -1,4 +1,4 @@
-<!-- docs-sync: f12e506 -->
+<!-- docs-sync: 04507d3 -->
 
 # Changelog
 
@@ -43,3 +43,4 @@
 - Every `<select>` on the site (paragraph style, code-block language, diagram type, bullet marker, code-block style, heading style, alignment) rendered as a plain, unthemed native dropdown — a native select's open option list is drawn by the OS and can't be styled to match the rest of the Pines UI on the page; replaced all of them with a `pinesSelect()` Alpine mixin in `site.js` driving a themeable button + listbox, on `markdown-editor`, `html-to-markdown`, and `csv-to-markdown-table` (`27421bf`)
 - Toolbar and action buttons across the homepage and all four tool pages were plain text (or a lone emoji), inconsistent with the rest of the Pines UI; replaced with inlined Lucide SVG icons (source copies in `site/assets/vendor/lucide/`), themeable via `currentColor` and working with JavaScript disabled (`f12e506`)
 - `markdown-editor`'s "Stack panels" toggle only appeared in Split view, so the word/character count next to it shifted position between view modes; reordered the toolbar so the toggle is consistently the last element, flush right, regardless of view (`f12e506`)
+- `markdown-editor`'s Diagram dropdown showed a stray mark next to its chevron — the placeholder text still carried a leftover literal `▾` character from before the button had a real Lucide chevron-down icon (`04507d3`)
