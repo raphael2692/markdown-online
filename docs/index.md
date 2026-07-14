@@ -66,6 +66,10 @@ public site.
   `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify, KaTeX,
   Mermaid, highlight.js, turndown, turndown-plugin-gfm, PapaParse —
   vendored locally, no CDN hotlinking in production).
+- **Icons**: Lucide, inlined as static `<svg>` markup (not the JS runtime),
+  so icons stay themeable via `currentColor`/Tailwind classes and keep
+  working with JavaScript disabled. Reference/source copies of each icon
+  used on the site live in `site/assets/vendor/lucide/`.
 
 ## Markdown extensions (smart typography, math, diagrams)
 

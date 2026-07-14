@@ -1,4 +1,4 @@
-<!-- docs-sync: 27421bf -->
+<!-- docs-sync: f12e506 -->
 
 # Changelog
 
@@ -41,3 +41,5 @@
 - `~~strikethrough~~` pasted into Word as a tracked-change deletion/comment instead of struck-through text — Word's importer maps marked's `<del>` tag to its own revision markup; the Word clipboard path now swaps it for `<s>` via `neutralizeTrackedChangeTags()`, while raw/download HTML keeps `<del>` (`1f69995`)
 - `html-to-markdown`, `markdown-to-html`, and `csv-to-markdown-table` textareas showed the same bold native UA focus outline `markdown-editor` was already fixed for (`59e47f6`) — they were missing `focus:outline-none`, and the outline was visibly clipped by the line-number gutter div on top; added `focus:outline-none` to all four pages' textareas and dropped the wrapper's `focus-within:border-neutral-500` entirely so focusing an input pane causes no visual change. Also fixed the line-number gutter drifting out of sync with wrapped text on the three pages that have one (`html-to-markdown`, `markdown-to-html`, `markdown-editor`) by adding `wrap="off"` so each logical line renders as exactly one row, matching the gutter's per-`\n` count (`778d917`)
 - Every `<select>` on the site (paragraph style, code-block language, diagram type, bullet marker, code-block style, heading style, alignment) rendered as a plain, unthemed native dropdown — a native select's open option list is drawn by the OS and can't be styled to match the rest of the Pines UI on the page; replaced all of them with a `pinesSelect()` Alpine mixin in `site.js` driving a themeable button + listbox, on `markdown-editor`, `html-to-markdown`, and `csv-to-markdown-table` (`27421bf`)
+- Toolbar and action buttons across the homepage and all four tool pages were plain text (or a lone emoji), inconsistent with the rest of the Pines UI; replaced with inlined Lucide SVG icons (source copies in `site/assets/vendor/lucide/`), themeable via `currentColor` and working with JavaScript disabled (`f12e506`)
+- `markdown-editor`'s "Stack panels" toggle only appeared in Split view, so the word/character count next to it shifted position between view modes; reordered the toolbar so the toggle is consistently the last element, flush right, regardless of view (`f12e506`)
