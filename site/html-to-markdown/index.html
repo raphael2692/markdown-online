@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>HTML to Markdown Converter – Free &amp; Private | __SITE_NAME__</title>
+  <meta name="description" content="Free HTML to Markdown converter — paste HTML, get clean Markdown instantly. Runs 100% in your browser: no upload, no signup.">
+  <link rel="canonical" href="__SITE_URL__/html-to-markdown/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="HTML to Markdown Converter – Free &amp; Private">
+  <meta property="og:description" content="Paste HTML, get clean Markdown instantly. Runs 100% in your browser — no upload, no signup.">
+  <meta property="og:url" content="__SITE_URL__/html-to-markdown/">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <style>[x-cloak]{display:none !important}</style>
+
+  <script defer src="/assets/vendor/alpine-focus-3.15.12.min.js"></script>
+  <script defer src="/assets/vendor/alpine-collapse-3.15.12.min.js"></script>
+  <script defer src="/assets/vendor/marked-18.0.6.min.js"></script>
+  <script defer src="/assets/vendor/dompurify-3.4.12.min.js"></script>
+  <script defer src="/assets/vendor/turndown-7.2.0.min.js"></script>
+  <script defer src="/assets/vendor/turndown-plugin-gfm-1.0.2.min.js"></script>
+  <!-- site.js must load before Alpine core: toolWidget() calls paneResizer()
+       at x-data construction time, and Alpine boots synchronously the
+       instant its own deferred script runs — so paneResizer must already
+       be defined by then. -->
+  <script defer src="/assets/site.js"></script>
+  <script defer src="/assets/vendor/alpine-3.15.12.min.js"></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "HTML to Markdown Converter",
+    "url": "__SITE_URL__/html-to-markdown/",
+    "description": "Free HTML to Markdown converter that runs entirely in the browser — paste HTML, get clean Markdown instantly.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any (web browser)",
+    "browserRequirements": "Requires JavaScript",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is this HTML to Markdown converter free?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. It's free to use, with no signup, and there's no limit on how much HTML you can convert." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does my HTML get uploaded anywhere?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. The conversion happens entirely in your browser using JavaScript — your HTML is never sent to a server." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it convert tables, task lists, and strikethrough?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Tables, task lists (checkbox items), and strikethrough all convert to their GitHub-Flavored Markdown equivalents, via the turndown-plugin-gfm extension." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I paste HTML copied straight from a webpage or Word?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — paste the HTML source directly into the input box. If you're copying rendered content from a browser or Word rather than viewing source, use your browser's \"Inspect\" or \"View Source\" to grab the actual markup first, since a plain clipboard paste normally lands as rendered text, not HTML." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does the Markdown output look different from the original HTML?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Markdown can't represent everything HTML can — things like inline styles, colors, custom classes, and multi-column layouts have no Markdown equivalent and are dropped. The converter keeps structure (headings, lists, links, tables, code, emphasis) and discards presentation." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I choose the bullet character or code block style?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — the options below the editor let you pick the bullet marker (-, *, or +) and switch code blocks between fenced (```) and indented style." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I preview the Markdown instead of reading raw syntax?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes — use the Raw / Rendered switch above the output box. Rendered re-parses the generated Markdown and shows a sanitized live preview; Raw shows the literal Markdown source." }
+      }
+    ]
+  }
+  </script>
+</head>
+<body class="bg-white text-neutral-800 antialiased">
+
+  <!--#include partials/header.html-->
+
+  <main class="mx-auto max-w-7xl px-4">
+
+    <h1 class="mt-8 text-3xl font-bold">HTML to Markdown Converter</h1>
+    <p class="mt-2 text-lg text-neutral-600">
+      Paste HTML, get clean Markdown instantly. Everything runs locally in your
+      browser — your markup is never uploaded to a server. Need to go the other
+      way? Try the <a class="text-indigo-600 hover:underline" href="/markdown-to-html/">Markdown to HTML converter</a>.
+    </p>
+
+    <section id="tool" class="mt-6" x-data="toolWidget()" x-init="init()">
+      <div class="rounded-lg border border-neutral-200">
+        <div class="hidden items-center justify-end border-b border-neutral-200 p-2 md:flex">
+          <button type="button" @click="stacked = !stacked"
+            class="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50"
+            :title="stacked ? 'Switch to side-by-side layout' : 'Stack panels vertically'">
+            <span x-text="stacked ? 'Side by side' : 'Stack panels'"></span>
+          </button>
+        </div>
+        <div x-ref="paneRow" class="flex flex-col md:flex-row"
+          :style="`--split: ${split}%; --pane-height: ${paneHeight}px`"
+          :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
+          <div class="split-pane-left min-w-0 border-b border-neutral-200 p-3 md:border-b-0 md:border-r">
+            <label for="tw-in" class="text-xs font-medium uppercase text-neutral-500">HTML input</label>
+            <div class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300 focus-within:border-neutral-500">
+              <div x-ref="mdGutter" aria-hidden="true"
+                class="pointer-events-none absolute inset-y-0 left-0 w-10 select-none overflow-hidden bg-neutral-50 py-2 text-right font-mono text-sm leading-6 text-neutral-400">
+                <template x-for="n in inputLineCount" :key="n">
+                  <div class="pr-2 leading-6" x-text="n"></div>
+                </template>
+              </div>
+              <textarea id="tw-in" x-ref="mdTextarea" x-model="input" @input.debounce.250ms="run()" @scroll="onInputScroll($event)"
+                spellcheck="false"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:ring-0"
+                placeholder="Paste HTML here…"></textarea>
+            </div>
+          </div>
+
+          <div x-show="!stacked"
+            class="hidden shrink-0 cursor-col-resize touch-none items-stretch justify-center border-x border-neutral-200 bg-neutral-100 hover:bg-neutral-200 md:flex md:w-2"
+            :class="dragging && 'bg-neutral-300'"
+            @mousedown="startDrag($event)" @touchstart="startDrag($event)"
+            title="Drag to resize">
+            <div class="my-auto h-8 w-px bg-neutral-400"></div>
+          </div>
+
+          <div class="min-w-0 p-3 md:flex-1">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-medium uppercase text-neutral-500">Markdown output</label>
+              <div class="flex rounded-md border border-neutral-300 text-xs">
+                <button type="button" @click="view = 'raw'"
+                  :class="view === 'raw' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                  class="rounded-l-md px-2 py-1">Raw</button>
+                <button type="button" @click="view = 'rendered'"
+                  :class="view === 'rendered' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                  class="rounded-r-md border-l border-neutral-300 px-2 py-1">Rendered</button>
+              </div>
+            </div>
+            <p x-show="error" x-cloak class="mt-1 text-sm text-red-600" x-text="error"></p>
+
+            <div x-show="!error && view === 'raw'"
+              class="pane-height relative mt-1 w-full overflow-hidden rounded-md border border-neutral-300">
+              <div x-ref="outGutter" aria-hidden="true"
+                class="pointer-events-none absolute inset-y-0 left-0 w-10 select-none overflow-hidden bg-neutral-100 py-2 text-right font-mono text-sm leading-6 text-neutral-400">
+                <template x-for="n in outputLineCount" :key="n">
+                  <div class="pr-2 leading-6" x-text="n"></div>
+                </template>
+              </div>
+              <textarea readonly x-ref="outTextarea" x-model="output" @scroll="onOutputScroll($event)"
+                spellcheck="false"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-neutral-50 py-2 pl-12 pr-2 font-mono text-sm leading-6"></textarea>
+            </div>
+
+            <div x-ref="preview" @scroll="onOutputScroll($event)" x-show="!error && view === 'rendered'"
+              class="pane-height md-preview mt-1 w-full overflow-y-auto rounded-md border border-neutral-300 bg-white p-3 text-sm"></div>
+          </div>
+        </div>
+
+        <div class="flex h-3 cursor-row-resize touch-none items-center justify-center border-b border-t border-neutral-200 bg-neutral-100 hover:bg-neutral-200"
+          :class="draggingV && 'bg-neutral-300'"
+          @mousedown="startVDrag($event)" @touchstart="startVDrag($event)"
+          title="Drag to resize height">
+          <div class="h-px w-8 bg-neutral-400"></div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 border-t border-neutral-200 p-3 text-sm">
+          <label class="flex items-center gap-2">
+            Bullet marker
+            <select x-model="opts.bulletListMarker" @change="run()" class="rounded-md border-neutral-300 text-sm">
+              <option value="-">-</option>
+              <option value="*">*</option>
+              <option value="+">+</option>
+            </select>
+          </label>
+          <label class="flex items-center gap-2">
+            Code blocks
+            <select x-model="opts.codeBlockStyle" @change="run()" class="rounded-md border-neutral-300 text-sm">
+              <option value="fenced">Fenced (```)</option>
+              <option value="indented">Indented (4 spaces)</option>
+            </select>
+          </label>
+          <label class="flex items-center gap-2">
+            Headings
+            <select x-model="opts.headingStyle" @change="run()" class="rounded-md border-neutral-300 text-sm">
+              <option value="atx">ATX (# Heading)</option>
+              <option value="setext">Setext (underlined)</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="flex flex-wrap gap-2 border-t border-neutral-200 p-3">
+          <button @click="copy()" class="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700">Copy Markdown</button>
+          <button @click="downloadOut()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Download .md</button>
+          <span x-show="toast" x-transition.opacity x-cloak class="ml-auto self-center text-sm text-green-700" x-text="toast"></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot mt-8" style="min-height:280px" data-slot="tool-below"></div>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">How to convert HTML to Markdown</h2>
+      <ol class="mt-3 list-decimal space-y-2 pl-6">
+        <li>Paste your HTML into the input box on the left — the output updates live as you type.</li>
+        <li>Pick a bullet marker, code block style, and heading style from the options below the editor to match your target Markdown flavor.</li>
+        <li>Switch the output panel between <strong>Raw</strong> (the literal Markdown source) and <strong>Rendered</strong> (a live preview re-parsed from that Markdown) with the toggle above it.</li>
+        <li>Copy the Markdown with <strong>Copy Markdown</strong>, or use <strong>Download .md</strong> to save it as a file.</li>
+      </ol>
+    </section>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">What this converter actually does</h2>
+      <p>
+        The conversion is handled by
+        <a class="text-indigo-600 hover:underline" href="https://github.com/mixmark-io/turndown">turndown</a>,
+        the standard HTML-to-Markdown library, with the
+        <a class="text-indigo-600 hover:underline" href="https://github.com/mixmark-io/turndown-plugin-gfm">turndown-plugin-gfm</a>
+        extension turned on so GitHub-Flavored constructs — tables,
+        strikethrough (<code>&lt;del&gt;</code>/<code>&lt;s&gt;</code>), and
+        task-list checkboxes — convert to their Markdown equivalents instead
+        of degrading to plain text. Headings, lists (ordered and nested),
+        links, images, blockquotes, inline code, and fenced code blocks with
+        a detected language all round-trip cleanly. Switch to
+        <strong>Rendered</strong> to sanity-check the result: the generated
+        Markdown is re-parsed with
+        <a class="text-indigo-600 hover:underline" href="https://marked.js.org/">marked</a>
+        and sanitized with
+        <a class="text-indigo-600 hover:underline" href="https://github.com/cure53/DOMPurify">DOMPurify</a>
+        before it's shown, so what you see is exactly what a Markdown
+        renderer downstream — GitHub, a static site generator, an LLM prompt
+        — would produce from the text you're about to copy.
+      </p>
+      <p>
+        Presentation-only markup has no Markdown equivalent and is
+        intentionally dropped: inline <code>style</code> attributes, custom
+        CSS classes, colors, fonts, and multi-column or grid layouts all
+        disappear, leaving just the structural content. That's normally what
+        you want — Markdown is a content format, not a layout format — but it
+        does mean a visually elaborate page will convert into much plainer
+        Markdown than it looked like in the browser.
+      </p>
+    </section>
+
+    <div class="ad-slot mt-10" style="min-height:280px" data-slot="mid-content"></div>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">Common edge cases</h2>
+      <p>
+        Nested tables, <code>&lt;iframe&gt;</code>s, forms, and inline SVG
+        have no Markdown representation and are dropped or left as raw HTML
+        passthrough, depending on the tag. Table cells containing line breaks
+        or pipe characters (<code>|</code>) are escaped so the table doesn't
+        break — if a cell's content is complex enough, consider whether a
+        table is the right output at all. If you're pasting content copied
+        from a live webpage rather than its HTML source, make sure what
+        landed in the box is actual markup and not rendered plain text —
+        browsers usually require "Copy" from dev tools' Elements/Inspect
+        panel, not a normal page selection, to get real HTML onto the
+        clipboard. Deeply nested <code>&lt;div&gt;</code> wrappers (common in
+        exports from rich text editors and CMSs) convert fine but can
+        produce more blank lines than a hand-written document would — that's
+        the converter faithfully reflecting the source's block structure,
+        not a bug.
+      </p>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">Frequently asked questions</h2>
+      <div class="mt-3 space-y-4">
+        <div>
+          <h3 class="font-medium">Is this HTML to Markdown converter free?</h3>
+          <p class="text-neutral-600">Yes. It's free to use, with no signup, and there's no limit on how much HTML you can convert.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Does my HTML get uploaded anywhere?</h3>
+          <p class="text-neutral-600">No. The conversion happens entirely in your browser using JavaScript — your HTML is never sent to a server.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Does it convert tables, task lists, and strikethrough?</h3>
+          <p class="text-neutral-600">Yes. Tables, task lists (checkbox items), and strikethrough all convert to their GitHub-Flavored Markdown equivalents, via the turndown-plugin-gfm extension.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Can I paste HTML copied straight from a webpage or Word?</h3>
+          <p class="text-neutral-600">Yes — paste the HTML source directly into the input box. If you're copying rendered content from a browser or Word rather than viewing source, use your browser's "Inspect" or "View Source" to grab the actual markup first, since a plain clipboard paste normally lands as rendered text, not HTML.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Why does the Markdown output look different from the original HTML?</h3>
+          <p class="text-neutral-600">Markdown can't represent everything HTML can — things like inline styles, colors, custom classes, and multi-column layouts have no Markdown equivalent and are dropped. The converter keeps structure (headings, lists, links, tables, code, emphasis) and discards presentation.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Can I choose the bullet character or code block style?</h3>
+          <p class="text-neutral-600">Yes — the options below the editor let you pick the bullet marker (-, *, or +) and switch code blocks between fenced (```) and indented style.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Can I preview the Markdown instead of reading raw syntax?</h3>
+          <p class="text-neutral-600">Yes — use the Raw / Rendered switch above the output box. Rendered re-parses the generated Markdown and shows a sanitized live preview; Raw shows the literal Markdown source.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-xl font-semibold">Related tools</h2>
+      <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+        <li><a class="text-indigo-600 hover:underline" href="/markdown-to-html/">Markdown to HTML converter</a></li>
+        <li><a class="text-indigo-600 hover:underline" href="/markdown-editor/">Markdown editor online</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <!--#include partials/footer.html-->
+
+  <script>
+    const SAMPLE_HTML = [
+      '<h' + '1>Sprint Notes</h1>',
+      '<p>A quick summary of <strong>what\'s done</strong> and what\'s',
+      '<em>left</em> this week. <del>The old plan</del> is scrapped — see the',
+      '<code>deploy()</code> helper below and',
+      '<a href="https://example.com">this reference</a> for context.</p>',
+      '<ul>',
+      '  <li><input type="checkbox" checked disabled> Set up the repo',
+      '    <ul><li>includes CI config</li></ul>',
+      '  </li>',
+      '  <li><input type="checkbox" disabled> Write unit tests</li>',
+      '  <li><input type="checkbox" disabled> Ship to staging</li>',
+      '</ul>',
+      '<h2>Next steps</h2>',
+      '<ol>',
+      '  <li>Review the <a href="https://example.com/pr/42"><strong>open pull request</strong></a></li>',
+      '  <li>Merge to <code>main</code> once CI is green</li>',
+      '</ol>',
+      '<table>',
+      '  <thead><tr><th>Task</th><th>Owner</th></tr></thead>',
+      '  <tbody>',
+      '    <tr><td>Tests</td><td>Alex</td></tr>',
+      '    <tr><td>Deploy</td><td>Sam</td></tr>',
+      '  </tbody>',
+      '</table>',
+      '<blockquote><p>Ping the #eng channel if anything above is unclear.</p></blockquote>',
+      '<pre><code class="language-python">def deploy(build_id):',
+      '    print(f"shipping {build_id}")</code></pre>',
+    ].join('\n');
+
+    function toolWidget() {
+      return {
+        ...paneResizer({ split: 40, paneHeight: 480 }),
+        ...toolActionsMixin(),
+        input: '', output: '', error: '', toast: '', view: 'raw',
+        opts: { bulletListMarker: '-', codeBlockStyle: 'fenced', headingStyle: 'atx' },
+        _renderGen: 0,
+        _td: null,
+
+        get inputLineCount() { return this.input.split('\n').length; },
+        get outputLineCount() { return this.output.split('\n').length; },
+
+        activeOutputEl() {
+          return this.view === 'raw' ? this.$refs.outTextarea : this.$refs.preview;
+        },
+
+        onInputScroll(e) {
+          this.$refs.mdGutter.scrollTop = e.target.scrollTop;
+          this.mirrorScroll(e.target, this.activeOutputEl());
+        },
+
+        onOutputScroll(e) {
+          if (this.view === 'raw') this.$refs.outGutter.scrollTop = e.target.scrollTop;
+          this.mirrorScroll(e.target, this.$refs.mdTextarea);
+        },
+
+        init() {
+          this.input = SAMPLE_HTML;
+          this.$nextTick(() => this.run());
+        },
+
+        turndownService() {
+          const td = new TurndownService({
+            headingStyle: this.opts.headingStyle,
+            codeBlockStyle: this.opts.codeBlockStyle,
+            bulletListMarker: this.opts.bulletListMarker,
+          });
+          turndownPluginGfm.gfm(td);
+          return td;
+        },
+
+        async run() {
+          this.error = '';
+          const myGen = ++this._renderGen;
+          try {
+            if (!this.input.trim()) {
+              this.output = '';
+            } else {
+              this.output = this.turndownService().turndown(this.input);
+            }
+            if (myGen !== this._renderGen) return;
+            const html = DOMPurify.sanitize(marked.parse(this.output, { gfm: true }));
+            this.$refs.preview.innerHTML = html;
+          } catch (e) {
+            if (myGen !== this._renderGen) return;
+            this.error = e.message || 'Conversion failed';
+          }
+        },
+
+        async copy() {
+          await navigator.clipboard.writeText(this.output);
+          this.flash('Copied');
+        },
+
+        downloadOut() {
+          window.downloadFile(this.output, 'converted.md', 'text/markdown;charset=utf-8');
+          this.flash('Downloaded');
+        },
+      };
+    }
+  </script>
+</body>
+</html>

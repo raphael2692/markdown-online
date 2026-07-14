@@ -18,7 +18,7 @@ Statuses: `todo | built | live`. This file is versioned with the repo — update
 
 | Slug | Primary keyword | Variants | Intent | Hub | Status |
 |---|---|---|---|---|---|
-| html-to-markdown | html to markdown | convert html to md | migrate content | markdown-to-html | todo |
+| html-to-markdown | html to markdown | convert html to md | migrate content | markdown-to-html | **built** |
 | csv-to-markdown-table | csv to markdown table | excel to markdown table | data → docs/README | markdown-table-generator | todo |
 | json-to-markdown-table | json to markdown table | json to md | API output → docs | markdown-table-generator | todo |
 | remove-markdown | remove markdown formatting | strip markdown, markdown to plain text | clean up LLM output | markdown-to-html | todo |
