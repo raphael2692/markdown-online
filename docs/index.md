@@ -16,7 +16,9 @@ public site.
   - `site/markdown-editor/index.html` (`/markdown-editor/`) — online
     Markdown editor for "markdown editor online" / "markdown preview
     online": Write/Split/Preview toggle, a resizable split-pane widget with
-    a line-number gutter, a formatting toolbar (heading, bold, italic,
+    a line-number gutter, a formatting toolbar (paragraph-style dropdown
+    spanning Paragraph/H1-H6 that reflects and re-sets the current line,
+    bold, italic,
     link, bullet/numbered list, quote, inline code, strikethrough, image,
     task list, table, horizontal rule, a code-block language picker, a
     Mermaid diagram-type picker, and a math insert) with keyboard
