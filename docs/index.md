@@ -7,12 +7,20 @@ public site.
 
 ## What exists right now
 
-- **Two live tool pages**, both Tier-1 hubs with full page anatomy
-  (meta/canonical/JSON-LD, tool widget, FAQ, prose) per the `seo-tool-pages`
-  skill's template:
-  - `site/markdown-to-html/index.html` (`/markdown-to-html/`) — Markdown →
-    HTML converter: resizable split-pane widget with synced line-number
-    gutters, a Raw/Rendered toggle, and Copy / Copy-for-Word / Download.
+- **Three live tool pages**, full page anatomy (meta/canonical/JSON-LD, tool
+  widget, FAQ, prose) per the `seo-tool-pages` skill's template:
+  - `site/markdown-to-html/index.html` (`/markdown-to-html/`) — Tier-1 hub,
+    Markdown → HTML converter: resizable split-pane widget with synced
+    line-number gutters, a Raw/Rendered toggle, and Copy / Copy-for-Word /
+    Download.
+  - `site/html-to-markdown/index.html` (`/html-to-markdown/`) — Tier-2 spoke
+    of `markdown-to-html`, HTML → Markdown converter: same split-pane/gutter
+    widget shape, a Raw/Rendered toggle (Rendered re-parses the generated
+    Markdown through `marked`/`DOMPurify` as a fidelity check), options for
+    bullet marker / code-block style / heading style, and Copy Markdown /
+    Download .md. Conversion uses `turndown` + `turndown-plugin-gfm` (see
+    below) rather than the shared `convertMarkdown()` pipeline, since that
+    pipeline is Markdown → HTML, not the reverse.
   - `site/markdown-editor/index.html` (`/markdown-editor/`) — online
     Markdown editor for "markdown editor online" / "markdown preview
     online": Write/Split/Preview toggle, a resizable split-pane widget with
@@ -25,15 +33,18 @@ public site.
     shortcuts, word/character/reading-time counts, localStorage autosave
     with restore and an explicit Clear action, and Copy / Copy-for-Word /
     Download .md / Download HTML / Print-to-PDF export.
-  - Both tools share the Markdown extensions pipeline — see
-    "Markdown extensions" below.
+  - `markdown-to-html` and `markdown-editor` share the Markdown extensions
+    pipeline — see "Markdown extensions" below. `html-to-markdown` doesn't
+    need it (there's no Markdown output to add math/diagram/typography
+    extensions to until a round trip back through `markdown-to-html`).
 - **Site shell**: homepage (`site/index.html`), `about/`, `privacy/`, `404.html`.
 - **Shared assets**: `site/assets/site.css` (built Tailwind output),
   `site/assets/site.js` (the shared `convertMarkdown()`/`sanitizeHtml()`
   pipeline, rich-clipboard copy, file download, ad-slot placeholder init,
   and the `paneResizer()` mixin — see below),
   `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify, KaTeX,
-  Mermaid, highlight.js — vendored locally, no CDN hotlinking in production).
+  Mermaid, highlight.js, turndown, turndown-plugin-gfm — vendored locally,
+  no CDN hotlinking in production).
 
 ## Markdown extensions (smart typography, math, diagrams)
 
@@ -183,9 +194,16 @@ pattern used elsewhere to avoid a stale async load racing a newer edit.
   (fixed `min-height`, zero CLS) but only show a static "Advertisement"
   placeholder — per the `seo-tool-pages` skill, ads wait until the site has
   ~10 real pages and some organic traffic.
-- **Internal linking is thin** — with only two tool pages, "Related tools"
-  mostly points back to the homepage (the editor links to the HTML
-  converter). This fills in as more Tier-2/3 pages ship per the keyword map.
+- **Internal linking is thin** — with only three tool pages, "Related tools"
+  mostly points back to the homepage. `markdown-to-html` and
+  `html-to-markdown` link each other and `markdown-editor` links the HTML
+  converter; this fills in as more Tier-2/3 pages ship per the keyword map.
+- **`build.py`'s "exactly one `<h1>`" check is a naive text search**, not
+  parsed HTML — it also matches a literal `<h1` substring anywhere in the
+  file, including inside a page's own JS sample-content string. Any sample
+  input embedded in a `<script>` block that itself contains HTML markup
+  (e.g. `html-to-markdown`'s sample HTML) needs that substring broken up
+  (e.g. `'<h' + '1>...'`) or the build fails validation.
 - **No GitHub repo URL yet** — `__GITHUB_URL__` is a placeholder in `build.py`.
 
 ## Where things live

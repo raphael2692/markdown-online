@@ -1,10 +1,12 @@
-<!-- docs-sync: 24f5030 -->
+<!-- docs-sync: cf9bbf6 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- HTML to Markdown converter (`/html-to-markdown/`): Tier 2 page targeting "html to markdown" / "convert html to md", split-pane widget with a Raw/Rendered toggle and bullet-marker / code-block-style / heading-style options, Copy Markdown and Download .md actions; links both directions with `markdown-to-html`, added to the homepage and header nav (`cf9bbf6`)
+- Vendored turndown 7.2.0 and turndown-plugin-gfm 1.0.2 — pinned versions, no CDN hotlinking (`cf9bbf6`)
 - Static-site build pipeline: `site/` → `build.py` → `dist/`, with shared header/footer partials, site-wide token substitution, sitemap.xml/robots.txt generation, and per-page validation (`342649d`)
 - Vendored Alpine.js, marked, and DOMPurify — pinned versions, no CDN hotlinking (`342649d`)
 - Homepage, `/about/`, `/privacy/`, and `404.html` (`342649d`)
@@ -30,6 +32,7 @@
 - Default sample Markdown/HTML on both tool widgets dropped a placeholder `![Sample screenshot](data:image/svg+xml,...)` line that added visual noise without demonstrating anything the KaTeX/Mermaid samples didn't already cover (`417a180`)
 - Both tool widgets' right-hand preview pane could be pushed outside its container by wide content (long unbroken tokens, wide tables) because the flex panes lacked `min-width: 0`; added `min-w-0` to both panes, `overflow-wrap: anywhere` on `.md-preview`, and made preview tables scroll internally instead of forcing the layout wider (`710b606`)
 - "Copy for Word / Docs" pasted Mermaid diagrams as nothing at all — Word's clipboard-HTML importer silently drops inline `<svg>`; `copyRich()` now rasterizes each diagram to a PNG `<img>` instead (`1f69995`)
+- `markdown-editor`'s textarea showed the browser's default UA focus outline as a bold black border, redundant with the wrapper's existing focus-within border (`59e47f6`)
 - Mermaid diagram labels rendered blank everywhere (preview, copy, download), not just in Word — DOMPurify hardcodes emptying `<foreignObject>` content nested in `<svg>` (an XSS defense with no opt-out), which is how Mermaid renders label text; added `sanitizePreservingForeignObjectLabels()`, used by both `renderMermaidDiagrams()` and the shared `sanitizeHtml()` (`1f69995`)
 - The new Word-copy PNG export silently fell back to a plain-text copy on any diagram with real label text — drawing an SVG containing `<foreignObject>` onto a `<canvas>` taints it, blocking `toDataURL()`; `flattenForeignObjectLabels()` now flattens labels to plain SVG `<text>` for that export path only (`1f69995`)
 - `~~strikethrough~~` pasted into Word as a tracked-change deletion/comment instead of struck-through text — Word's importer maps marked's `<del>` tag to its own revision markup; the Word clipboard path now swaps it for `<s>` via `neutralizeTrackedChangeTags()`, while raw/download HTML keeps `<del>` (`1f69995`)
