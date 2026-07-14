@@ -7,7 +7,7 @@ public site.
 
 ## What exists right now
 
-- **Three live tool pages**, full page anatomy (meta/canonical/JSON-LD, tool
+- **Four live tool pages**, full page anatomy (meta/canonical/JSON-LD, tool
   widget, FAQ, prose) per the `seo-tool-pages` skill's template:
   - `site/markdown-to-html/index.html` (`/markdown-to-html/`) — Tier-1 hub,
     Markdown → HTML converter: resizable split-pane widget with synced
@@ -37,14 +37,30 @@ public site.
     pipeline — see "Markdown extensions" below. `html-to-markdown` doesn't
     need it (there's no Markdown output to add math/diagram/typography
     extensions to until a round trip back through `markdown-to-html`).
+  - `site/csv-to-markdown-table/index.html` (`/csv-to-markdown-table/`) —
+    Tier-2 page targeting "csv to markdown table" / "excel to markdown
+    table": a CSV/JSON tab toggle over a single input pane (no line-number
+    gutter — plain text, not a synced dual-language pair), an alignment
+    dropdown (left/center/right, written as standard `:---`/`:---:`/`---:`
+    colon syntax) and a "first row is header" checkbox (CSV only — JSON
+    always uses the union of object keys as columns), a Raw/Rendered
+    toggle, and Copy Markdown / Download .md / Copy-for-Word-Docs actions.
+    CSV parsing uses vendored PapaParse, lazy-loaded on first conversion
+    via `ensurePapaParseLoaded()` (`site/assets/site.js`) rather than at
+    page load. The header-row/plain-array → padded, alignment-aware
+    Markdown table logic lives in a shared `rowsToMdTable()` helper in
+    `site.js` (used by both the CSV and JSON code paths on this page), so
+    the next table-source page (`json-to-markdown-table`, the
+    `markdown-table-generator` hub) can reuse it instead of
+    reimplementing padding/escaping.
 - **Site shell**: homepage (`site/index.html`), `about/`, `privacy/`, `404.html`.
 - **Shared assets**: `site/assets/site.css` (built Tailwind output),
   `site/assets/site.js` (the shared `convertMarkdown()`/`sanitizeHtml()`
   pipeline, rich-clipboard copy, file download, ad-slot placeholder init,
   and the `paneResizer()` mixin — see below),
   `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify, KaTeX,
-  Mermaid, highlight.js, turndown, turndown-plugin-gfm — vendored locally,
-  no CDN hotlinking in production).
+  Mermaid, highlight.js, turndown, turndown-plugin-gfm, PapaParse —
+  vendored locally, no CDN hotlinking in production).
 
 ## Markdown extensions (smart typography, math, diagrams)
 

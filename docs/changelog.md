@@ -1,10 +1,13 @@
-<!-- docs-sync: cf9bbf6 -->
+<!-- docs-sync: b565092 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- CSV to Markdown table converter (`/csv-to-markdown-table/`): Tier 2 page targeting "csv to markdown table" / "excel to markdown table", CSV/JSON tab toggle over a single input pane, alignment dropdown (left/center/right, written as colon syntax) and a first-row-is-header checkbox for CSV, Raw/Rendered toggle, Copy Markdown / Download .md / Copy-for-Word-Docs actions; added to the homepage (`b565092`)
+- Vendored PapaParse 5.4.1 for client-side CSV parsing, lazy-loaded on first conversion via `ensurePapaParseLoaded()` — pinned version, no CDN hotlinking (`b565092`)
+- Shared `rowsToMdTable()` helper in `site.js`: padded, alignment-aware Markdown table generation from a header + rows, reusable by future table-source pages (`b565092`)
 - HTML to Markdown converter (`/html-to-markdown/`): Tier 2 page targeting "html to markdown" / "convert html to md", split-pane widget with a Raw/Rendered toggle and bullet-marker / code-block-style / heading-style options, Copy Markdown and Download .md actions; links both directions with `markdown-to-html`, added to the homepage and header nav (`cf9bbf6`)
 - Vendored turndown 7.2.0 and turndown-plugin-gfm 1.0.2 — pinned versions, no CDN hotlinking (`cf9bbf6`)
 - Static-site build pipeline: `site/` → `build.py` → `dist/`, with shared header/footer partials, site-wide token substitution, sitemap.xml/robots.txt generation, and per-page validation (`342649d`)
