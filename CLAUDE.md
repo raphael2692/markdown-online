@@ -15,6 +15,7 @@ A typical "add the X converter page" task touches all four: seo-tool-pages for t
 
 - **Pure static.** No backend, no framework, no SPA. Plain HTML + Tailwind (standalone CLI build) + Alpine.js. All conversion logic runs client-side; "your text never leaves your browser" is a core promise stated on every page — never add code that violates it (no analytics that ship page content, no remote conversion APIs).
 - **No hotlinked CDNs in production.** All JS vendored under `site/assets/vendor/` with pinned versions.
+- **Icons: Lucide**, inlined as static SVG — not the JS runtime. Source/reference copies live in `site/assets/vendor/lucide/` (see its README for the fetch-and-inline convention); pages inline the `<svg>` markup directly so icons stay themeable via `currentColor`/Tailwind classes and keep working with JavaScript disabled. Standard wrapper: `viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4"`.
 - **Hosting:** Cloudflare Pages, deploy from `dist/`.
 
 ## Repo layout

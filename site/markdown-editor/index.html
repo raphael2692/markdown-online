@@ -109,20 +109,31 @@
           <div class="flex rounded-md border border-neutral-300 text-xs">
             <button type="button" @click="view = 'write'"
               :class="view === 'write' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
-              class="rounded-l-md px-2 py-1">Write</button>
+              class="flex items-center gap-1.5 rounded-l-md px-2 py-1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M13 21h8" /><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></svg>
+              Write
+            </button>
             <button type="button" @click="view = 'split'"
               :class="view === 'split' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
-              class="border-l border-neutral-300 px-2 py-1">Split</button>
+              class="flex items-center gap-1.5 border-l border-neutral-300 px-2 py-1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 3v18" /></svg>
+              Split
+            </button>
             <button type="button" @click="view = 'preview'"
               :class="view === 'preview' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
-              class="rounded-r-md border-l border-neutral-300 px-2 py-1">Preview</button>
+              class="flex items-center gap-1.5 rounded-r-md border-l border-neutral-300 px-2 py-1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></svg>
+              Preview
+            </button>
           </div>
+          <span class="text-xs text-neutral-500" x-text="`${wordCount} words · ${charCount} characters · ~${readingTime} min read`"></span>
           <button type="button" x-show="view === 'split'" @click="stacked = !stacked"
-            class="hidden rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 md:inline-flex"
+            class="hidden items-center gap-1.5 rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 md:inline-flex"
             :title="stacked ? 'Switch to side-by-side layout' : 'Stack panels vertically'">
+            <svg x-show="stacked" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 3v18" /></svg>
+            <svg x-show="!stacked" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M21 9H3" /><path d="M21 15H3" /></svg>
             <span x-text="stacked ? 'Side by side' : 'Stack panels'"></span>
           </button>
-          <span class="text-xs text-neutral-500" x-text="`${wordCount} words · ${charCount} characters · ~${readingTime} min read`"></span>
         </div>
 
         <div class="flex flex-wrap items-center gap-4 border-b border-neutral-200 p-3 text-sm">
@@ -156,7 +167,7 @@
               :aria-expanded="open" aria-haspopup="listbox" aria-label="Paragraph style"
               class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
               <span class="truncate" x-text="displayLabel"></span>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
             </button>
             <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
               x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
@@ -171,24 +182,24 @@
                     :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
                     class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
                     <span x-text="item.label"></span>
-                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
+                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
                   </div>
                 </li>
               </template>
             </ul>
           </div>
-          <button type="button" @click="wrapSelection('**', '**', 'bold text')" title="Bold (Ctrl/Cmd+B)" aria-label="Bold" class="rounded border border-neutral-300 px-2 py-1 text-xs font-bold hover:bg-neutral-50">B</button>
-          <button type="button" @click="wrapSelection('*', '*', 'italic text')" title="Italic (Ctrl/Cmd+I)" aria-label="Italic" class="rounded border border-neutral-300 px-2 py-1 text-xs italic hover:bg-neutral-50">I</button>
-          <button type="button" @click="wrapSelection('[', '](https://)', 'link text')" title="Link (Ctrl/Cmd+K)" aria-label="Link" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Link</button>
-          <button type="button" @click="prefixLines('- ')" title="Bullet list" aria-label="Bullet list" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">List</button>
-          <button type="button" @click="insertNumberedList()" title="Numbered list" aria-label="Numbered list" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">1.</button>
-          <button type="button" @click="prefixLines('> ')" title="Quote" aria-label="Quote" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Quote</button>
-          <button type="button" @click="wrapSelection('`', '`', 'code')" title="Inline code" aria-label="Inline code" class="rounded border border-neutral-300 px-2 py-1 text-xs font-mono hover:bg-neutral-50">Code</button>
-          <button type="button" @click="wrapSelection('~~', '~~', 'strikethrough text')" title="Strikethrough" aria-label="Strikethrough" class="rounded border border-neutral-300 px-2 py-1 text-xs line-through hover:bg-neutral-50">S</button>
-          <button type="button" @click="wrapSelection('![', '](https://)', 'alt text')" title="Image" aria-label="Image" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Image</button>
-          <button type="button" @click="prefixLines('- [ ] ')" title="Task list" aria-label="Task list" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Task</button>
-          <button type="button" @click="insertTable()" title="Table" aria-label="Table" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Table</button>
-          <button type="button" @click="insertHr()" title="Horizontal rule" aria-label="Horizontal rule" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">HR</button>
+          <button type="button" @click="wrapSelection('**', '**', 'bold text')" title="Bold (Ctrl/Cmd+B)" aria-label="Bold" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8" /></svg></button>
+          <button type="button" @click="wrapSelection('*', '*', 'italic text')" title="Italic (Ctrl/Cmd+I)" aria-label="Italic" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><line x1="19" x2="10" y1="4" y2="4" /><line x1="14" x2="5" y1="20" y2="20" /><line x1="15" x2="9" y1="4" y2="20" /></svg></button>
+          <button type="button" @click="wrapSelection('[', '](https://)', 'link text')" title="Link (Ctrl/Cmd+K)" aria-label="Link" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></button>
+          <button type="button" @click="prefixLines('- ')" title="Bullet list" aria-label="Bullet list" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M3 5h.01" /><path d="M3 12h.01" /><path d="M3 19h.01" /><path d="M8 5h13" /><path d="M8 12h13" /><path d="M8 19h13" /></svg></button>
+          <button type="button" @click="insertNumberedList()" title="Numbered list" aria-label="Numbered list" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M11 5h10" /><path d="M11 12h10" /><path d="M11 19h10" /><path d="M4 4h1v5" /><path d="M4 9h2" /><path d="M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02" /></svg></button>
+          <button type="button" @click="prefixLines('> ')" title="Quote" aria-label="Quote" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z" /><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z" /></svg></button>
+          <button type="button" @click="wrapSelection('`', '`', 'code')" title="Inline code" aria-label="Inline code" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="m16 18 6-6-6-6" /><path d="m8 6-6 6 6 6" /></svg></button>
+          <button type="button" @click="wrapSelection('~~', '~~', 'strikethrough text')" title="Strikethrough" aria-label="Strikethrough" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M16 4H9a3 3 0 0 0-2.83 4" /><path d="M14 12a4 4 0 0 1 0 8H6" /><line x1="4" x2="20" y1="12" y2="12" /></svg></button>
+          <button type="button" @click="wrapSelection('![', '](https://)', 'alt text')" title="Image" aria-label="Image" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg></button>
+          <button type="button" @click="prefixLines('- [ ] ')" title="Task list" aria-label="Task list" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M13 5h8" /><path d="M13 12h8" /><path d="M13 19h8" /><path d="m3 17 2 2 4-4" /><rect x="3" y="4" width="6" height="6" rx="1" /></svg></button>
+          <button type="button" @click="insertTable()" title="Table" aria-label="Table" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M12 3v18" /><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M3 15h18" /></svg></button>
+          <button type="button" @click="insertHr()" title="Horizontal rule" aria-label="Horizontal rule" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M5 12h14" /></svg></button>
 
           <span class="mx-1 h-5 w-px bg-neutral-200" aria-hidden="true"></span>
 
@@ -242,9 +253,10 @@
                class="relative inline-block w-32" title="Insert code block">
             <button type="button" x-ref="pinesSelectButton" @click="toggle()"
               :aria-expanded="open" aria-haspopup="listbox" aria-label="Insert code block"
-              class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
-              <span class="truncate" x-text="displayLabel"></span>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+              class="flex min-h-[30px] w-full items-center gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m16 18 6-6-6-6" /><path d="m8 6-6 6 6 6" /></svg>
+              <span class="flex-1 truncate text-left" x-text="displayLabel"></span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
             </button>
             <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
               x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
@@ -259,7 +271,7 @@
                     :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
                     class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
                     <span x-text="item.label"></span>
-                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
+                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
                   </div>
                 </li>
               </template>
@@ -288,9 +300,10 @@
                class="relative inline-block w-32" title="Insert diagram">
             <button type="button" x-ref="pinesSelectButton" @click="toggle()"
               :aria-expanded="open" aria-haspopup="listbox" aria-label="Insert diagram"
-              class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
-              <span class="truncate" x-text="displayLabel"></span>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+              class="flex min-h-[30px] w-full items-center gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2" /><path d="M7 11v4a2 2 0 0 0 2 2h4" /><rect width="8" height="8" x="13" y="13" rx="2" /></svg>
+              <span class="flex-1 truncate text-left" x-text="displayLabel"></span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
             </button>
             <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
               x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
@@ -305,14 +318,14 @@
                     :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
                     class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
                     <span x-text="item.label"></span>
-                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
+                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
                   </div>
                 </li>
               </template>
             </ul>
           </div>
 
-          <button type="button" @click="insertMath()" title="Insert math (KaTeX)" aria-label="Insert math" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">∑ Math</button>
+          <button type="button" @click="insertMath()" title="Insert math (KaTeX)" aria-label="Insert math" class="flex items-center gap-1.5 rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M18 7V5a1 1 0 0 0-1-1H6.5a.5.5 0 0 0-.4.8l4.5 6a2 2 0 0 1 0 2.4l-4.5 6a.5.5 0 0 0 .4.8H17a1 1 0 0 0 1-1v-2" /></svg> Math</button>
         </div>
 
         <div x-ref="paneRow" :style="`--split: ${split}%; --pane-height: ${paneHeight}px`"
@@ -352,7 +365,7 @@
           </div>
         </div>
 
-        <div class="flex h-3 cursor-row-resize touch-none items-center justify-center border-b border-t border-neutral-200 bg-neutral-100 hover:bg-neutral-200"
+        <div class="flex h-2 cursor-row-resize touch-none items-center justify-center border-b border-t border-neutral-200 bg-neutral-100 hover:bg-neutral-200"
           :class="draggingV && 'bg-neutral-300'"
           @mousedown="startVDrag($event)" @touchstart="startVDrag($event)"
           title="Drag to resize height">
@@ -362,15 +375,15 @@
         <div class="flex flex-wrap items-center gap-3 border-t border-neutral-200 p-3 text-xs text-neutral-500">
           <span x-show="restored" x-cloak>Draft restored from your last visit.</span>
           <span x-show="savedAt" x-cloak x-text="'Saved ' + savedAt"></span>
-          <button type="button" @click="clearDraft()" class="ml-auto rounded-md border border-neutral-300 px-2 py-1 hover:bg-neutral-50">Clear</button>
+          <button type="button" @click="clearDraft()" class="ml-auto flex items-center gap-1.5 rounded-md border border-neutral-300 px-2 py-1 hover:bg-neutral-50"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg> Clear</button>
         </div>
 
         <div class="flex flex-wrap gap-2 border-t border-neutral-200 p-3">
-          <button @click="copyMarkdown()" class="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700">Copy Markdown</button>
-          <button @click="copyRichClick()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Copy for Word / Docs</button>
-          <button @click="downloadMd()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Download .md</button>
-          <button @click="downloadHtml()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Download HTML</button>
-          <button @click="printPdf()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Print / Save as PDF</button>
+          <button @click="copyMarkdown()" class="flex items-center gap-1.5 rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg> Copy Markdown</button>
+          <button @click="copyRichClick()" class="flex items-center gap-1.5 rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /><path d="M16 4h2a2 2 0 0 1 2 2v4" /><path d="M21 14H11" /><path d="m15 10-4 4 4 4" /></svg> Copy for Word / Docs</button>
+          <button @click="downloadMd()" class="flex items-center gap-1.5 rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></svg> Download .md</button>
+          <button @click="downloadHtml()" class="flex items-center gap-1.5 rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></svg> Download HTML</button>
+          <button @click="printPdf()" class="flex items-center gap-1.5 rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" /><rect x="6" y="14" width="12" height="8" rx="1" /></svg> Print / Save as PDF</button>
           <span x-show="toast" x-transition.opacity x-cloak class="ml-auto self-center text-sm text-green-700" x-text="toast"></span>
         </div>
       </div>
