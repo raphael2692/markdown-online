@@ -128,6 +128,86 @@ function toolActionsMixin() {
 }
 window.toolActionsMixin = toolActionsMixin;
 
+// Pines-styled replacement for a native <select>: a native <select>'s open
+// option list is drawn by the OS, not the page, so it can never be themed —
+// this renders the closed button AND the open list as plain DOM (Tailwind +
+// Alpine), matching the rest of the Pines UI on the page.
+//
+// Usage — mix into a nested x-data on a wrapper div, inside a page's main
+// toolWidget() scope, so `value`/`onSelect` can close over that scope's own
+// state and methods directly:
+//   <div x-data="pinesSelect({
+//          items: [{ value: 'a', label: 'A' }, { header: 'Group' }, ...],
+//          value: () => opts.align,
+//          onSelect: (v) => { opts.align = v; run(); },
+//        })" class="relative inline-block">
+// For an action menu with no persistent selection (e.g. "insert code
+// block"), pass value: () => null and a fixed placeholder.
+function pinesSelect({ items, value, onSelect, placeholder = 'Select' }) {
+  return {
+    open: false,
+    dropUp: false,
+    items,
+    activeIndex: -1,
+
+    get selectableIndexes() {
+      return this.items.reduce((acc, item, i) => { if (!item.header) acc.push(i); return acc; }, []);
+    },
+    get selectedItem() {
+      const v = value();
+      return this.items.find((i) => !i.header && i.value === v) || null;
+    },
+    get displayLabel() {
+      const sel = this.selectedItem;
+      return sel ? sel.label : placeholder;
+    },
+
+    openMenu() {
+      this.open = true;
+      const selectable = this.selectableIndexes;
+      const selIdx = this.items.indexOf(this.selectedItem);
+      this.activeIndex = selIdx > -1 ? selIdx : (selectable[0] ?? -1);
+      this.$nextTick(() => {
+        const btn = this.$refs.pinesSelectButton;
+        const list = this.$refs.pinesSelectList;
+        if (btn && list) {
+          const spaceBelow = window.innerHeight - btn.getBoundingClientRect().bottom;
+          this.dropUp = spaceBelow < list.offsetHeight && btn.getBoundingClientRect().top > spaceBelow;
+        }
+        this.scrollActiveIntoView();
+      });
+    },
+    close() {
+      this.open = false;
+      this.$refs.pinesSelectButton && this.$refs.pinesSelectButton.focus();
+    },
+    toggle() { this.open ? this.close() : this.openMenu(); },
+
+    choose(item) {
+      if (item.header) return;
+      onSelect(item.value);
+      this.close();
+    },
+    scrollActiveIntoView() {
+      const list = this.$refs.pinesSelectList;
+      const el = list && list.querySelector(`[data-idx="${this.activeIndex}"]`);
+      if (el) el.scrollIntoView({ block: 'nearest' });
+    },
+    moveActive(step) {
+      const selectable = this.selectableIndexes;
+      if (!selectable.length) return;
+      const pos = selectable.indexOf(this.activeIndex);
+      const nextPos = pos === -1 ? 0 : Math.min(Math.max(pos + step, 0), selectable.length - 1);
+      this.activeIndex = selectable[nextPos];
+      this.scrollActiveIntoView();
+    },
+    chooseActive() {
+      if (this.activeIndex > -1) this.choose(this.items[this.activeIndex]);
+    },
+  };
+}
+window.pinesSelect = pinesSelect;
+
 // ---------------------------------------------------------------------
 // Markdown extensions: smart typography, KaTeX math, Mermaid diagrams.
 // All three are opt-in (tool widgets gate them behind checkboxes) and

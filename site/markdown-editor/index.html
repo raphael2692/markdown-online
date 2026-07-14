@@ -134,17 +134,49 @@
         </div>
 
         <div x-show="view !== 'preview'" class="flex flex-wrap items-center gap-1 border-b border-neutral-200 p-2">
-          <select :value="currentHeadingLevel" @change="setHeading($event.target.value ? parseInt($event.target.value, 10) : 0)"
-            title="Paragraph style" aria-label="Paragraph style"
-            class="rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50">
-            <option value="">Paragraph</option>
-            <option value="1">Heading 1</option>
-            <option value="2">Heading 2</option>
-            <option value="3">Heading 3</option>
-            <option value="4">Heading 4</option>
-            <option value="5">Heading 5</option>
-            <option value="6">Heading 6</option>
-          </select>
+          <div x-data="pinesSelect({
+                  items: [
+                    { value: '', label: 'Paragraph' },
+                    { value: '1', label: 'Heading 1' },
+                    { value: '2', label: 'Heading 2' },
+                    { value: '3', label: 'Heading 3' },
+                    { value: '4', label: 'Heading 4' },
+                    { value: '5', label: 'Heading 5' },
+                    { value: '6', label: 'Heading 6' },
+                  ],
+                  value: () => currentHeadingLevel,
+                  onSelect: (v) => setHeading(v ? parseInt(v, 10) : 0),
+                })"
+               @keydown.escape.stop="close()"
+               @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+               @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+               @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+               class="relative inline-block w-28" title="Paragraph style">
+            <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+              :aria-expanded="open" aria-haspopup="listbox" aria-label="Paragraph style"
+              class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+              <span class="truncate" x-text="displayLabel"></span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+            </button>
+            <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+              x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+              :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+              class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+              role="listbox">
+              <template x-for="(item, idx) in items" :key="idx">
+                <li :data-idx="idx" role="presentation">
+                  <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                  <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                    role="option" :aria-selected="selectedItem === item"
+                    :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                    class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                    <span x-text="item.label"></span>
+                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
+                  </div>
+                </li>
+              </template>
+            </ul>
+          </div>
           <button type="button" @click="wrapSelection('**', '**', 'bold text')" title="Bold (Ctrl/Cmd+B)" aria-label="Bold" class="rounded border border-neutral-300 px-2 py-1 text-xs font-bold hover:bg-neutral-50">B</button>
           <button type="button" @click="wrapSelection('*', '*', 'italic text')" title="Italic (Ctrl/Cmd+I)" aria-label="Italic" class="rounded border border-neutral-300 px-2 py-1 text-xs italic hover:bg-neutral-50">I</button>
           <button type="button" @click="wrapSelection('[', '](https://)', 'link text')" title="Link (Ctrl/Cmd+K)" aria-label="Link" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">Link</button>
@@ -160,63 +192,125 @@
 
           <span class="mx-1 h-5 w-px bg-neutral-200" aria-hidden="true"></span>
 
-          <select @change="insertCodeBlock($event.target.value); $event.target.selectedIndex = 0"
-            title="Insert code block" aria-label="Insert code block"
-            class="rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50">
-            <option value="">Code block</option>
-            <optgroup label="Popular">
-              <option value="javascript">JavaScript</option>
-              <option value="typescript">TypeScript</option>
-              <option value="python">Python</option>
-              <option value="bash">Bash</option>
-              <option value="json">JSON</option>
-              <option value="html">HTML</option>
-              <option value="css">CSS</option>
-              <option value="sql">SQL</option>
-            </optgroup>
-            <optgroup label="More languages">
-              <option value="c">C</option>
-              <option value="cpp">C++</option>
-              <option value="csharp">C#</option>
-              <option value="diff">Diff</option>
-              <option value="go">Go</option>
-              <option value="graphql">GraphQL</option>
-              <option value="ini">INI / TOML</option>
-              <option value="java">Java</option>
-              <option value="kotlin">Kotlin</option>
-              <option value="less">Less</option>
-              <option value="lua">Lua</option>
-              <option value="makefile">Makefile</option>
-              <option value="markdown">Markdown</option>
-              <option value="objectivec">Objective-C</option>
-              <option value="perl">Perl</option>
-              <option value="php">PHP</option>
-              <option value="r">R</option>
-              <option value="ruby">Ruby</option>
-              <option value="rust">Rust</option>
-              <option value="scss">SCSS</option>
-              <option value="swift">Swift</option>
-              <option value="vbnet">VB.NET</option>
-              <option value="wasm">WebAssembly</option>
-              <option value="xml">XML</option>
-              <option value="yaml">YAML</option>
-              <option value="plaintext">Plain text</option>
-            </optgroup>
-          </select>
+          <div x-data="pinesSelect({
+                  items: [
+                    { header: 'Popular' },
+                    { value: 'javascript', label: 'JavaScript' },
+                    { value: 'typescript', label: 'TypeScript' },
+                    { value: 'python', label: 'Python' },
+                    { value: 'bash', label: 'Bash' },
+                    { value: 'json', label: 'JSON' },
+                    { value: 'html', label: 'HTML' },
+                    { value: 'css', label: 'CSS' },
+                    { value: 'sql', label: 'SQL' },
+                    { header: 'More languages' },
+                    { value: 'c', label: 'C' },
+                    { value: 'cpp', label: 'C++' },
+                    { value: 'csharp', label: 'C#' },
+                    { value: 'diff', label: 'Diff' },
+                    { value: 'go', label: 'Go' },
+                    { value: 'graphql', label: 'GraphQL' },
+                    { value: 'ini', label: 'INI / TOML' },
+                    { value: 'java', label: 'Java' },
+                    { value: 'kotlin', label: 'Kotlin' },
+                    { value: 'less', label: 'Less' },
+                    { value: 'lua', label: 'Lua' },
+                    { value: 'makefile', label: 'Makefile' },
+                    { value: 'markdown', label: 'Markdown' },
+                    { value: 'objectivec', label: 'Objective-C' },
+                    { value: 'perl', label: 'Perl' },
+                    { value: 'php', label: 'PHP' },
+                    { value: 'r', label: 'R' },
+                    { value: 'ruby', label: 'Ruby' },
+                    { value: 'rust', label: 'Rust' },
+                    { value: 'scss', label: 'SCSS' },
+                    { value: 'swift', label: 'Swift' },
+                    { value: 'vbnet', label: 'VB.NET' },
+                    { value: 'wasm', label: 'WebAssembly' },
+                    { value: 'xml', label: 'XML' },
+                    { value: 'yaml', label: 'YAML' },
+                    { value: 'plaintext', label: 'Plain text' },
+                  ],
+                  value: () => null,
+                  onSelect: (v) => insertCodeBlock(v),
+                  placeholder: 'Code block',
+                })"
+               @keydown.escape.stop="close()"
+               @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+               @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+               @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+               class="relative inline-block w-32" title="Insert code block">
+            <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+              :aria-expanded="open" aria-haspopup="listbox" aria-label="Insert code block"
+              class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+              <span class="truncate" x-text="displayLabel"></span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+            </button>
+            <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+              x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+              :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+              class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+              role="listbox">
+              <template x-for="(item, idx) in items" :key="idx">
+                <li :data-idx="idx" role="presentation">
+                  <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                  <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                    role="option" :aria-selected="selectedItem === item"
+                    :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                    class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                    <span x-text="item.label"></span>
+                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
+                  </div>
+                </li>
+              </template>
+            </ul>
+          </div>
 
-          <select @change="insertDiagram($event.target.value); $event.target.value = ''"
-            title="Insert diagram" aria-label="Insert diagram"
-            class="rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50">
-            <option value="" disabled selected>Diagram ▾</option>
-            <option value="flowchart">Flowchart</option>
-            <option value="sequence">Sequence diagram</option>
-            <option value="class">Class diagram</option>
-            <option value="state">State diagram</option>
-            <option value="er">Entity relationship</option>
-            <option value="gantt">Gantt chart</option>
-            <option value="pie">Pie chart</option>
-            <option value="mindmap">Mind map</option>
-          </select>
+          <div x-data="pinesSelect({
+                  items: [
+                    { value: 'flowchart', label: 'Flowchart' },
+                    { value: 'sequence', label: 'Sequence diagram' },
+                    { value: 'class', label: 'Class diagram' },
+                    { value: 'state', label: 'State diagram' },
+                    { value: 'er', label: 'Entity relationship' },
+                    { value: 'gantt', label: 'Gantt chart' },
+                    { value: 'pie', label: 'Pie chart' },
+                    { value: 'mindmap', label: 'Mind map' },
+                  ],
+                  value: () => null,
+                  onSelect: (v) => insertDiagram(v),
+                  placeholder: 'Diagram ▾',
+                })"
+               @keydown.escape.stop="close()"
+               @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+               @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+               @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+               class="relative inline-block w-32" title="Insert diagram">
+            <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+              :aria-expanded="open" aria-haspopup="listbox" aria-label="Insert diagram"
+              class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+              <span class="truncate" x-text="displayLabel"></span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+            </button>
+            <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+              x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+              :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+              class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+              role="listbox">
+              <template x-for="(item, idx) in items" :key="idx">
+                <li :data-idx="idx" role="presentation">
+                  <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                  <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                    role="option" :aria-selected="selectedItem === item"
+                    :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                    class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                    <span x-text="item.label"></span>
+                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
+                  </div>
+                </li>
+              </template>
+            </ul>
+          </div>
 
           <button type="button" @click="insertMath()" title="Insert math (KaTeX)" aria-label="Insert math" class="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">∑ Math</button>
         </div>
