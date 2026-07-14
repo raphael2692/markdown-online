@@ -89,6 +89,43 @@ this-origin URL when math is enabled, so a downloaded standalone file still
 renders math correctly even opened outside the site. It lives in the shared
 `toolActionsMixin()` (see below), not per-page.
 
+### Mermaid labels vs. DOMPurify, and Word's clipboard quirks
+
+Mermaid renders every node/edge label as `<foreignObject><div>...</div>
+</foreignObject>` (HTML nested inside the SVG, needed for text measurement/
+wrapping) — but DOMPurify hardcodes emptying anything nested inside a
+`<foreignObject>` that's inside an `<svg>`, as a defense against a known
+mutation-XSS namespace-confusion technique, with **no config flag to disable
+it**. A plain `DOMPurify.sanitize(svg, {svg: true})` therefore renders every
+diagram with correct shapes but blank labels — and this isn't a one-time
+risk: `sanitizeHtml()` runs again on already-mermaid-rendered HTML at every
+preview/copy/download call site, so even a diagram whose labels survived the
+first pass gets re-blanked by the next sanitize call unless every pass
+handles it. Both `renderMermaidDiagrams()` and `sanitizeHtml()` now route
+through a shared `sanitizePreservingForeignObjectLabels()`: it sanitizes each
+label's HTML on its own, outside SVG context (where DOMPurify allows
+`div`/`span`/`p` normally), empties the foreignObjects before the real
+SVG-wide pass so it has nothing left to wipe, then splices the cleaned label
+HTML back in.
+
+Word's clipboard-HTML importer adds two more wrinkles, both handled only on
+the "Copy for Word / Docs" path (`copyRich()`), not on preview/download:
+
+- **Inline `<svg>` is silently dropped on paste** — no error, the diagram
+  just doesn't appear. `copyRich()` rasterizes each mermaid SVG to a PNG
+  `<img>` data URI (`svgToPngDataUri()`) instead. Drawing an SVG that
+  contains a `<foreignObject>` onto a `<canvas>` taints that canvas (blocks
+  `toDataURL()`, no way to un-taint it), so `flattenForeignObjectLabels()`
+  first replaces each foreignObject with a plain SVG `<text>`/`<tspan>`
+  purely for this export — the live preview keeps the real foreignObject
+  markup.
+- **`<del>` (marked's strikethrough tag) pastes as a tracked-change
+  deletion/comment**, not plain strikethrough — Word's importer maps it the
+  same way Word's own revision-tracking export does.
+  `neutralizeTrackedChangeTags()` swaps `<del>` for `<s>` on the Word
+  clipboard path only; raw/download HTML keeps `<del>`, the semantically
+  correct tag that round-trips through turndown.
+
 ## Syntax highlighting (preview-only, always on)
 
 Unlike the three extensions above, code-block syntax highlighting is not a

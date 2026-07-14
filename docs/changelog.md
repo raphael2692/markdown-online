@@ -1,4 +1,4 @@
-<!-- docs-sync: 710b606 -->
+<!-- docs-sync: 1f69995 -->
 
 # Changelog
 
@@ -28,3 +28,7 @@
 - `markdown-editor` toolbar's Task button carried a lone emoji icon inconsistent with every other plain-text button, and task-list items rendered a disc bullet alongside the checkbox; toolbar label made plain text and `.md-preview li:has(> input[type="checkbox"])` now suppresses the marker (`0ff72fd`)
 - Default sample Markdown/HTML on both tool widgets dropped a placeholder `![Sample screenshot](data:image/svg+xml,...)` line that added visual noise without demonstrating anything the KaTeX/Mermaid samples didn't already cover (`417a180`)
 - Both tool widgets' right-hand preview pane could be pushed outside its container by wide content (long unbroken tokens, wide tables) because the flex panes lacked `min-width: 0`; added `min-w-0` to both panes, `overflow-wrap: anywhere` on `.md-preview`, and made preview tables scroll internally instead of forcing the layout wider (`710b606`)
+- "Copy for Word / Docs" pasted Mermaid diagrams as nothing at all — Word's clipboard-HTML importer silently drops inline `<svg>`; `copyRich()` now rasterizes each diagram to a PNG `<img>` instead (`1f69995`)
+- Mermaid diagram labels rendered blank everywhere (preview, copy, download), not just in Word — DOMPurify hardcodes emptying `<foreignObject>` content nested in `<svg>` (an XSS defense with no opt-out), which is how Mermaid renders label text; added `sanitizePreservingForeignObjectLabels()`, used by both `renderMermaidDiagrams()` and the shared `sanitizeHtml()` (`1f69995`)
+- The new Word-copy PNG export silently fell back to a plain-text copy on any diagram with real label text — drawing an SVG containing `<foreignObject>` onto a `<canvas>` taints it, blocking `toDataURL()`; `flattenForeignObjectLabels()` now flattens labels to plain SVG `<text>` for that export path only (`1f69995`)
+- `~~strikethrough~~` pasted into Word as a tracked-change deletion/comment instead of struck-through text — Word's importer maps marked's `<del>` tag to its own revision markup; the Word clipboard path now swaps it for `<s>` via `neutralizeTrackedChangeTags()`, while raw/download HTML keeps `<del>` (`1f69995`)
