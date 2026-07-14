@@ -1,4 +1,4 @@
-<!-- docs-sync: 778d917 -->
+<!-- docs-sync: 27421bf -->
 
 # Changelog
 
@@ -40,3 +40,4 @@
 - The new Word-copy PNG export silently fell back to a plain-text copy on any diagram with real label text — drawing an SVG containing `<foreignObject>` onto a `<canvas>` taints it, blocking `toDataURL()`; `flattenForeignObjectLabels()` now flattens labels to plain SVG `<text>` for that export path only (`1f69995`)
 - `~~strikethrough~~` pasted into Word as a tracked-change deletion/comment instead of struck-through text — Word's importer maps marked's `<del>` tag to its own revision markup; the Word clipboard path now swaps it for `<s>` via `neutralizeTrackedChangeTags()`, while raw/download HTML keeps `<del>` (`1f69995`)
 - `html-to-markdown`, `markdown-to-html`, and `csv-to-markdown-table` textareas showed the same bold native UA focus outline `markdown-editor` was already fixed for (`59e47f6`) — they were missing `focus:outline-none`, and the outline was visibly clipped by the line-number gutter div on top; added `focus:outline-none` to all four pages' textareas and dropped the wrapper's `focus-within:border-neutral-500` entirely so focusing an input pane causes no visual change. Also fixed the line-number gutter drifting out of sync with wrapped text on the three pages that have one (`html-to-markdown`, `markdown-to-html`, `markdown-editor`) by adding `wrap="off"` so each logical line renders as exactly one row, matching the gutter's per-`\n` count (`778d917`)
+- Every `<select>` on the site (paragraph style, code-block language, diagram type, bullet marker, code-block style, heading style, alignment) rendered as a plain, unthemed native dropdown — a native select's open option list is drawn by the OS and can't be styled to match the rest of the Pines UI on the page; replaced all of them with a `pinesSelect()` Alpine mixin in `site.js` driving a themeable button + listbox, on `markdown-editor`, `html-to-markdown`, and `csv-to-markdown-table` (`27421bf`)

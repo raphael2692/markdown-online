@@ -57,7 +57,12 @@ public site.
 - **Shared assets**: `site/assets/site.css` (built Tailwind output),
   `site/assets/site.js` (the shared `convertMarkdown()`/`sanitizeHtml()`
   pipeline, rich-clipboard copy, file download, ad-slot placeholder init,
-  and the `paneResizer()` mixin — see below),
+  the `paneResizer()` mixin — see below — and `pinesSelect()`, a themeable
+  button+listbox mixin that replaces every native `<select>` on the site,
+  since a native select's open option list is drawn by the OS and can't be
+  styled to match the rest of the Pines UI; used by the paragraph-style,
+  code-block-language, diagram-type, bullet-marker, code-block-style,
+  heading-style, and alignment dropdowns above),
   `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify, KaTeX,
   Mermaid, highlight.js, turndown, turndown-plugin-gfm, PapaParse —
   vendored locally, no CDN hotlinking in production).
