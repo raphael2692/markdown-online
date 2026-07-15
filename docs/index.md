@@ -198,18 +198,22 @@ elsewhere to avoid a stale async load racing a newer edit.
   `__GITHUB_URL__`, `__YEAR__`), generates `sitemap.xml` + `robots.txt`, and
   validates each built page (title present, canonical present, exactly one
   `<h1>`, no leftover unsubstituted tokens).
+- **Hosting**: GitHub Pages project site at
+  `https://raphael2692.github.io/markdown-online/` (no custom domain), built
+  by `.github/workflows/deploy.yml` on every push to `main`. Because it's a
+  project site rather than a domain root, every page in this repo is written
+  with root-relative paths (`/assets/site.css`, `/about/`, …) that need a
+  `/markdown-online` prefix to resolve — `build.py`'s `BASE_PATH` constant
+  rewrites `href`/`src`/`action` attributes at build time via
+  `apply_base_path()`. `site/assets/site.js` isn't touched by that HTML-only
+  rewrite, so its lazy-loaded vendor scripts (KaTeX, Mermaid, PapaParse,
+  Turndown, highlight.js) instead derive the prefix at runtime from the
+  script's own `src` (`ASSETS_BASE`, top of the file) — if a custom domain
+  or root repo replaces this setup, set `BASE_PATH = ""` and `ASSETS_BASE`
+  resolves to `""` automatically.
 
 ## Known gaps (tracked, not hidden)
 
-- **`SITE_URL`/`GITHUB_URL` in `build.py` are placeholders** until the repo
-  has a real GitHub remote and (if used) a custom domain — update both in
-  one place once that's decided.
-- **GitHub Pages base path is unresolved.** If this ends up served at
-  `https://<owner>.github.io/<repo>/` rather than a custom domain or a
-  `<owner>.github.io` root repo, every root-relative path in this codebase
-  (`/assets/site.css`, `/about/`, …) needs a base-path prefix to resolve.
-  Settle this — a custom domain (`CNAME`) is the simplest fix — before the
-  first real deploy.
 - **`build.py`'s "exactly one `<h1>`" check is a naive text search**, not
   parsed HTML — it also matches a literal `<h1` substring anywhere in the
   file, including inside a page's own JS sample-content string. Any sample

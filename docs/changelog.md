@@ -1,8 +1,11 @@
-<!-- docs-sync: f671d6d -->
+<!-- docs-sync: 32260df -->
 
 # Changelog
 
 ## [Unreleased]
+
+### Changed
+- `build.py` now targets the real GitHub Pages project site (`SITE_URL`/`GITHUB_URL` for `raphael2692/markdown-online`) and rewrites root-relative `href`/`src`/`action` attributes with a `/markdown-online` base path at build time; `site.js`'s lazy-loaded vendor scripts derive the same prefix at runtime from their own script `src` (`32260df`)
 
 ### Removed
 - "Line breaks as `<br>`", "Full HTML document", and "Smart typography" checkboxes on the editor — smart typography and GFM line breaks are now always applied instead of opt-in, and "Copy HTML"/"Download HTML" no longer offer a standalone full-document wrap (`wrapDocument()` removed); Print/Save as PDF remains the path to a standalone, styled document (`1627767`)
