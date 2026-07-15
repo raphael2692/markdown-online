@@ -1,5 +1,11 @@
 @import "tailwindcss" source("../");
 @source not "assets/vendor/**";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Lets native form controls (checkboxes, scrollbars, the file-input button)
+   render with the browser's own dark palette instead of staying light. */
+:root { color-scheme: light; }
+.dark { color-scheme: dark; }
 
 /* Draggable split between the tool widget's two panes — the percentage
    only applies at the md breakpoint, where the panes sit side by side. */
@@ -104,3 +110,22 @@
   overflow-x: auto;
 }
 .md-preview .katex-display { overflow-x: auto; overflow-y: hidden; }
+
+/* Dark-mode overrides for the hand-rolled preview styles above — kept as
+   plain `.dark` selectors (not Tailwind utilities) since these are already
+   hand-rolled CSS, not classes on the markup itself. */
+.dark .md-preview code { background: #2d2d2d; }
+.dark .md-preview pre { background: #1e1e1e; }
+.dark .md-preview th,
+.dark .md-preview td {
+  border-color: #404040;
+}
+.dark .md-preview blockquote {
+  border-left-color: #525252;
+  color: #a3a3a3;
+}
+.dark .md-preview a { color: #818cf8; }
+.dark .md-preview .mermaid-error {
+  background: #450a0a;
+  color: #fca5a5;
+}

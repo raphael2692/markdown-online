@@ -3,22 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!--#include partials/theme-init.html-->
   <title>Page not found | __SITE_NAME__</title>
   <meta name="robots" content="noindex">
   <link rel="stylesheet" href="/assets/site.css">
+  <script defer src="/assets/theme.js"></script>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 </head>
-<body class="bg-white text-neutral-800 antialiased">
+<body class="bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 antialiased">
 
   <!--#include partials/header.html-->
 
   <main class="mx-auto max-w-6xl px-4 text-center">
     <h1 class="mt-16 text-3xl font-bold">Page not found</h1>
-    <p class="mt-2 text-lg text-neutral-600">
+    <p class="mt-2 text-lg text-neutral-600 dark:text-neutral-400">
       That page doesn't exist. Head back home to use the tool.
     </p>
     <p class="mt-6">
-      <a class="text-indigo-600 hover:underline" href="/">Go to the homepage</a>
+      <a class="text-indigo-600 dark:text-indigo-400 hover:underline" href="/">Go to the homepage</a>
     </p>
   </main>
 

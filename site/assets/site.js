@@ -458,15 +458,34 @@ window.getKatexCssText = () => katexCssText;
 
 let mermaidReadyPromise = null;
 
+// Mermaid bakes its theme's colors directly into each rendered SVG's
+// attributes at render time (not via CSS classes), so switching the site's
+// dark/light toggle can't just be a stylesheet swap the way highlight.js's
+// coloring is below — every already-rendered diagram needs regenerating
+// through mermaid.render() again under the new theme. See the 'themechange'
+// listener further down, which re-initializes and calls run() again.
+function mermaidTheme() {
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'default';
+}
+
 function ensureMermaidLoaded() {
   if (!mermaidReadyPromise) {
     mermaidReadyPromise = loadScript(`${ASSETS_BASE}/assets/vendor/mermaid-11.16.0.min.js`).then(() => {
-      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: mermaidTheme() });
     }).catch((e) => { mermaidReadyPromise = null; throw e; });
   }
   return mermaidReadyPromise;
 }
 window.ensureMermaidLoaded = ensureMermaidLoaded;
+
+// Re-applies the current theme to Mermaid's config; a no-op if Mermaid was
+// never loaded on this page. Doesn't repaint existing diagrams by itself —
+// callers still need to re-run the conversion pipeline to regenerate them.
+function syncMermaidTheme() {
+  if (!mermaidReadyPromise) return Promise.resolve();
+  return mermaidReadyPromise.then(() => mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: mermaidTheme() }));
+}
+window.syncMermaidTheme = syncMermaidTheme;
 
 // Rich features (math, diagrams) turn on automatically the moment their
 // syntax appears in the document, rather than behind a manual checkbox the
@@ -554,15 +573,32 @@ window.rowsToMdTable = rowsToMdTable;
 
 let hljsReadyPromise = null;
 
+// Unlike Mermaid, highlight.js's coloring is plain CSS classes (hljs-keyword,
+// hljs-string, ...) painted once by hljs.highlightElement() — so following
+// the theme only needs swapping which stylesheet is in effect, never
+// re-highlighting the code itself.
+function hljsStylesheetHref() {
+  const dark = document.documentElement.classList.contains('dark');
+  return `${ASSETS_BASE}/assets/vendor/highlightjs-11.11.1/${dark ? 'github-dark' : 'github'}.min.css`;
+}
+
 function ensureHljsLoaded() {
   if (!hljsReadyPromise) {
     hljsReadyPromise = Promise.all([
       loadScript(`${ASSETS_BASE}/assets/vendor/highlightjs-11.11.1/highlight.min.js`),
-      loadStylesheet(`${ASSETS_BASE}/assets/vendor/highlightjs-11.11.1/github.min.css`),
+      loadStylesheet(hljsStylesheetHref()),
     ]).catch((e) => { hljsReadyPromise = null; throw e; });
   }
   return hljsReadyPromise;
 }
+
+// A no-op if highlight.js's stylesheet was never loaded on this page.
+function syncHljsTheme() {
+  if (!hljsReadyPromise) return;
+  const link = document.querySelector('link[href*="/highlightjs-11.11.1/github"]');
+  if (link) link.href = hljsStylesheetHref();
+}
+window.syncHljsTheme = syncHljsTheme;
 window.ensureHljsLoaded = ensureHljsLoaded;
 
 // Call after replacing a preview element's innerHTML. Assumes hljs is
@@ -712,3 +748,13 @@ async function copyRich(markdown, opts) {
   }
 }
 window.copyRich = copyRich;
+
+// Keeps already-loaded generated content in step with the header's dark-mode
+// toggle (theme.js dispatches this on document). Re-rendering the mermaid
+// diagrams themselves (not just re-theming mermaid's config) is left to the
+// page's own toolWidget(), which is the only place that knows whether any
+// are currently on screen and can call run() to regenerate them.
+document.addEventListener('themechange', () => {
+  syncMermaidTheme();
+  syncHljsTheme();
+});
