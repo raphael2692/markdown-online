@@ -116,9 +116,3 @@ than doing the step manually.
   secrets consumed at request time. A feature that seems to need a backend
   (accounts, saved documents, server-side conversion) needs a hosting-model
   conversation first.
-- `SITE_URL`/`GITHUB_URL` in `build.py` are still placeholders until the
-  GitHub remote and (if used) a custom domain are decided. If Pages ends up
-  serving this at `https://<owner>.github.io/<repo>/` rather than a custom
-  domain or a `<owner>.github.io` root repo, every root-relative path in
-  this codebase (`/assets/site.css`, `/about/`, …) needs a base-path prefix
-  to resolve — settle this before the first real deploy.
