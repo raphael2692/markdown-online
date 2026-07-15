@@ -10,11 +10,16 @@ natively — this wiki is for engineering depth, not visitor-facing content.
 
 ## What exists right now
 
-- **One tool page**, `site/index.html` — a unified Markdown workspace:
-  writing/splitting/previewing Markdown, importing from HTML/CSV/JSON, and
-  exporting to Markdown/HTML/rich-clipboard/PDF. (Consolidates what used to
-  be four separate converter pages — `markdown-to-html`, `html-to-markdown`,
-  `markdown-editor`, `csv-to-markdown-table`.)
+- **Landing page**, `site/index.html` — pitch, feature docs, and FAQ, with
+  "Open Editor" links (header/footer nav, and inline in the body) into the
+  tool. Not the tool itself — new tool capability doesn't belong here.
+- **The tool**, `site/editor/index.html` at `/editor/` — a unified Markdown
+  workspace: writing/splitting/previewing Markdown, importing from
+  HTML/CSV/JSON, and exporting to Markdown/HTML/rich-clipboard/PDF.
+  (Consolidates what used to be four separate converter pages —
+  `markdown-to-html`, `html-to-markdown`, `markdown-editor`,
+  `csv-to-markdown-table` — first into one page at `/`, then split back out
+  to `/editor/` once the root became a landing page.)
 - **Site shell**: `about/`, `privacy/`, `404.html`.
 - **Shared assets**: `site/assets/site.css` (built Tailwind output),
   `site/assets/site.js` (the shared `convertMarkdown()`/`sanitizeHtml()`
