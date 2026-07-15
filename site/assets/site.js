@@ -98,7 +98,7 @@ function paneResizer(opts) {
 }
 window.paneResizer = paneResizer;
 
-// Shared toast + rich-copy + standalone-HTML-wrap behavior for tool widgets.
+// Shared toast + rich-copy behavior for tool widgets.
 // Mix into an Alpine component with: ...toolActionsMixin(), alongside the
 // page's own `toast`, `input`, `opts` state.
 function toolActionsMixin() {
@@ -108,21 +108,6 @@ function toolActionsMixin() {
     async copyRichClick() {
       const ok = await window.copyRich(this.input, this.opts);
       this.flash(ok ? 'Copied — paste into Word or Google Docs' : 'Copied as plain text');
-    },
-
-    wrapDocument(html) {
-      // getKatexCssText() already rewrites font url()s to an absolute,
-      // this-origin URL — resolves correctly even opened outside this page.
-      const katexCss = this.opts.math ? `<style>\n${getKatexCssText()}\n</style>\n` : '';
-      return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
-        + '<title>Document</title>\n<style>\n'
-        + '  body { font: 16px/1.6 system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }\n'
-        + '  pre { background: #f6f6f6; padding: .75em; overflow-x: auto; }\n'
-        + '  code { font-family: ui-monospace, monospace; }\n'
-        + '  table { border-collapse: collapse; }\n'
-        + '  th, td { border: 1px solid #ccc; padding: .35em .6em; }\n'
-        + '  blockquote { border-left: 3px solid #ccc; margin-left: 0; padding-left: 1em; color: #555; }\n'
-        + '</style>\n' + katexCss + '</head>\n<body>\n' + html + '\n</body>\n</html>\n';
     },
   };
 }

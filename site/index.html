@@ -76,7 +76,7 @@
       {
         "@type": "Question",
         "name": "What does \"Smart typography\" do?",
-        "acceptedAnswer": { "@type": "Answer", "text": "It converts straight quotes into curly quotes and --/--- into en/em dashes — useful for polished writing, off by default so the raw Markdown you typed stays exactly as-is." }
+        "acceptedAnswer": { "@type": "Answer", "text": "It converts straight quotes into curly quotes and --/--- into en/em dashes — useful for polished writing. It's on by default, along with converting single line breaks to <br>, so both apply automatically as you write." }
       },
       {
         "@type": "Question",
@@ -155,10 +155,10 @@
         or
         <a class="text-indigo-600 hover:underline" href="https://mermaid.js.org/">Mermaid</a>
         and renders it — in the preview, the rich copy, the HTML export, and
-        Print / Save as PDF alike. <strong>Smart typography</strong> is the one
-        remaining manual toggle, since it's a style preference rather than
-        something detectable in the text: it turns straight quotes into curly
-        quotes and <code>--</code>/<code>---</code> into en/em dashes.
+        Print / Save as PDF alike. <strong>Smart typography</strong> (straight
+        quotes become curly quotes, <code>--</code>/<code>---</code> become
+        en/em dashes) and single line breaks rendering as <code>&lt;br&gt;</code>
+        are both applied automatically — no toggles to switch on first.
       </p>
     </section>
 
@@ -212,9 +212,7 @@
         Six buttons cover every hand-off. <strong>Copy Markdown</strong> and
         <strong>Download .md</strong> give you the raw source. <strong>Copy
         HTML</strong> and <strong>Download HTML</strong> give you the
-        converted markup — toggle <strong>Full HTML document</strong> to wrap
-        it in a complete standalone page with basic styling, or leave it off
-        for just the fragment. <strong>Copy for Word / Docs</strong> copies a
+        converted markup as a plain fragment. <strong>Copy for Word / Docs</strong> copies a
         rich, formatted version that pastes correctly into Word or Google
         Docs, including tables, images, and rasterized Mermaid diagrams. And
         <strong>Print / Save as PDF</strong> opens your browser's print dialog
@@ -292,7 +290,7 @@
         </div>
         <div>
           <h3 class="font-medium">What does "Smart typography" do?</h3>
-          <p class="text-neutral-600">It converts straight quotes into curly quotes and <code>--</code>/<code>---</code> into en/em dashes — useful for polished writing, off by default so the raw Markdown you typed stays exactly as-is.</p>
+          <p class="text-neutral-600">It converts straight quotes into curly quotes and <code>--</code>/<code>---</code> into en/em dashes — useful for polished writing. It's on by default, along with single line breaks rendering as <code>&lt;br&gt;</code>, so both apply automatically as you write.</p>
         </div>
         <div>
           <h3 class="font-medium">Does the preview syntax-highlight code blocks?</h3>

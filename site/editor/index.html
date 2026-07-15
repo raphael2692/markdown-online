@@ -182,18 +182,6 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-4 border-b border-neutral-200 p-3 text-sm">
-          <label class="flex items-center gap-2">
-            <input type="checkbox" x-model="opts.gfmBreaks" @change="run()" class="rounded border-neutral-300">
-            Line breaks as &lt;br&gt;
-          </label>
-          <label class="flex items-center gap-2">
-            <input type="checkbox" x-model="opts.fullDocument" class="rounded border-neutral-300">
-            Full HTML document
-          </label>
-          <label class="flex items-center gap-2">
-            <input type="checkbox" x-model="opts.smartypants" @change="run()" class="rounded border-neutral-300">
-            Smart typography
-          </label>
           <span class="text-xs text-neutral-500">Math and diagrams render automatically as soon as you insert or type them.</span>
         </div>
 
@@ -781,9 +769,8 @@
         _saveTimer: null, _renderGen: 0,
         currentHeadingLevel: '',
         opts: {
-          smartypants: false, math: false, mermaid: false,
-          gfmBreaks: false,
-          fullDocument: true,
+          smartypants: true, math: false, mermaid: false,
+          gfmBreaks: true,
         },
         importKind: null,
         importHtml: { text: '', bulletListMarker: '-', codeBlockStyle: 'fenced', headingStyle: 'atx', error: '' },
@@ -981,13 +968,11 @@
           this.flash('Downloaded');
         },
         downloadHtml() {
-          const html = this.opts.fullDocument ? this.wrapDocument(this.fragment) : this.fragment;
-          window.downloadFile(html, 'document.html', 'text/html;charset=utf-8');
+          window.downloadFile(this.fragment, 'document.html', 'text/html;charset=utf-8');
           this.flash('Downloaded');
         },
         async copyHtml() {
-          const html = this.opts.fullDocument ? this.wrapDocument(this.fragment) : this.fragment;
-          await navigator.clipboard.writeText(html);
+          await navigator.clipboard.writeText(this.fragment);
           this.flash('HTML copied');
         },
         async printPdf() {
