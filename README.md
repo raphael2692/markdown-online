@@ -8,7 +8,7 @@ and never touches a server.
 
 ## What it does
 
-One page, everything you need for Markdown:
+One tool, everything you need for Markdown — the editor lives at `/editor/`:
 
 - **Write, split, or preview** — a live editor with a synced side-by-side
   preview, or full-width writing/preview modes.

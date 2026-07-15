@@ -28,7 +28,10 @@ never hand-edit anything under `dist/`, and never hand-edit
 
 ## Where things live
 
-- `site/index.html` — the tool itself (editor/import/export in one page).
+- `site/editor/index.html` — the tool itself (editor/import/export in one
+  page, at `/editor/`).
+- `site/index.html` — the landing page: pitch, feature docs, FAQ, and a
+  link into the editor.
 - `site/assets/site.js` — the shared conversion pipeline
   (`convertMarkdown()`, `sanitizeHtml()`), clipboard/download helpers, and
   the Alpine mixins (`paneResizer()`, `toolActionsMixin()`) the widget is

@@ -50,8 +50,9 @@ the conversion logic, pines-ui for components, mkdocs-wiki at the end.
 
 ```
 site/                  # source (this is what you edit)
-  index.html           # the tool: write/preview, import (HTML/CSV/JSON),
-                        # export (MD/HTML/rich-clipboard/PDF) — one page
+  index.html           # landing page: pitch, feature docs, FAQ, links to /editor/
+  editor/              # the tool: write/preview, import (HTML/CSV/JSON),
+                        # export (MD/HTML/rich-clipboard/PDF) — one page, at /editor/
   about/  privacy/  404.html
   assets/
     site.css           # BUILT tailwind output (never hand-edit)
@@ -104,7 +105,7 @@ than doing the step manually.
 - Commits: conventional style (`feat(widget): add CSV import mode`,
   `fix(build): …`) — the changelog is derived from these.
 - New tool capability is a mode/option inside the single widget on
-  `site/index.html`, not a new page.
+  `site/editor/index.html`, not a new page.
 
 ## Honest constraints (keep expectations calibrated)
 
