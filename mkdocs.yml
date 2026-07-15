@@ -1,4 +1,4 @@
-site_name: Markdown Tools — Internal Wiki
+site_name: Markdown Online — Internal Wiki
 site_dir: .mkdocs-site  # NOT "site/" — that's the public website source, not the wiki output
 docs_dir: docs
 

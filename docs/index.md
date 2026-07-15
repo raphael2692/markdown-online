@@ -1,4 +1,4 @@
-# Markdown Tools — Internal Wiki
+# Markdown Online — Internal Wiki
 
 A free, open-source (GPL-3.0), browser-only Markdown tool — write, preview,
 import, and export, all in one page, all running client-side. This wiki is

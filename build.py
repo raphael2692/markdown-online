@@ -16,7 +16,7 @@ from pathlib import Path
 # custom domain or a <owner>.github.io root repo is set up later, change
 # SITE_URL to the new root and set BASE_PATH = "".
 SITE_URL = "https://raphael2692.github.io/markdown-online"
-SITE_NAME = "Markdown Tools"
+SITE_NAME = "Markdown Online"
 GITHUB_URL = "https://github.com/raphael2692/markdown-online"
 BASE_PATH = "/markdown-online"
 

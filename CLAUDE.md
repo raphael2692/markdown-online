@@ -1,4 +1,4 @@
-# CLAUDE.md — Markdown Tools Site
+# CLAUDE.md — Markdown Online Site
 
 Static site of a single, unified browser-only Markdown tool (write, preview,
 import, export) — free, open source (GPL-3.0), no ads, no tracking, no
