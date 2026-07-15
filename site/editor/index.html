@@ -123,6 +123,12 @@
                 </template>
               </ul>
             </div>
+
+            <button type="button" @click="clearDraft()" title="Clear the editor and delete your saved draft"
+              class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+              Clear
+            </button>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
@@ -179,10 +185,6 @@
 
             <span x-show="toast" x-transition.opacity x-cloak class="text-xs text-green-700" x-text="toast"></span>
           </div>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-4 border-b border-neutral-200 p-3 text-sm">
-          <span class="text-xs text-neutral-500">Math and diagrams render automatically as soon as you insert or type them.</span>
         </div>
 
         <div x-show="view !== 'preview'" class="flex flex-wrap items-center gap-1 border-b border-neutral-200 p-2">
@@ -424,7 +426,6 @@
         <div class="flex flex-wrap items-center gap-3 border-t border-neutral-200 p-3 text-xs text-neutral-500">
           <span x-show="restored" x-cloak>Draft restored from your last visit.</span>
           <span x-show="savedAt" x-cloak x-text="'Saved ' + savedAt"></span>
-          <button type="button" @click="clearDraft()" class="ml-auto flex items-center gap-1.5 rounded-md border border-neutral-300 px-2 py-1 hover:bg-neutral-50"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg> Clear</button>
         </div>
 
       </div>
