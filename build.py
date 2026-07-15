@@ -11,27 +11,35 @@ import sys
 from datetime import date
 from pathlib import Path
 
-# TODO: replace once the GitHub Pages URL is known — either a custom domain,
-# or https://<owner>.github.io/<repo>/ if there isn't one (note the trailing
-# path segment: every href in this repo is root-relative, so a project-pages
-# URL without a custom domain needs a base-path fix — see docs/index.md
-# "Known gaps"). This is the only place SITE_URL needs to change; every page
-# sources it from __SITE_URL__.
-SITE_URL = "https://example.com"
+# Deployed at a GitHub Pages *project* site (no custom domain), so it lives
+# under a /markdown-online/ path segment rather than at a domain root. If a
+# custom domain or a <owner>.github.io root repo is set up later, change
+# SITE_URL to the new root and set BASE_PATH = "".
+SITE_URL = "https://raphael2692.github.io/markdown-online"
 SITE_NAME = "Markdown Tools"
-GITHUB_URL = "https://github.com/"
+GITHUB_URL = "https://github.com/raphael2692/markdown-online"
+BASE_PATH = "/markdown-online"
 
 ROOT = Path(__file__).parent
 SITE = ROOT / "site"
 DIST = ROOT / "dist"
 
 INCLUDE_RE = re.compile(r"<!--#include ([\w./-]+)-->")
+# Root-relative href/src/action (but not protocol-relative "//...") needs the
+# base path prefix so links/assets resolve under the project-pages subpath.
+BASE_PATH_RE = re.compile(r'(href|src|action)="(/(?!/)[^"]*)"')
 TOKENS = {
     "__SITE_URL__": SITE_URL.rstrip("/"),
     "__SITE_NAME__": SITE_NAME,
     "__GITHUB_URL__": GITHUB_URL,
     "__YEAR__": str(date.today().year),
 }
+
+
+def apply_base_path(html):
+    if not BASE_PATH:
+        return html
+    return BASE_PATH_RE.sub(lambda m: f'{m.group(1)}="{BASE_PATH}{m.group(2)}"', html)
 
 
 def expand_includes(html, seen=()):
@@ -69,6 +77,7 @@ def build():
         if src.suffix == ".html":
             html = expand_includes(src.read_text())
             html = substitute_tokens(html)
+            html = apply_base_path(html)
             dest.write_text(html)
             html_files.append(rel)
         else:

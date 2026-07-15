@@ -1,3 +1,12 @@
+// Derived from this script's own <script src>, so lazy-loaded vendor assets
+// below resolve correctly under a GitHub Pages project-site base path
+// (e.g. /markdown-online) without hardcoding it here.
+const ASSETS_BASE = (() => {
+  const src = document.currentScript && document.currentScript.src;
+  const m = src && src.match(/^(.*)\/assets\/site\.js(?:[?#].*)?$/);
+  return m ? m[1] : '';
+})();
+
 function downloadFile(content, filename, mime) {
   mime = mime || 'text/plain;charset=utf-8';
   const blob = content instanceof Blob ? content : new Blob([content], { type: mime });
@@ -426,15 +435,15 @@ let katexCssText = '';
 function ensureKatexLoaded() {
   if (!katexReadyPromise) {
     katexReadyPromise = Promise.all([
-      loadScript('/assets/vendor/katex-0.17.0/katex.min.js'),
-      loadStylesheet('/assets/vendor/katex-0.17.0/katex.min.css'),
+      loadScript(`${ASSETS_BASE}/assets/vendor/katex-0.17.0/katex.min.js`),
+      loadStylesheet(`${ASSETS_BASE}/assets/vendor/katex-0.17.0/katex.min.css`),
       // Cached text is only ever spliced into *other* documents (a downloaded
       // standalone HTML file, or the print-to-PDF iframe) whose base URL isn't
       // this page's own — so font url(fonts/...) references are rewritten to
       // an absolute, this-origin URL rather than left relative (which would
       // resolve against the wrong base and silently fall back to no font).
-      fetch('/assets/vendor/katex-0.17.0/katex.min.css').then((r) => r.text()).then((t) => {
-        katexCssText = t.replace(/url\(fonts\//g, `url(${location.origin}/assets/vendor/katex-0.17.0/fonts/`);
+      fetch(`${ASSETS_BASE}/assets/vendor/katex-0.17.0/katex.min.css`).then((r) => r.text()).then((t) => {
+        katexCssText = t.replace(/url\(fonts\//g, `url(${location.origin}${ASSETS_BASE}/assets/vendor/katex-0.17.0/fonts/`);
       }),
     ]).then(() => registerKatexExtension())
       // A failed attempt (network blip) must not permanently wedge the
@@ -451,7 +460,7 @@ let mermaidReadyPromise = null;
 
 function ensureMermaidLoaded() {
   if (!mermaidReadyPromise) {
-    mermaidReadyPromise = loadScript('/assets/vendor/mermaid-11.16.0.min.js').then(() => {
+    mermaidReadyPromise = loadScript(`${ASSETS_BASE}/assets/vendor/mermaid-11.16.0.min.js`).then(() => {
       mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
     }).catch((e) => { mermaidReadyPromise = null; throw e; });
   }
@@ -499,7 +508,7 @@ let papaReadyPromise = null;
 
 function ensurePapaParseLoaded() {
   if (!papaReadyPromise) {
-    papaReadyPromise = loadScript('/assets/vendor/papaparse-5.4.1.min.js')
+    papaReadyPromise = loadScript(`${ASSETS_BASE}/assets/vendor/papaparse-5.4.1.min.js`)
       .catch((e) => { papaReadyPromise = null; throw e; });
   }
   return papaReadyPromise;
@@ -514,8 +523,8 @@ let turndownReadyPromise = null;
 function ensureTurndownLoaded() {
   if (!turndownReadyPromise) {
     turndownReadyPromise = Promise.all([
-      loadScript('/assets/vendor/turndown-7.2.0.min.js'),
-      loadScript('/assets/vendor/turndown-plugin-gfm-1.0.2.min.js'),
+      loadScript(`${ASSETS_BASE}/assets/vendor/turndown-7.2.0.min.js`),
+      loadScript(`${ASSETS_BASE}/assets/vendor/turndown-plugin-gfm-1.0.2.min.js`),
     ]).catch((e) => { turndownReadyPromise = null; throw e; });
   }
   return turndownReadyPromise;
@@ -548,8 +557,8 @@ let hljsReadyPromise = null;
 function ensureHljsLoaded() {
   if (!hljsReadyPromise) {
     hljsReadyPromise = Promise.all([
-      loadScript('/assets/vendor/highlightjs-11.11.1/highlight.min.js'),
-      loadStylesheet('/assets/vendor/highlightjs-11.11.1/github.min.css'),
+      loadScript(`${ASSETS_BASE}/assets/vendor/highlightjs-11.11.1/highlight.min.js`),
+      loadStylesheet(`${ASSETS_BASE}/assets/vendor/highlightjs-11.11.1/github.min.css`),
     ]).catch((e) => { hljsReadyPromise = null; throw e; });
   }
   return hljsReadyPromise;

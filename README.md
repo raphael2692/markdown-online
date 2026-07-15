@@ -25,7 +25,7 @@ from this site — nothing is sent anywhere.
 
 ## Try it
 
-<!-- TODO once GitHub Pages is live: link the deployed URL here. -->
+**https://raphael2692.github.io/markdown-online/**
 
 ## Local development
 
