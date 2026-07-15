@@ -281,6 +281,44 @@ elsewhere to avoid a stale async load racing a newer edit.
   or root repo replaces this setup, set `BASE_PATH = ""` and `ASSETS_BASE`
   resolves to `""` automatically.
 
+## Preview zoom, pan, and fit-to-view
+
+The rendered preview (`x-ref="preview"`) is a fixed-size, both-axes
+`overflow-auto` viewport wrapping a second element, `x-ref="previewInner"`
+(the one carrying the `.md-preview` class), and `run()` writes
+`sanitizeHtml(fragment)` into `previewInner`, not into the scrolling
+viewport itself. Zoom is applied as an inline `style="zoom: …"` on
+`previewInner` alone — CSS `zoom` (not `transform: scale()`) so text
+actually reflows at the new size like native browser zoom, and because it
+changes the subtree's real layout size, the *outer* viewport's
+`overflow-auto` naturally grows scrollbars once zoomed content no longer
+fits, with no manual width/height bookkeeping. Keeping zoom off the
+scrolling element itself avoids the box that reports its size to
+`paneResizer()`'s scroll-mirroring (`mirrorScroll()`, keyed off
+`scrollHeight`/`clientHeight`) from being the same box being magnified.
+
+- **Controls**: a floating pill (`position: absolute`, bottom-left) inside
+  the pane's non-scrolling wrapper — zoom out / percentage (click to reset
+  to 100%) / zoom in, then a fit-to-view button and a hand-tool toggle.
+  Zoom steps by 10, clamped to 25–400% (`zoomMin`/`zoomMax`/`ZOOM_STEP` in
+  `toolWidget()`).
+- **Zoom to fit** (`zoomToFit()`) reads `previewInner.scrollWidth/Height`,
+  divides out the *current* zoom factor to recover the unzoomed ("natural")
+  content size, then scales to the smaller of the width/height ratios
+  against the viewport's padding-adjusted `clientWidth`/`clientHeight`.
+  Since normal text already reflows to the container's width, this is
+  mostly a vertical fit in practice — it's for the case where a wide table,
+  long Mermaid/DBML diagram, or tall document would otherwise need
+  scrolling to see in full.
+- **Hand tool** (`panMode`) reuses the same drag-tracking idiom as
+  `paneResizer()`'s `startDrag()`/`startVDrag()` (mousedown/touchstart →
+  document-level move/up listeners), just writing `scrollLeft`/`scrollTop`
+  on the viewport instead of a CSS custom property. While active,
+  `previewInner` gets `pointer-events: none` so a mousedown anywhere over
+  rendered content (a link, a checkbox) falls through to the viewport's own
+  handler and pans instead of following the link or starting a text
+  selection.
+
 ## Dark mode
 
 A header toggle (`#theme-toggle`, in `site/partials/header.html`, so it's on
