@@ -1,18 +1,6 @@
 @import "tailwindcss" source("../");
 @source not "assets/vendor/**";
 
-.ad-slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed #d4d4d4;
-  border-radius: 0.5rem;
-  color: #a3a3a3;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 /* Draggable split between the tool widget's two panes — the percentage
    only applies at the md breakpoint, where the panes sit side by side. */
 @media (min-width: 768px) {

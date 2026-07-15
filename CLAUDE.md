@@ -1,44 +1,74 @@
 # CLAUDE.md — Markdown Tools Site
 
-Static site of browser-only markdown utilities (converters, generators, cleaners), one page per search query, monetized with ads. **The product is Google rankings** — traffic → ad impressions is the entire business model. Every change is judged by: (1) does it help a page rank, (2) does it keep pages fast, (3) does it avoid thin-content risk.
+Static site of a single, unified browser-only Markdown tool (write, preview,
+import, export) — free, open source (GPL-3.0), no ads, no tracking, no
+signup. **The product is the tool itself.** Every change is judged by:
+(1) does it make the tool more correct or more useful, (2) does it keep the
+page fast and dependency-light, (3) does it preserve "nothing you paste or
+type ever leaves your browser."
 
 ## Skills — when to use which
 
-- **seo-tool-pages** — ALWAYS when creating or editing any public page: page anatomy, meta/canonical, JSON-LD schema, keyword map, internal linking, sitemap, ads, launch steps. Adding a tool page starts here.
-- **markdown-browser-ops** — ALWAYS for the tool widget itself: library choices, conversion recipes, clipboard/download/PDF patterns, the Alpine widget skeleton, sanitization.
-- **pines-ui** — UI components (buttons, textareas, toasts, accordions, tabs). One override: production pages use our built Tailwind CSS file, never the CDN Play script from pines' base templates.
-- **mkdocs-wiki** — internal docs live in `docs/` (MkDocs). After completing any task that changes the repo, run its maintain flow (wiki + changelog sync). The wiki is internal only — never deployed with the public site.
+- **markdown-browser-ops** — ALWAYS for the tool widget itself: library
+  choices, conversion recipes, clipboard/download/PDF patterns, the Alpine
+  widget skeleton, sanitization. New import/export capability is a mode
+  inside the existing widget, not a new page.
+- **pines-ui** — UI components (buttons, textareas, toasts, accordions,
+  tabs). One override: the page uses our built Tailwind CSS file, never the
+  CDN Play script from pines' base templates.
+- **mkdocs-wiki** — internal dev-notes wiki lives in `docs/` (MkDocs). After
+  completing any task that changes the repo, run its maintain flow (wiki +
+  changelog sync). The wiki is internal only — never deployed with the
+  public site; `README.md`/`CONTRIBUTING.md` at the repo root are what
+  GitHub visitors see.
 
-A typical "add the X converter page" task touches all four: seo-tool-pages for the page, markdown-browser-ops for the widget, pines-ui for components, mkdocs-wiki at the end.
+A typical "add an import/export mode" task touches markdown-browser-ops for
+the conversion logic, pines-ui for components, mkdocs-wiki at the end.
 
 ## Stack (fixed — don't relitigate)
 
-- **Pure static.** No backend, no framework, no SPA. Plain HTML + Tailwind (standalone CLI build) + Alpine.js. All conversion logic runs client-side; "your text never leaves your browser" is a core promise stated on every page — never add code that violates it (no analytics that ship page content, no remote conversion APIs).
-- **No hotlinked CDNs in production.** All JS vendored under `site/assets/vendor/` with pinned versions.
-- **Icons: Lucide**, inlined as static SVG — not the JS runtime. Source/reference copies live in `site/assets/vendor/lucide/` (see its README for the fetch-and-inline convention); pages inline the `<svg>` markup directly so icons stay themeable via `currentColor`/Tailwind classes and keep working with JavaScript disabled. Standard wrapper: `viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4"`.
-- **Hosting:** Cloudflare Pages, deploy from `dist/`.
+- **Pure static.** No backend, no framework, no SPA. Plain HTML + Tailwind
+  (standalone CLI build) + Alpine.js. All conversion logic runs
+  client-side; "your text never leaves your browser" is a core promise —
+  never add code that violates it (no analytics that ship page content, no
+  remote conversion APIs).
+- **No hotlinked CDNs in production.** All JS vendored under
+  `site/assets/vendor/` with pinned versions.
+- **Icons: Lucide**, inlined as static SVG — not the JS runtime.
+  Source/reference copies live in `site/assets/vendor/lucide/` (see its
+  README for the fetch-and-inline convention); pages inline the `<svg>`
+  markup directly so icons stay themeable via `currentColor`/Tailwind
+  classes and keep working with JavaScript disabled. Standard wrapper:
+  `viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+  stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4"`.
+- **Hosting:** GitHub Pages, deployed automatically by
+  `.github/workflows/deploy.yml` on every push to `main` (build CSS, run
+  `build.py`, publish `dist/` via `actions/deploy-pages`). No manual upload
+  step, no `gh-pages` branch.
 
 ## Repo layout
 
 ```
 site/                  # source (this is what you edit)
-  index.html           # homepage: all tools grouped by hub
-  <slug>/index.html    # one directory per tool page (clean URLs)
+  index.html           # the tool: write/preview, import (HTML/CSV/JSON),
+                        # export (MD/HTML/rich-clipboard/PDF) — one page
   about/  privacy/  404.html
   assets/
     site.css           # BUILT tailwind output (never hand-edit)
     input.css          # tailwind source
-    site.js            # shared helpers: copyRich, downloadFile, ad-slot init
+    site.js            # shared helpers: convertMarkdown/sanitizeHtml,
+                        # copyRich, downloadFile, widget mixins
     vendor/            # pinned minified libs (alpine, marked, dompurify, …)
 build.py               # copies site/→dist/, generates sitemap.xml, validates pages
 dist/                  # build output (gitignored)
-docs/ + mkdocs.yml     # internal wiki (mkdocs-wiki skill), incl. keyword-map.md
+docs/ + mkdocs.yml     # internal dev-notes wiki (mkdocs-wiki skill) — not part of the public site
+.github/workflows/     # GitHub Pages deploy
 ```
 
 ## Commands
 
 ```bash
-# CSS (after any class changes / new pages)
+# CSS (after any class changes)
 tailwindcss -i site/assets/input.css -o site/assets/site.css --minify
 
 # Build: copy to dist/, regenerate sitemap.xml, run page validations
@@ -51,24 +81,43 @@ python -m http.server -d dist 8000
 mkdocs serve
 ```
 
-If `build.py` doesn't yet do something described here (sitemap from page list, validation checks), extend it rather than doing the step manually.
+If `build.py` doesn't yet do something described here, extend it rather
+than doing the step manually.
 
-## Definition of done — any new/edited public page
+## Definition of done — any change to the tool or site
 
-1. Passes the per-page checklist in seo-tool-pages `references/launch-checklist.md` (unique title/description, canonical, one H1, JSON-LD valid and matching visible content, 250-500 words unique prose, internal links both directions, fixed-height ad slots).
-2. Page content is complete in static HTML — readable as an article with JS disabled; widget enhances it.
-3. Widget tested per markdown-browser-ops testing list (LLM-shaped input, XSS payloads inert, empty input, rich copy pastes correctly into Docs/Word).
-4. Row updated in `docs/keyword-map.md` (status → built/live).
-5. `python build.py` clean; sitemap includes the page.
-6. mkdocs-wiki maintain flow run; changelog synced; docs committed separately (`docs: sync wiki and changelog`).
+1. Widget change tested per the markdown-browser-ops testing checklist
+   (LLM-shaped input, XSS payloads inert, empty input, large input stays
+   responsive, rich copy pastes correctly into Docs/Word, PDF output is
+   sane).
+2. `python build.py` runs clean (title/canonical/single-`<h1>` validation
+   passes, no leftover tokens).
+3. If the change adds, removes, or renames a feature, `README.md`'s feature
+   list stays accurate — update it in the same change.
+4. mkdocs-wiki maintain flow run before finishing; changelog synced; docs
+   committed separately (`docs: sync wiki and changelog`).
 
 ## Conventions
 
-- URLs: lowercase-hyphenated slug = primary keyword, directory style `/slug/`, self-canonical with trailing slash.
-- Commits: conventional style (`feat(page): add csv-to-markdown-table`, `fix(widget): …`) — the changelog is derived from these.
-- Prose is written for humans; if two pages' prose looks templated, rewrite one. When unsure whether a page idea is distinct enough, check the keyword map's "one intent per page" rule before building.
-- Never place ads above the H1 or inside the tool widget; ad slots always have `min-height` reserved.
+- URLs: the public site is `/`, `/about/`, `/privacy/` — directory style,
+  self-canonical with a trailing slash.
+- Commits: conventional style (`feat(widget): add CSV import mode`,
+  `fix(build): …`) — the changelog is derived from these.
+- New tool capability is a mode/option inside the single widget on
+  `site/index.html`, not a new page.
 
-## Honest constraints (keep the user's expectations calibrated)
+## Honest constraints (keep expectations calibrated)
 
-Head terms ("markdown to pdf") won't rank for months if ever — build Tier 2/3 long-tail pages first per the keyword map. Dev audiences block ads (~30-50%); revenue comes from page volume compounding, not any single page. Backlinks (HN/PH/Reddit launches, open-sourcing) move rankings more than on-page tweaks — see launch-checklist.md Phase 3.
+- This isn't a growth engine anymore — there's no keyword map or ad revenue
+  driving a content cadence. Feature growth follows what maintainers and
+  contributors actually want to build.
+- GitHub Pages hosting is fully static: no server-side code, no database, no
+  secrets consumed at request time. A feature that seems to need a backend
+  (accounts, saved documents, server-side conversion) needs a hosting-model
+  conversation first.
+- `SITE_URL`/`GITHUB_URL` in `build.py` are still placeholders until the
+  GitHub remote and (if used) a custom domain are decided. If Pages ends up
+  serving this at `https://<owner>.github.io/<repo>/` rather than a custom
+  domain or a `<owner>.github.io` root repo, every root-relative path in
+  this codebase (`/assets/site.css`, `/about/`, …) needs a base-path prefix
+  to resolve — settle this before the first real deploy.

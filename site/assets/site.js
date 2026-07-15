@@ -521,6 +521,22 @@ function ensurePapaParseLoaded() {
 }
 window.ensurePapaParseLoaded = ensurePapaParseLoaded;
 
+// turndown-plugin-gfm only touches TurndownService at call time
+// (turndownPluginGfm.gfm(td)), not at parse time, so load order between the
+// two scripts doesn't matter and Promise.all is safe.
+let turndownReadyPromise = null;
+
+function ensureTurndownLoaded() {
+  if (!turndownReadyPromise) {
+    turndownReadyPromise = Promise.all([
+      loadScript('/assets/vendor/turndown-7.2.0.min.js'),
+      loadScript('/assets/vendor/turndown-plugin-gfm-1.0.2.min.js'),
+    ]).catch((e) => { turndownReadyPromise = null; throw e; });
+  }
+  return turndownReadyPromise;
+}
+window.ensureTurndownLoaded = ensureTurndownLoaded;
+
 // Shared by every CSV/JSON/table-source -> Markdown-table tool: pads columns
 // to a fixed width (most generators emit ragged tables) and escapes `|` /
 // newlines so a data value can never break out of its cell.
@@ -702,9 +718,3 @@ async function copyRich(markdown, opts) {
   }
 }
 window.copyRich = copyRich;
-
-// Reserved ad slots show a placeholder label until an ad network is wired in —
-// see seo-tool-pages skill: ads wait until the site has ~10 real pages.
-document.querySelectorAll('.ad-slot').forEach((el) => {
-  el.textContent = 'Advertisement';
-});

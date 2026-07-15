@@ -1,7 +1,7 @@
 ---
 name: markdown-browser-ops
 description: >-
-  Implement markdown operations that run 100% client-side in the browser — markdown↔HTML, markdown→PDF, markdown→Word/Google Docs (rich clipboard), strip/escape markdown, table generators (CSV/JSON→md), previews — with vetted library choices, XSS sanitization, lazy loading, and a reusable Alpine.js widget pattern. Use this skill whenever the user builds or edits any converter/generator/cleaner tool on the markdown-tools site, mentions marked/markdown-it/turndown/DOMPurify, asks "how do I convert X to Y in the browser", needs copy-to-clipboard or file-download behavior, or debugs a tool widget. Trigger for ANY tool-widget implementation on this project, even if the word markdown isn't used. Pair with seo-tool-pages for page structure and pines-ui for UI components.
+  Implement markdown operations that run 100% client-side in the browser — markdown↔HTML, markdown→PDF, markdown→Word/Google Docs (rich clipboard), strip/escape markdown, table generators (CSV/JSON→md), previews — with vetted library choices, XSS sanitization, lazy loading, and a reusable Alpine.js widget pattern. Use this skill whenever the user builds or edits any converter/generator/cleaner tool on the markdown-tools site, mentions marked/markdown-it/turndown/DOMPurify, asks "how do I convert X to Y in the browser", needs copy-to-clipboard or file-download behavior, or debugs a tool widget. Trigger for ANY tool-widget implementation on this project, even if the word markdown isn't used. Pair with pines-ui for UI components.
 ---
 
 # Markdown Browser Ops
@@ -23,7 +23,7 @@ Every tool on this site runs entirely in the browser — no backend, no upload. 
 
 Vendor all libraries locally under `/assets/vendor/` (pin versions, copy the minified builds into the repo). No hotlinked CDNs in production: it's a page-speed, reliability, and honesty issue — the site promises "nothing leaves your browser".
 
-**Load discipline** (this is a CWV requirement from seo-tool-pages): `marked` + `DOMPurify` + Alpine load `defer` in `<head>`. Everything else lazy-loads on first interaction via dynamic script injection — pattern in `references/tool-widget-pattern.html`.
+**Load discipline** (keeps first paint fast): `marked` + `DOMPurify` + Alpine load `defer` in `<head>`. Everything else lazy-loads on first interaction via dynamic script injection — pattern in `references/tool-widget-pattern.html`.
 
 ## Security: sanitize every render
 

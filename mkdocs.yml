@@ -10,7 +10,6 @@ theme:
 
 nav:
   - Home: index.md
-  - Keyword map: keyword-map.md
   - Changelog: changelog.md
 
 markdown_extensions:

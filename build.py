@@ -11,8 +11,12 @@ import sys
 from datetime import date
 from pathlib import Path
 
-# TODO: replace with the real domain once one is chosen — this is the only
-# place it needs to change; every page sources it from __SITE_URL__.
+# TODO: replace once the GitHub Pages URL is known — either a custom domain,
+# or https://<owner>.github.io/<repo>/ if there isn't one (note the trailing
+# path segment: every href in this repo is root-relative, so a project-pages
+# URL without a custom domain needs a base-path fix — see docs/index.md
+# "Known gaps"). This is the only place SITE_URL needs to change; every page
+# sources it from __SITE_URL__.
 SITE_URL = "https://example.com"
 SITE_NAME = "Markdown Tools"
 GITHUB_URL = "https://github.com/"
