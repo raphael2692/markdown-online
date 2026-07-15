@@ -415,10 +415,36 @@
             <div class="my-auto h-8 w-px bg-neutral-400 dark:bg-neutral-600"></div>
           </div>
 
-          <div x-show="view !== 'write'" class="min-w-0 p-3" :class="view === 'split' ? 'md:flex-1' : 'md:w-full'">
+          <div x-show="view !== 'write'" class="relative min-w-0 p-3" :class="view === 'split' ? 'md:flex-1' : 'md:w-full'">
             <label class="sr-only">Rendered preview</label>
-            <div x-ref="preview" @scroll="onPreviewScroll($event)"
-              class="pane-height md-preview w-full overflow-y-auto rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-3 text-sm"></div>
+            <div x-ref="preview" @scroll="onPreviewScroll($event)" @mousedown="startPan($event)" @touchstart="startPan($event)"
+              :class="panMode ? (panDragging ? 'cursor-grabbing' : 'cursor-grab') : ''"
+              class="pane-height w-full overflow-auto rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-3 text-sm">
+              <div x-ref="previewInner" class="md-preview" :class="panMode && 'pointer-events-none select-none'" :style="`zoom: ${previewZoom / 100}`"></div>
+            </div>
+
+            <div class="absolute bottom-4 left-4 z-10 flex items-center gap-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 p-1 text-xs text-neutral-600 dark:text-neutral-400 shadow-md backdrop-blur">
+              <button type="button" @click="zoomOut()" :disabled="previewZoom <= zoomMin" title="Zoom out" aria-label="Zoom out"
+                class="flex h-6 w-6 items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 disabled:opacity-40 disabled:hover:bg-transparent">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M5 12h14" /></svg>
+              </button>
+              <button type="button" @click="resetZoom()" title="Reset zoom to 100%"
+                class="min-w-[3.25rem] rounded-full px-1.5 py-1 text-center tabular-nums hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100" x-text="`${previewZoom}%`"></button>
+              <button type="button" @click="zoomIn()" :disabled="previewZoom >= zoomMax" title="Zoom in" aria-label="Zoom in"
+                class="flex h-6 w-6 items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 disabled:opacity-40 disabled:hover:bg-transparent">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+              </button>
+              <span class="mx-0.5 h-5 w-px bg-neutral-200 dark:bg-neutral-700" aria-hidden="true"></span>
+              <button type="button" @click="zoomToFit()" title="Zoom to fit — scales the preview so everything is visible" aria-label="Zoom to fit"
+                class="flex h-6 w-6 items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M21 8V5a2 2 0 0 0-2-2h-3" /><path d="M3 16v3a2 2 0 0 0 2 2h3" /><path d="M16 21h3a2 2 0 0 0 2-2v-3" /></svg>
+              </button>
+              <button type="button" @click="panMode = !panMode" :aria-pressed="panMode" title="Pan tool — drag the preview to move it instead of scrolling" aria-label="Toggle pan tool"
+                :class="panMode ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'"
+                class="flex h-6 w-6 items-center justify-center rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" /><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" /><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" /><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -755,6 +781,7 @@
     ].join('\n');
 
     const STORAGE_KEY = 'markdown-editor-draft-v1';
+    const ZOOM_MIN = 25, ZOOM_MAX = 400, ZOOM_STEP = 10;
 
     const MERMAID_TEMPLATES = {
       flowchart: 'graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Do thing]\n  B -->|No| D[Skip]',
@@ -794,6 +821,8 @@
         view: 'split', restored: false, savedAt: '',
         _saveTimer: null, _renderGen: 0,
         currentHeadingLevel: '',
+        previewZoom: 100, panMode: false, panDragging: false,
+        zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX,
         opts: {
           smartypants: true, math: false, mermaid: false, dbml: false,
           gfmBreaks: true,
@@ -857,11 +886,11 @@
             const html = await convertMarkdown(this.input, this.opts);
             if (myGen !== this._renderGen) return; // a newer run() already superseded this one
             this.fragment = html;
-            this.$refs.preview.innerHTML = sanitizeHtml(this.fragment);
+            this.$refs.previewInner.innerHTML = sanitizeHtml(this.fragment);
             // Colors the preview only — Copy/Download/Print HTML keep marked's
             // plain `language-*` class untouched.
             ensureHljsLoaded().then(() => {
-              if (myGen === this._renderGen) highlightCodeBlocks(this.$refs.preview);
+              if (myGen === this._renderGen) highlightCodeBlocks(this.$refs.previewInner);
             }).catch(() => {});
           } catch (e) {
             if (myGen !== this._renderGen) return;
@@ -875,6 +904,58 @@
         },
         onPreviewScroll(e) {
           if (this.view === 'split') this.mirrorScroll(e.target, this.$refs.mdTextarea);
+        },
+
+        // ---- preview zoom/pan ----
+        zoomIn() { this.previewZoom = Math.min(this.zoomMax, this.previewZoom + ZOOM_STEP); },
+        zoomOut() { this.previewZoom = Math.max(this.zoomMin, this.previewZoom - ZOOM_STEP); },
+        resetZoom() { this.previewZoom = 100; },
+        // Scales the preview so its full (unzoomed) content fits inside the
+        // visible viewport on both axes — undoes the current zoom on the
+        // measured size first, since scrollWidth/Height already reflect it.
+        zoomToFit() {
+          const viewport = this.$refs.preview, inner = this.$refs.previewInner;
+          if (!viewport || !inner) return;
+          const scale = this.previewZoom / 100;
+          const naturalWidth = inner.scrollWidth / scale;
+          const naturalHeight = inner.scrollHeight / scale;
+          if (!naturalWidth || !naturalHeight) return;
+          const cs = getComputedStyle(viewport);
+          const availWidth = viewport.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+          const availHeight = viewport.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+          const fitScale = Math.min(availWidth / naturalWidth, availHeight / naturalHeight);
+          this.previewZoom = Math.min(this.zoomMax, Math.max(this.zoomMin, Math.round(fitScale * 100)));
+          this.$nextTick(() => { viewport.scrollTop = 0; viewport.scrollLeft = 0; });
+        },
+        // Same drag-to-track idiom as startDrag/startVDrag in paneResizer,
+        // just moving scrollLeft/scrollTop instead of a --split/--pane-height var.
+        startPan(e) {
+          if (!this.panMode) return;
+          e.preventDefault();
+          const viewport = this.$refs.preview;
+          const startX = e.touches ? e.touches[0].clientX : e.clientX;
+          const startY = e.touches ? e.touches[0].clientY : e.clientY;
+          const startLeft = viewport.scrollLeft, startTop = viewport.scrollTop;
+          this.panDragging = true;
+
+          const onMove = (ev) => {
+            const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+            const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
+            viewport.scrollLeft = startLeft - (clientX - startX);
+            viewport.scrollTop = startTop - (clientY - startY);
+          };
+          const onUp = () => {
+            this.panDragging = false;
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onUp);
+          };
+
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+          document.addEventListener('touchmove', onMove, { passive: false });
+          document.addEventListener('touchend', onUp);
         },
 
         // ---- toolbar formatting helpers ----
