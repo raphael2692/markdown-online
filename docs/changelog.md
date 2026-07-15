@@ -1,4 +1,4 @@
-<!-- docs-sync: 1627767 -->
+<!-- docs-sync: f671d6d -->
 
 # Changelog
 
@@ -8,6 +8,7 @@
 - "Line breaks as `<br>`", "Full HTML document", and "Smart typography" checkboxes on the editor — smart typography and GFM line breaks are now always applied instead of opt-in, and "Copy HTML"/"Download HTML" no longer offer a standalone full-document wrap (`wrapDocument()` removed); Print/Save as PDF remains the path to a standalone, styled document (`1627767`)
 
 ### Changed
+- Removed the redundant "Math and diagrams render automatically…" hint bar from the editor toolbar, and moved the Clear button from the isolated footer status bar up next to Import, grouping it with the other document-lifecycle actions (`f671d6d`)
 - Shared header/footer widened from `max-w-7xl` to `max-w-screen-2xl` to match the editor page's content width, so the navbar no longer looks narrower than the toolbar below it (`1627767`)
 
 ### Added
