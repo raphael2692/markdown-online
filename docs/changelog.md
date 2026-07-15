@@ -1,10 +1,11 @@
-<!-- docs-sync: 32260df -->
+<!-- docs-sync: d9eec37 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Changed
+- Rebranded the product from "Markdown Tools" to "Markdown Online" across every site-facing surface: `build.py`'s `SITE_NAME` (which drives About/Privacy/404/header/footer via the `__SITE_NAME__` token), the landing page's title/`og:title`/H1 and both JSON-LD `SoftwareApplication` names, `README.md`, and the internal wiki's title (`docs/index.md`, `mkdocs.yml`) (`d9eec37`)
 - `build.py` now targets the real GitHub Pages project site (`SITE_URL`/`GITHUB_URL` for `raphael2692/markdown-online`) and rewrites root-relative `href`/`src`/`action` attributes with a `/markdown-online` base path at build time; `site.js`'s lazy-loaded vendor scripts derive the same prefix at runtime from their own script `src` (`32260df`)
 
 ### Removed
