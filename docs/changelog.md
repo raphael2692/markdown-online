@@ -1,4 +1,4 @@
-<!-- docs-sync: 05a6ad4 -->
+<!-- docs-sync: 5f8f23e -->
 
 # Changelog
 
@@ -37,6 +37,7 @@
 - Project relicensed as GPL-3.0; hosting moves from Cloudflare Pages to GitHub Pages (`05a6ad4`)
 - `about/` and `privacy/` rewritten to describe the open-source, ad-free project instead of the ad-monetized model; nav simplified to a single "About" link plus GitHub (`05a6ad4`)
 - Internal wiki (`docs/index.md`) rewritten to describe the unified tool and drop SEO/monetization framing, while keeping the Markdown-extensions/DOMPurify/Word-clipboard engineering notes (`05a6ad4`)
+- Editor toolbar UI/UX: Copy Markdown, Export (Copy HTML/Copy for Word/Download .md/Download HTML/Print to PDF) moved from a bottom action bar into the top toolbar, so they no longer require scrolling past the (resizable, up to 1400px tall) editor panes to reach; the "Stack panels" toggle moved next to the Write/Split/Preview control it governs instead of floating disconnected on the header's right edge; the formatting toolbar is now grouped into labeled Format/Insert/Embed clusters with tooltips that state whether a button wraps the current selection or inserts a block at the cursor (`5f8f23e`)
 
 ### Removed
 - All ad-slot markup, CSS, and the JS placeholder filler — no ad network was ever wired in, and the project no longer plans to add one (`05a6ad4`)

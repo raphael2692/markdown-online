@@ -146,19 +146,34 @@ elsewhere to avoid a stale async load racing a newer edit.
   `.pane-height` CSS classes (`site/assets/input.css`) on its panes. Keep
   building on this mixin rather than re-implementing drag-resize or
   scroll-sync by hand. `paneResizer()` also carries a `stacked` boolean
-  (default off), toggled by a "Stack panels" / "Side by side" button shown
-  at the `md` breakpoint above the pane row; the `.is-stacked` CSS class it
-  applies forces `flex-direction: column` and lets the output pane's
-  flex-basis follow its own content instead of `--split`, overriding the
-  responsive side-by-side default regardless of viewport width. The
-  horizontal drag divider hides while stacked (there's no width to drag);
-  the vertical pane-height divider still works either way.
+  (default off), toggled by a "Stack panels" / "Side by side" button in the
+  top toolbar, immediately next to the Write/Split/Preview view control
+  (only shown once `view === 'split'`, since it has nothing to do outside
+  that mode); the `.is-stacked` CSS class it applies forces
+  `flex-direction: column` and lets the output pane's flex-basis follow its
+  own content instead of `--split`, overriding the responsive side-by-side
+  default regardless of viewport width. The horizontal drag divider hides
+  while stacked (there's no width to drag); the vertical pane-height
+  divider still works either way.
 - **Shared toast/copy/export behavior**: the tool widget also mixes in
   `toolActionsMixin()` (`site/assets/site.js`) for `flash()` (the toast
   message shown after Copy/Download actions), `copyRichClick()` (wraps
   `window.copyRich()` for the "Copy for Word / Docs" button), and
   `wrapDocument()` described above — spread alongside `paneResizer()`:
-  `{ ...paneResizer(), ...toolActionsMixin(), /* page state */ }`.
+  `{ ...paneResizer(), ...toolActionsMixin(), /* page state */ }`. All of
+  Copy Markdown/Copy HTML/Copy for Word/Download .md/Download HTML/Print to
+  PDF live in the top toolbar too — a standalone "Copy Markdown" button
+  plus an "Export" dropdown for the rest — so they're reachable without
+  scrolling past the editor panes, however tall the panes are resized to.
+- **Toolbar button grouping**: the formatting toolbar is split into three
+  labeled clusters so it's clear which buttons act on the current selection
+  versus which insert new content: **Format** (Bold/Italic/Strikethrough/
+  Inline code/Link — `wrapSelection()`, wraps the selection or inserts a
+  placeholder if nothing's selected), **Insert** (Bullet/Numbered/Task
+  list/Quote — `prefixLines()`/`insertNumberedList()`, applied per selected
+  line; Table/Image/Horizontal rule — inserted at the cursor), and **Embed**
+  (Code block/Diagram/Math dropdowns — also inserted at the cursor). Each
+  button's tooltip spells out which behavior it uses.
 - **Import mechanism**: HTML and CSV/JSON aren't separate tools anymore —
   they're "Import" actions inside the same widget. Import-from-HTML runs
   the pasted/uploaded HTML through `TurndownService` (+ `turndown-plugin-gfm`
