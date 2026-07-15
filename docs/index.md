@@ -13,6 +13,11 @@ natively — this wiki is for engineering depth, not visitor-facing content.
 - **Landing page**, `site/index.html` — pitch, feature docs, and FAQ, with
   "Open Editor" links (header/footer nav, and inline in the body) into the
   tool. Not the tool itself — new tool capability doesn't belong here.
+- **Shared header nav** (`site/partials/header.html`) is included on every
+  page, including `/editor/` itself — its "Open Editor" link is scoped-CSS
+  hidden there (`#page-editor #nav-open-editor{display:none}`, set inline in
+  `site/editor/index.html`'s `<head>`) rather than branched out of the shared
+  partial, since it's a plain SSI-style include with no templating.
 - **The tool**, `site/editor/index.html` at `/editor/` — a unified Markdown
   workspace: writing/splitting/previewing Markdown, importing from
   HTML/CSV/JSON, and exporting to Markdown/HTML/rich-clipboard/PDF.
