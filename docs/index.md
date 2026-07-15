@@ -33,6 +33,9 @@ natively — this wiki is for engineering depth, not visitor-facing content.
   replaces every native `<select>` on the site, since a native select's open
   option list is drawn by the OS and can't be styled to match the rest of
   the Pines UI), `site/assets/theme.js` (the dark-mode toggle — see below),
+  `site/assets/dbml.js` (the native DBML-to-SVG diagram renderer — see
+  below; first-party code, but lazy-loaded like the vendored libraries since
+  most visitors never trigger it),
   `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify, KaTeX, Mermaid,
   highlight.js — light **and** dark stylesheets — turndown,
   turndown-plugin-gfm, PapaParse — vendored locally, no CDN hotlinking in
@@ -51,12 +54,12 @@ The tool's conversion pipeline is one shared function —
 GFM line breaks (`breaks: true`, single newlines render as `<br>`) are both
 always on — there's no toggle, since neither is worth exposing as a decision
 the user has to make; math and diagrams auto-enable themselves —
-`autoEnableRichFeatures()` scans the input for `$inline$`/`$$block$$` math or
-a ` ```mermaid ` fence and lazy-loads KaTeX/Mermaid the moment that syntax
-appears, rather than requiring the user to flip a checkbox first (Mermaid
-alone is ~3.5MB minified, so nothing downloads it unasked). Once auto-enabled
-for a session, a feature stays on even if the triggering syntax is later
-deleted.
+`autoEnableRichFeatures()` scans the input for `$inline$`/`$$block$$` math, a
+` ```mermaid ` fence, or a ` ```dbml ` fence, and lazy-loads KaTeX/Mermaid/
+`dbml.js` the moment that syntax appears, rather than requiring the user to
+flip a checkbox first (Mermaid alone is ~3.5MB minified, so nothing
+downloads it unasked). Once auto-enabled for a session, a feature stays on
+even if the triggering syntax is later deleted.
 
 - **Smart typography** — `smartyPants()` parses marked's HTML output into an
   inert `<template>`, walks text nodes only (skipping `pre`/`code`/`script`/
@@ -135,6 +138,63 @@ the "Copy for Word / Docs" path (`copyRich()`), not on preview/download:
   `neutralizeTrackedChangeTags()` swaps `<del>` for `<s>` on the Word
   clipboard path only; raw/download HTML keeps `<del>`, the semantically
   correct tag that round-trips through turndown.
+
+## Database schema diagrams (DBML)
+
+A ` ```dbml ` fence renders as a live entity-relationship diagram, the same
+way ` ```mermaid ` does — but it is **not** a translation into Mermaid's
+`erDiagram` grammar. That grammar is narrower than DBML (no enums as boxes,
+no notes, no indexes/table groups, entity names restricted to a plain
+identifier charset), so squeezing a parsed DBML AST through it would lose
+real information from what the user wrote. Instead `site/assets/dbml.js` is
+a small first-party module (lazy-loaded like the vendored libraries, via
+`ensureDbmlLoaded()`) that owns the whole pipeline itself:
+
+- **Parser** — a hand-written subset parser, not `@dbml/core` (its `lib/` is
+  ~37MB uncompiled with no browser/UMD bundle, which would fight the site's
+  "dependency-light, no bundler" constraint). Handles `Table`/`Enum`/`Ref`
+  blocks (both multi-line and single-line, comma-packed columns like
+  `id int [pk], name varchar`), inline column refs (`[ref: > users.id]`),
+  `note:`/`default:` settings, and comments. Nesting is tracked by
+  annotating every line with its brace depth in one pass
+  (`annotateDepths()`) rather than hand-counting braces at each call site —
+  that's what lets a nested `indexes { ... }` block inside a `Table` get
+  skipped cleanly without misreading its lines as columns. Unsupported by
+  design, and skipped rather than mis-rendered: composite (multi-column)
+  refs/PKs, `TableGroup`, `Project` settings, quoted identifiers containing
+  spaces.
+- **Layout** — force-directed (Fruchterman-Reingold style): circular-radius
+  repulsion between every node pair, a spring pulling ref-connected tables
+  together, a centering pull strong enough (`0.15` per iteration) to stop
+  weakly-connected tables drifting off to infinity over 250 iterations, then
+  an AABB overlap-cleanup pass since the circular approximation can still
+  leave two very-non-square boxes overlapping. An enum gets a soft
+  layout-only edge toward any table whose column uses it as a type (weight
+  `1.1`, no line drawn — DBML doesn't model "uses this enum" as a `Ref`), so
+  it settles near its users instead of landing wherever repulsion happens to
+  push it. The `+90` clearance term in the repulsion's `minSep` isn't
+  arbitrary: two boxes linked by one strong edge otherwise converge close
+  enough that the crow's-foot marker pair at each end visually crams
+  together.
+- **Drawing** — plain SVG built via `document.createElementNS` +
+  `.textContent` (never string-concatenated HTML), so table/column/enum/note
+  text is inert against injection by construction; `renderDbmlDiagrams()` in
+  `site.js` still runs the output through `DOMPurify.sanitize(svg,
+  {USE_PROFILES:{svg:true, svgFilters:true}})` as defense in depth, same as
+  every other render site. No `<foreignObject>` is used (labels are plain
+  SVG `<text>`), which sidesteps the whole
+  `sanitizePreservingForeignObjectLabels()` dance Mermaid needs. Crow's-foot
+  cardinality comes straight from the DBML operator — `>` many-to-one, `<`
+  one-to-many, `-` one-to-one, `<>` many-to-many — with no invented
+  optionality (no zero-vs-one distinction), since DBML itself doesn't encode
+  that.
+- **Errors** render as the same `.mermaid-error` box Mermaid failures use
+  (e.g. no `Table` block found at all) — no new CSS needed since the visual
+  output (a diagram or an error box inside `.mermaid-diagram`/
+  `.mermaid-error`) is the same shape either way.
+- **Theme** — colors are baked into the SVG at render time (like Mermaid),
+  so the editor's `themechange` listener re-runs the conversion pipeline
+  when `opts.dbml` is on, same as it does for Mermaid.
 
 ## Syntax highlighting (preview-only, always on)
 
