@@ -1,4 +1,4 @@
-<!-- docs-sync: 13fcb51 -->
+<!-- docs-sync: 5cb87fd -->
 
 # Changelog
 
@@ -6,6 +6,7 @@
 
 ### Fixed
 - Header's GitHub link now uses the actual GitHub brand mark instead of a generic external-link arrow icon (`13fcb51`)
+- Markdown input placeholder now mentions pasting as an alternative to typing, not just "Start writing Markdown…" (`5cb87fd`)
 
 ### Changed
 - Rebranded the product from "Markdown Tools" to "Markdown Online" across every site-facing surface: `build.py`'s `SITE_NAME` (which drives About/Privacy/404/header/footer via the `__SITE_NAME__` token), the landing page's title/`og:title`/H1 and both JSON-LD `SoftwareApplication` names, `README.md`, and the internal wiki's title (`docs/index.md`, `mkdocs.yml`) (`d9eec37`)
