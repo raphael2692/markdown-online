@@ -38,9 +38,10 @@ natively — this wiki is for engineering depth, not visitor-facing content.
 ## Markdown extensions (smart typography, math, diagrams)
 
 The tool's conversion pipeline is one shared function —
-`convertMarkdown(input, opts)` in `site/assets/site.js`. Smart typography is
-the one remaining manual checkbox (a style preference, not something
-detectable in the text); math and diagrams auto-enable themselves —
+`convertMarkdown(input, opts)` in `site/assets/site.js`. Smart typography and
+GFM line breaks (`breaks: true`, single newlines render as `<br>`) are both
+always on — there's no toggle, since neither is worth exposing as a decision
+the user has to make; math and diagrams auto-enable themselves —
 `autoEnableRichFeatures()` scans the input for `$inline$`/`$$block$$` math or
 a ` ```mermaid ` fence and lazy-loads KaTeX/Mermaid the moment that syntax
 appears, rather than requiring the user to flip a checkbox first (Mermaid
@@ -79,15 +80,15 @@ deleted.
   replaces each with sanitized SVG (or an inline error box on failure, so one
   bad diagram never breaks the rest of the document).
 
-All three apply consistently everywhere `convertMarkdown()` is used: live
+Both apply consistently everywhere `convertMarkdown()` is used: live
 preview, copy / download / print-to-PDF. A `sanitizeHtml()` helper wraps
 `DOMPurify.sanitize()` with `USE_PROFILES: {html, mathMl, svg}` so KaTeX's
 MathML accessibility tree and Mermaid's SVG output survive sanitization
-instead of being stripped as non-standard tags. `wrapDocument()` (the "Full
-HTML document" / downloaded HTML path) inlines KaTeX's CSS with font
-`url()`s rewritten to an absolute, this-origin URL when math is enabled, so
-a downloaded standalone file still renders math correctly even opened
-outside the site. It lives in the shared `toolActionsMixin()` (see below).
+instead of being stripped as non-standard tags. "Copy HTML" and "Download
+HTML" both hand out the plain converted fragment — there's no standalone
+full-document wrap; Print / Save as PDF is the path for a standalone,
+styled document (it builds its own print stylesheet, inlining KaTeX's CSS
+when math is present).
 
 ### Mermaid labels vs. DOMPurify, and Word's clipboard quirks
 
@@ -162,9 +163,9 @@ elsewhere to avoid a stale async load racing a newer edit.
   divider still works either way.
 - **Shared toast/copy/export behavior**: the tool widget also mixes in
   `toolActionsMixin()` (`site/assets/site.js`) for `flash()` (the toast
-  message shown after Copy/Download actions), `copyRichClick()` (wraps
-  `window.copyRich()` for the "Copy for Word / Docs" button), and
-  `wrapDocument()` described above — spread alongside `paneResizer()`:
+  message shown after Copy/Download actions) and `copyRichClick()` (wraps
+  `window.copyRich()` for the "Copy for Word / Docs" button) — spread
+  alongside `paneResizer()`:
   `{ ...paneResizer(), ...toolActionsMixin(), /* page state */ }`. All of
   Copy Markdown/Copy HTML/Copy for Word/Download .md/Download HTML/Print to
   PDF live in the top toolbar too — a standalone "Copy Markdown" button
