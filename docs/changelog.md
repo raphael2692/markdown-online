@@ -1,4 +1,4 @@
-<!-- docs-sync: 04507d3 -->
+<!-- docs-sync: 05a6ad4 -->
 
 # Changelog
 
@@ -22,12 +22,26 @@
 - Auto-detection of math/diagram syntax on `markdown-editor` (no manual toggle needed) and a widened widget layout (`90a5f08`)
 - Toolbar buttons for inline code, strikethrough, image, task list, table, and horizontal rule on `markdown-editor`, closing the gap against the rest of GFM that `marked` already rendered but had no one-click insert for (`4e1cafd`)
 - "Stack panels" / "side by side" toggle for both tool widgets' two-pane layout, via a `stacked` flag added to the shared `paneResizer()` mixin and an `.is-stacked` CSS override — lets the output pane sit below the input instead of beside it, overriding the responsive default regardless of viewport width (`e79e98e`)
+- Import from HTML and Import from CSV/JSON, right inside the unified editor: paste or upload content and the converted Markdown lands at the cursor instead of requiring a separate converter page (`05a6ad4`)
+- "Copy HTML" action and a "Full HTML document" toggle shared by both HTML export paths (`05a6ad4`)
+- `LICENSE` (GPL-3.0), `README.md`, and `CONTRIBUTING.md` for the newly open-sourced project (`05a6ad4`)
+- GitHub Actions workflow (`.github/workflows/deploy.yml`) building and deploying `dist/` to GitHub Pages on every push to `main` (`05a6ad4`)
+- `ensureTurndownLoaded()` in `site.js`, lazy-loading Turndown + turndown-plugin-gfm on first HTML import instead of unconditionally in `<head>` (`05a6ad4`)
 
 ### Changed
 - Extracted the draggable split-pane / pane-height / scroll-mirroring logic into a shared `paneResizer()` mixin in `site.js`; both tool widgets now use it instead of each re-implementing it (`40007d2`)
 - Default sample Markdown on `markdown-editor` and `markdown-to-html` now exercises nearly every rendered feature on first load — strikethrough, an inline image (embedded as a data URI, no network request), KaTeX inline/block math, and a Mermaid diagram, alongside the existing headings, lists, task list, table, blockquote, and code fence (`6b28765`)
 - Extracted `flash()`, `copyRichClick()`, and `wrapDocument()` — previously duplicated identically on `markdown-editor` and `markdown-to-html` — into a shared `toolActionsMixin()` in `site.js` (`50b5c7f`)
 - `markdown-editor` toolbar's single "H" button (always inserted `## `) replaced with a Paragraph/H1-H6 dropdown that reflects the current line's heading level as the cursor moves and swaps the leading `#`s cleanly instead of stacking a new prefix on each click (`24f5030`)
+- Consolidated the four separate converter pages (`markdown-to-html`, `html-to-markdown`, `markdown-editor`, `csv-to-markdown-table`) into a single unified Markdown workspace at `/` — one tool with import/export modes, not four separate pages (`05a6ad4`)
+- Project relicensed as GPL-3.0; hosting moves from Cloudflare Pages to GitHub Pages (`05a6ad4`)
+- `about/` and `privacy/` rewritten to describe the open-source, ad-free project instead of the ad-monetized model; nav simplified to a single "About" link plus GitHub (`05a6ad4`)
+- Internal wiki (`docs/index.md`) rewritten to describe the unified tool and drop SEO/monetization framing, while keeping the Markdown-extensions/DOMPurify/Word-clipboard engineering notes (`05a6ad4`)
+
+### Removed
+- All ad-slot markup, CSS, and the JS placeholder filler — no ad network was ever wired in, and the project no longer plans to add one (`05a6ad4`)
+- `docs/keyword-map.md` and the `seo-tool-pages` skill (page-per-keyword strategy, launch checklist, JSON-LD/page templates) — no longer applicable now that there's one tool page, not many (`05a6ad4`)
+- The four standalone converter pages, superseded by the unified workspace (`05a6ad4`)
 
 ### Fixed
 - Both tool widgets failed to render (panes stuck collapsed, no toolbar) because `site.js` — which defines `paneResizer()`, called at `x-data` construction time — loaded after Alpine's core script, which boots synchronously as soon as it runs; reordered the `<script defer>` tags so `site.js` executes first (`da4e649`)
