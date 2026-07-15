@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Markdown Editor — Write, Preview &amp; Export, Free &amp; Browser-Only</title>
+  <meta name="description" content="Write, preview, import from HTML or CSV/JSON, and export to HTML, Word, or PDF — entirely in your browser. Free, open source, no signup, and nothing you type ever leaves your browser.">
+  <link rel="canonical" href="__SITE_URL__/editor/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Markdown Editor — Write, Preview &amp; Export, Free &amp; Browser-Only">
+  <meta property="og:description" content="Write, preview, import from HTML or CSV/JSON, and export to HTML, Word, or PDF — entirely in your browser. Free, no signup.">
+  <meta property="og:url" content="__SITE_URL__/editor/">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <style>[x-cloak]{display:none !important}</style>
+
+  <script defer src="/assets/vendor/alpine-focus-3.15.12.min.js"></script>
+  <script defer src="/assets/vendor/marked-18.0.6.min.js"></script>
+  <script defer src="/assets/vendor/dompurify-3.4.12.min.js"></script>
+  <!-- site.js must load before Alpine core: toolWidget() calls paneResizer()
+       at x-data construction time, and Alpine boots synchronously the
+       instant its own deferred script runs — so paneResizer must already
+       be defined by then. -->
+  <script defer src="/assets/site.js"></script>
+  <script defer src="/assets/vendor/alpine-3.15.12.min.js"></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Markdown Tools",
+    "url": "__SITE_URL__/editor/",
+    "description": "A free, all-in-one Markdown workspace that runs entirely in the browser — write and format Markdown with a full toolbar and live preview, import existing HTML or CSV/JSON as Markdown, and export to Word, PDF, or HTML. No upload, no signup, no server-side processing.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any (web browser)",
+    "browserRequirements": "Requires JavaScript",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+</head>
+<body class="bg-white text-neutral-800 antialiased">
+
+  <!--#include partials/header.html-->
+
+  <main class="mx-auto max-w-screen-2xl px-4">
+
+    <h1 class="sr-only">Markdown Editor</h1>
+
+    <section id="tool" class="mt-4" x-data="toolWidget()" x-init="init()">
+      <div class="rounded-lg border border-neutral-200">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 p-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex rounded-md border border-neutral-300 text-xs">
+              <button type="button" @click="view = 'write'"
+                :class="view === 'write' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                class="flex items-center gap-1.5 rounded-l-md px-2 py-1">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M13 21h8" /><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></svg>
+                Write
+              </button>
+              <button type="button" @click="view = 'split'"
+                :class="view === 'split' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                class="flex items-center gap-1.5 border-l border-neutral-300 px-2 py-1">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 3v18" /></svg>
+                Split
+              </button>
+              <button type="button" @click="view = 'preview'"
+                :class="view === 'preview' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                class="flex items-center gap-1.5 rounded-r-md border-l border-neutral-300 px-2 py-1">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></svg>
+                Preview
+              </button>
+            </div>
+
+            <button type="button" x-show="view === 'split'" x-cloak @click="stacked = !stacked"
+              class="hidden items-center gap-1.5 rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 md:inline-flex"
+              :title="stacked ? 'Switch to side-by-side layout' : 'Stack panels vertically'">
+              <svg x-show="stacked" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 3v18" /></svg>
+              <svg x-show="!stacked" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M21 9H3" /><path d="M21 15H3" /></svg>
+              <span x-text="stacked ? 'Side by side' : 'Stack panels'"></span>
+            </button>
+
+            <div x-data="pinesSelect({
+                    items: [
+                      { value: 'html', label: 'Import from HTML…' },
+                      { value: 'csv', label: 'Import from CSV/JSON…' },
+                    ],
+                    value: () => null,
+                    onSelect: (v) => openImport(v),
+                    placeholder: 'Import',
+                  })"
+                 @keydown.escape.stop="close()"
+                 @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+                 @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+                 @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+                 class="relative inline-block" title="Import content">
+              <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+                :aria-expanded="open" aria-haspopup="listbox" aria-label="Import content"
+                class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M12 3v12" /><path d="m17 8-5-5-5 5" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></svg>
+                <span x-text="displayLabel"></span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+                x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+                class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+                role="listbox">
+                <template x-for="(item, idx) in items" :key="idx">
+                  <li :data-idx="idx" role="presentation">
+                    <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                    <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                      role="option" :aria-selected="selectedItem === item"
+                      :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                      class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                      <span x-text="item.label"></span>
+                      <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                    </div>
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs text-neutral-500" x-text="`${wordCount} words · ${charCount} characters · ~${readingTime} min read`"></span>
+
+            <button type="button" @click="copyMarkdown()" title="Copy the raw Markdown source"
+              class="flex items-center gap-1.5 rounded-md bg-neutral-900 px-2.5 py-1.5 text-xs text-white hover:bg-neutral-700">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
+              Copy Markdown
+            </button>
+
+            <div x-data="pinesSelect({
+                    items: [
+                      { value: 'copy-html', label: 'Copy HTML' },
+                      { value: 'copy-rich', label: 'Copy for Word / Docs' },
+                      { value: 'download-md', label: 'Download .md' },
+                      { value: 'download-html', label: 'Download HTML' },
+                      { value: 'print-pdf', label: 'Print / Save as PDF' },
+                    ],
+                    value: () => null,
+                    onSelect: (v) => exportAction(v),
+                    placeholder: 'Export',
+                  })"
+                 @keydown.escape.stop="close()"
+                 @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+                 @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+                 @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+                 class="relative inline-block" title="Export or print this document">
+              <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+                :aria-expanded="open" aria-haspopup="listbox" aria-label="Export"
+                class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></svg>
+                <span x-text="displayLabel"></span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+                x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+                class="absolute right-0 z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+                role="listbox">
+                <template x-for="(item, idx) in items" :key="idx">
+                  <li :data-idx="idx" role="presentation">
+                    <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                    <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                      role="option" :aria-selected="selectedItem === item"
+                      :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                      class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                      <span x-text="item.label"></span>
+                    </div>
+                  </li>
+                </template>
+              </ul>
+            </div>
+
+            <span x-show="toast" x-transition.opacity x-cloak class="text-xs text-green-700" x-text="toast"></span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 border-b border-neutral-200 p-3 text-sm">
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="opts.gfmBreaks" @change="run()" class="rounded border-neutral-300">
+            Line breaks as &lt;br&gt;
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="opts.fullDocument" class="rounded border-neutral-300">
+            Full HTML document
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="opts.smartypants" @change="run()" class="rounded border-neutral-300">
+            Smart typography
+          </label>
+          <span class="text-xs text-neutral-500">Math and diagrams render automatically as soon as you insert or type them.</span>
+        </div>
+
+        <div x-show="view !== 'preview'" class="flex flex-wrap items-center gap-1 border-b border-neutral-200 p-2">
+          <div x-data="pinesSelect({
+                  items: [
+                    { value: '', label: 'Paragraph' },
+                    { value: '1', label: 'Heading 1' },
+                    { value: '2', label: 'Heading 2' },
+                    { value: '3', label: 'Heading 3' },
+                    { value: '4', label: 'Heading 4' },
+                    { value: '5', label: 'Heading 5' },
+                    { value: '6', label: 'Heading 6' },
+                  ],
+                  value: () => currentHeadingLevel,
+                  onSelect: (v) => setHeading(v ? parseInt(v, 10) : 0),
+                })"
+               @keydown.escape.stop="close()"
+               @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+               @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+               @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+               class="relative inline-block w-28" title="Paragraph style">
+            <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+              :aria-expanded="open" aria-haspopup="listbox" aria-label="Paragraph style"
+              class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+              <span class="truncate" x-text="displayLabel"></span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+              x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+              :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+              class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+              role="listbox">
+              <template x-for="(item, idx) in items" :key="idx">
+                <li :data-idx="idx" role="presentation">
+                  <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                  <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                    role="option" :aria-selected="selectedItem === item"
+                    :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                    class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                    <span x-text="item.label"></span>
+                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                  </div>
+                </li>
+              </template>
+            </ul>
+          </div>
+          <span class="mx-1 h-5 w-px bg-neutral-200" aria-hidden="true"></span>
+
+          <span class="mr-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400 select-none" title="These act on the text you've selected (or insert a placeholder if nothing is selected)">Format</span>
+          <button type="button" @click="wrapSelection('**', '**', 'bold text')" title="Bold (Ctrl/Cmd+B) — wraps the selected text" aria-label="Bold" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8" /></svg></button>
+          <button type="button" @click="wrapSelection('*', '*', 'italic text')" title="Italic (Ctrl/Cmd+I) — wraps the selected text" aria-label="Italic" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><line x1="19" x2="10" y1="4" y2="4" /><line x1="14" x2="5" y1="20" y2="20" /><line x1="15" x2="9" y1="4" y2="20" /></svg></button>
+          <button type="button" @click="wrapSelection('~~', '~~', 'strikethrough text')" title="Strikethrough — wraps the selected text" aria-label="Strikethrough" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M16 4H9a3 3 0 0 0-2.83 4" /><path d="M14 12a4 4 0 0 1 0 8H6" /><line x1="4" x2="20" y1="12" y2="12" /></svg></button>
+          <button type="button" @click="wrapSelection('`', '`', 'code')" title="Inline code — wraps the selected text" aria-label="Inline code" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="m16 18 6-6-6-6" /><path d="m8 6-6 6 6 6" /></svg></button>
+          <button type="button" @click="wrapSelection('[', '](https://)', 'link text')" title="Link (Ctrl/Cmd+K) — wraps the selected text as the link label" aria-label="Link" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></button>
+
+          <span class="mx-1 h-5 w-px bg-neutral-200" aria-hidden="true"></span>
+
+          <span class="mr-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400 select-none" title="These insert a block at the cursor, or apply to every selected line">Insert</span>
+          <button type="button" @click="prefixLines('- ')" title="Bullet list — adds a marker to each selected line" aria-label="Bullet list" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M3 5h.01" /><path d="M3 12h.01" /><path d="M3 19h.01" /><path d="M8 5h13" /><path d="M8 12h13" /><path d="M8 19h13" /></svg></button>
+          <button type="button" @click="insertNumberedList()" title="Numbered list — numbers each selected line" aria-label="Numbered list" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M11 5h10" /><path d="M11 12h10" /><path d="M11 19h10" /><path d="M4 4h1v5" /><path d="M4 9h2" /><path d="M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02" /></svg></button>
+          <button type="button" @click="prefixLines('- [ ] ')" title="Task list — adds a checkbox to each selected line" aria-label="Task list" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M13 5h8" /><path d="M13 12h8" /><path d="M13 19h8" /><path d="m3 17 2 2 4-4" /><rect x="3" y="4" width="6" height="6" rx="1" /></svg></button>
+          <button type="button" @click="prefixLines('> ')" title="Quote — adds a quote marker to each selected line" aria-label="Quote" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z" /><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z" /></svg></button>
+          <button type="button" @click="insertTable()" title="Table — inserts a table template at the cursor" aria-label="Table" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M12 3v18" /><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M3 15h18" /></svg></button>
+          <button type="button" @click="wrapSelection('![', '](https://)', 'alt text')" title="Image — inserts image markdown at the cursor" aria-label="Image" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg></button>
+          <button type="button" @click="insertHr()" title="Horizontal rule — inserts a divider at the cursor" aria-label="Horizontal rule" class="rounded border border-neutral-300 p-1.5 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M5 12h14" /></svg></button>
+
+          <span class="mx-1 h-5 w-px bg-neutral-200" aria-hidden="true"></span>
+
+          <span class="mr-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400 select-none" title="These insert rich content templates at the cursor">Embed</span>
+          <div x-data="pinesSelect({
+                  items: [
+                    { header: 'Popular' },
+                    { value: 'javascript', label: 'JavaScript' },
+                    { value: 'typescript', label: 'TypeScript' },
+                    { value: 'python', label: 'Python' },
+                    { value: 'bash', label: 'Bash' },
+                    { value: 'json', label: 'JSON' },
+                    { value: 'html', label: 'HTML' },
+                    { value: 'css', label: 'CSS' },
+                    { value: 'sql', label: 'SQL' },
+                    { header: 'More languages' },
+                    { value: 'c', label: 'C' },
+                    { value: 'cpp', label: 'C++' },
+                    { value: 'csharp', label: 'C#' },
+                    { value: 'diff', label: 'Diff' },
+                    { value: 'go', label: 'Go' },
+                    { value: 'graphql', label: 'GraphQL' },
+                    { value: 'ini', label: 'INI / TOML' },
+                    { value: 'java', label: 'Java' },
+                    { value: 'kotlin', label: 'Kotlin' },
+                    { value: 'less', label: 'Less' },
+                    { value: 'lua', label: 'Lua' },
+                    { value: 'makefile', label: 'Makefile' },
+                    { value: 'markdown', label: 'Markdown' },
+                    { value: 'objectivec', label: 'Objective-C' },
+                    { value: 'perl', label: 'Perl' },
+                    { value: 'php', label: 'PHP' },
+                    { value: 'r', label: 'R' },
+                    { value: 'ruby', label: 'Ruby' },
+                    { value: 'rust', label: 'Rust' },
+                    { value: 'scss', label: 'SCSS' },
+                    { value: 'swift', label: 'Swift' },
+                    { value: 'vbnet', label: 'VB.NET' },
+                    { value: 'wasm', label: 'WebAssembly' },
+                    { value: 'xml', label: 'XML' },
+                    { value: 'yaml', label: 'YAML' },
+                    { value: 'plaintext', label: 'Plain text' },
+                  ],
+                  value: () => null,
+                  onSelect: (v) => insertCodeBlock(v),
+                  placeholder: 'Code block',
+                })"
+               @keydown.escape.stop="close()"
+               @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+               @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+               @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+               class="relative inline-block w-32" title="Insert code block — inserts a fenced code block at the cursor">
+            <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+              :aria-expanded="open" aria-haspopup="listbox" aria-label="Insert code block"
+              class="flex min-h-[30px] w-full items-center gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m16 18 6-6-6-6" /><path d="m8 6-6 6 6 6" /></svg>
+              <span class="flex-1 truncate text-left" x-text="displayLabel"></span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+              x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+              :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+              class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+              role="listbox">
+              <template x-for="(item, idx) in items" :key="idx">
+                <li :data-idx="idx" role="presentation">
+                  <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                  <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                    role="option" :aria-selected="selectedItem === item"
+                    :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                    class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                    <span x-text="item.label"></span>
+                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                  </div>
+                </li>
+              </template>
+            </ul>
+          </div>
+
+          <div x-data="pinesSelect({
+                  items: [
+                    { value: 'flowchart', label: 'Flowchart' },
+                    { value: 'sequence', label: 'Sequence diagram' },
+                    { value: 'class', label: 'Class diagram' },
+                    { value: 'state', label: 'State diagram' },
+                    { value: 'er', label: 'Entity relationship' },
+                    { value: 'gantt', label: 'Gantt chart' },
+                    { value: 'pie', label: 'Pie chart' },
+                    { value: 'mindmap', label: 'Mind map' },
+                  ],
+                  value: () => null,
+                  onSelect: (v) => insertDiagram(v),
+                  placeholder: 'Diagram',
+                })"
+               @keydown.escape.stop="close()"
+               @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+               @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+               @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+               class="relative inline-block w-32" title="Insert diagram — inserts a Mermaid diagram template at the cursor">
+            <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+              :aria-expanded="open" aria-haspopup="listbox" aria-label="Insert diagram"
+              class="flex min-h-[30px] w-full items-center gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2" /><path d="M7 11v4a2 2 0 0 0 2 2h4" /><rect width="8" height="8" x="13" y="13" rx="2" /></svg>
+              <span class="flex-1 truncate text-left" x-text="displayLabel"></span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+              x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+              :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+              class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+              role="listbox">
+              <template x-for="(item, idx) in items" :key="idx">
+                <li :data-idx="idx" role="presentation">
+                  <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                  <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                    role="option" :aria-selected="selectedItem === item"
+                    :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                    class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                    <span x-text="item.label"></span>
+                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                  </div>
+                </li>
+              </template>
+            </ul>
+          </div>
+
+          <button type="button" @click="insertMath()" title="Insert math (KaTeX) — inserts a math block at the cursor" aria-label="Insert math" class="flex items-center gap-1.5 rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M18 7V5a1 1 0 0 0-1-1H6.5a.5.5 0 0 0-.4.8l4.5 6a2 2 0 0 1 0 2.4l-4.5 6a.5.5 0 0 0 .4.8H17a1 1 0 0 0 1-1v-2" /></svg> Math</button>
+        </div>
+
+        <div x-ref="paneRow" :style="`--split: ${split}%; --pane-height: ${paneHeight}px`"
+          class="flex flex-col md:flex-row"
+          :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
+          <div x-show="view !== 'preview'" class="min-w-0 border-b border-neutral-200 p-3 md:border-b-0 md:border-r"
+            :class="view === 'split' ? 'split-pane-left' : 'md:w-full'">
+            <label for="tw-in" class="sr-only">Markdown input</label>
+            <div class="pane-height relative w-full overflow-hidden rounded-md border border-neutral-300">
+              <div x-ref="mdGutter" aria-hidden="true"
+                class="pointer-events-none absolute inset-y-0 left-0 w-10 select-none overflow-hidden bg-neutral-50 py-2 text-right font-mono text-sm leading-6 text-neutral-400">
+                <template x-for="n in inputLineCount" :key="n">
+                  <div class="pr-2 leading-6" x-text="n"></div>
+                </template>
+              </div>
+              <textarea id="tw-in" x-ref="mdTextarea" x-model="input"
+                @input.debounce.250ms="run()" @keydown="onKeydown($event)" @scroll="onInputScroll($event)"
+                @click="updateHeadingLevel()" @keyup="updateHeadingLevel()" @select="updateHeadingLevel()"
+                spellcheck="true" wrap="off"
+                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:outline-none focus:ring-0"
+                placeholder="Start writing Markdown…"></textarea>
+            </div>
+          </div>
+
+          <div x-show="view === 'split' && !stacked"
+            class="hidden shrink-0 cursor-col-resize touch-none items-stretch justify-center border-x border-neutral-200 bg-neutral-100 hover:bg-neutral-200 md:flex md:w-2"
+            :class="dragging && 'bg-neutral-300'"
+            @mousedown="startDrag($event)" @touchstart="startDrag($event)"
+            title="Drag to resize">
+            <div class="my-auto h-8 w-px bg-neutral-400"></div>
+          </div>
+
+          <div x-show="view !== 'write'" class="min-w-0 p-3" :class="view === 'split' ? 'md:flex-1' : 'md:w-full'">
+            <label class="sr-only">Rendered preview</label>
+            <div x-ref="preview" @scroll="onPreviewScroll($event)"
+              class="pane-height md-preview w-full overflow-y-auto rounded-md border border-neutral-300 bg-white p-3 text-sm"></div>
+          </div>
+        </div>
+
+        <div class="flex h-2 cursor-row-resize touch-none items-center justify-center border-b border-t border-neutral-200 bg-neutral-100 hover:bg-neutral-200"
+          :class="draggingV && 'bg-neutral-300'"
+          @mousedown="startVDrag($event)" @touchstart="startVDrag($event)"
+          title="Drag to resize height">
+          <div class="h-px w-8 bg-neutral-400"></div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 border-t border-neutral-200 p-3 text-xs text-neutral-500">
+          <span x-show="restored" x-cloak>Draft restored from your last visit.</span>
+          <span x-show="savedAt" x-cloak x-text="'Saved ' + savedAt"></span>
+          <button type="button" @click="clearDraft()" class="ml-auto flex items-center gap-1.5 rounded-md border border-neutral-300 px-2 py-1 hover:bg-neutral-50"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg> Clear</button>
+        </div>
+
+      </div>
+
+      <template x-teleport="body">
+        <div x-show="importKind !== null" x-cloak
+          class="fixed inset-0 z-[99] flex items-center justify-center p-4"
+          @keydown.escape.window="closeImport()">
+          <div x-show="importKind !== null"
+            x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-black/40" @click="closeImport()"></div>
+
+          <div x-show="importKind !== null"
+            x-trap.inert.noscroll="importKind !== null"
+            x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+            class="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg">
+
+            <div class="flex items-center justify-between border-b border-neutral-200 p-4">
+              <h3 class="text-lg font-semibold" x-text="importKind === 'html' ? 'Import from HTML' : 'Import from CSV/JSON'"></h3>
+              <button type="button" @click="closeImport()" aria-label="Close" class="rounded-full p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-5 w-5" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+              </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4">
+              <template x-if="importKind === 'html'">
+                <div class="space-y-3">
+                  <label class="block">
+                    <span class="text-xs font-medium uppercase text-neutral-500">HTML source</span>
+                    <textarea x-model="importHtml.text" rows="8" spellcheck="false"
+                      class="mt-1 w-full resize-y rounded-md border border-neutral-300 p-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400"
+                      placeholder="Paste HTML here…"></textarea>
+                  </label>
+                  <label class="block">
+                    <span class="text-xs font-medium uppercase text-neutral-500">Or upload a file</span>
+                    <input type="file" accept=".html,.htm" @change="onImportFile('html', $event)"
+                      class="mt-1 block w-full text-sm text-neutral-600 file:mr-2 file:rounded-md file:border file:border-neutral-300 file:bg-white file:px-2 file:py-1 file:text-xs file:font-medium hover:file:bg-neutral-50">
+                  </label>
+                  <div class="flex flex-wrap items-center gap-3 text-sm">
+                    <div class="flex items-center gap-2">
+                      <span>Bullet marker</span>
+                      <div x-data="pinesSelect({
+                              items: [
+                                { value: '-', label: '-' },
+                                { value: '*', label: '*' },
+                                { value: '+', label: '+' },
+                              ],
+                              value: () => importHtml.bulletListMarker,
+                              onSelect: (v) => { importHtml.bulletListMarker = v; },
+                            })"
+                           @keydown.escape.stop="close()"
+                           @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+                           @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+                           @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+                           class="relative inline-block w-16" title="Bullet marker">
+                        <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+                          :aria-expanded="open" aria-haspopup="listbox" aria-label="Bullet marker"
+                          class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+                          <span class="truncate" x-text="displayLabel"></span>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                        </button>
+                        <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+                          x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                          :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+                          class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+                          role="listbox">
+                          <template x-for="(item, idx) in items" :key="idx">
+                            <li :data-idx="idx" role="presentation">
+                              <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                              <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                                role="option" :aria-selected="selectedItem === item"
+                                :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                                class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                                <span x-text="item.label"></span>
+                                <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                              </div>
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span>Code blocks</span>
+                      <div x-data="pinesSelect({
+                              items: [
+                                { value: 'fenced', label: 'Fenced (```)' },
+                                { value: 'indented', label: 'Indented (4 spaces)' },
+                              ],
+                              value: () => importHtml.codeBlockStyle,
+                              onSelect: (v) => { importHtml.codeBlockStyle = v; },
+                            })"
+                           @keydown.escape.stop="close()"
+                           @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+                           @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+                           @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+                           class="relative inline-block w-44" title="Code blocks">
+                        <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+                          :aria-expanded="open" aria-haspopup="listbox" aria-label="Code blocks"
+                          class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+                          <span class="truncate" x-text="displayLabel"></span>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                        </button>
+                        <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+                          x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                          :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+                          class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+                          role="listbox">
+                          <template x-for="(item, idx) in items" :key="idx">
+                            <li :data-idx="idx" role="presentation">
+                              <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                              <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                                role="option" :aria-selected="selectedItem === item"
+                                :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                                class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                                <span x-text="item.label"></span>
+                                <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                              </div>
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span>Headings</span>
+                      <div x-data="pinesSelect({
+                              items: [
+                                { value: 'atx', label: 'ATX (# Heading)' },
+                                { value: 'setext', label: 'Setext (underlined)' },
+                              ],
+                              value: () => importHtml.headingStyle,
+                              onSelect: (v) => { importHtml.headingStyle = v; },
+                            })"
+                           @keydown.escape.stop="close()"
+                           @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+                           @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+                           @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+                           class="relative inline-block w-44" title="Headings">
+                        <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+                          :aria-expanded="open" aria-haspopup="listbox" aria-label="Headings"
+                          class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+                          <span class="truncate" x-text="displayLabel"></span>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                        </button>
+                        <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+                          x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                          :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+                          class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+                          role="listbox">
+                          <template x-for="(item, idx) in items" :key="idx">
+                            <li :data-idx="idx" role="presentation">
+                              <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                              <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                                role="option" :aria-selected="selectedItem === item"
+                                :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                                class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                                <span x-text="item.label"></span>
+                                <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                              </div>
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <p x-show="importHtml.error" x-cloak class="text-sm text-red-600" x-text="importHtml.error"></p>
+                </div>
+              </template>
+
+              <template x-if="importKind === 'csv'">
+                <div class="space-y-3">
+                  <div class="flex w-fit rounded-md border border-neutral-300 text-xs">
+                    <button type="button" @click="importCsv.mode = 'csv'"
+                      :class="importCsv.mode === 'csv' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                      class="flex items-center gap-1.5 rounded-l-md px-2 py-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M12 3v18" /><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M3 15h18" /></svg>
+                      CSV
+                    </button>
+                    <button type="button" @click="importCsv.mode = 'json'"
+                      :class="importCsv.mode === 'json' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'"
+                      class="flex items-center gap-1.5 rounded-r-md border-l border-neutral-300 px-2 py-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1" /><path d="M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1" /></svg>
+                      JSON
+                    </button>
+                  </div>
+                  <label class="block">
+                    <span class="text-xs font-medium uppercase text-neutral-500" x-text="importCsv.mode === 'csv' ? 'CSV source' : 'JSON source'"></span>
+                    <textarea x-model="importCsv.text" rows="8" spellcheck="false"
+                      class="mt-1 w-full resize-y rounded-md border border-neutral-300 p-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400"
+                      :placeholder="importCsv.mode === 'csv' ? 'Paste CSV here…' : 'Paste a JSON array of objects here…'"></textarea>
+                  </label>
+                  <label class="block">
+                    <span class="text-xs font-medium uppercase text-neutral-500">Or upload a file</span>
+                    <input type="file" :accept="importCsv.mode === 'csv' ? '.csv' : '.json'" @change="onImportFile('csv', $event)"
+                      class="mt-1 block w-full text-sm text-neutral-600 file:mr-2 file:rounded-md file:border file:border-neutral-300 file:bg-white file:px-2 file:py-1 file:text-xs file:font-medium hover:file:bg-neutral-50">
+                  </label>
+                  <div class="flex flex-wrap items-center gap-4 text-sm">
+                    <div class="flex items-center gap-2">
+                      <span>Alignment</span>
+                      <div x-data="pinesSelect({
+                              items: [
+                                { value: 'left', label: 'Left' },
+                                { value: 'center', label: 'Center' },
+                                { value: 'right', label: 'Right' },
+                              ],
+                              value: () => importCsv.align,
+                              onSelect: (v) => { importCsv.align = v; },
+                            })"
+                           @keydown.escape.stop="close()"
+                           @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+                           @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+                           @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+                           class="relative inline-block w-28" title="Alignment">
+                        <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+                          :aria-expanded="open" aria-haspopup="listbox" aria-label="Alignment"
+                          class="flex min-h-[30px] w-full items-center justify-between gap-1.5 rounded border border-neutral-300 bg-white px-2 py-1 text-xs hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400">
+                          <span class="truncate" x-text="displayLabel"></span>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                        </button>
+                        <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+                          x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                          :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+                          class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-xs shadow-lg focus:outline-none"
+                          role="listbox">
+                          <template x-for="(item, idx) in items" :key="idx">
+                            <li :data-idx="idx" role="presentation">
+                              <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400" x-text="item.header"></div>
+                              <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                                role="option" :aria-selected="selectedItem === item"
+                                :class="{ 'bg-neutral-100 text-neutral-900': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                                class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                                <span x-text="item.label"></span>
+                                <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                              </div>
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </div>
+                    <label x-show="importCsv.mode === 'csv'" class="flex items-center gap-2">
+                      <input type="checkbox" x-model="importCsv.header" class="rounded border-neutral-300">
+                      First row is header
+                    </label>
+                  </div>
+                  <p x-show="importCsv.error" x-cloak class="text-sm text-red-600" x-text="importCsv.error"></p>
+                </div>
+              </template>
+            </div>
+
+            <div class="flex justify-end gap-2 border-t border-neutral-200 p-4">
+              <button type="button" @click="closeImport()" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50">Cancel</button>
+              <button type="button" @click="importKind === 'html' ? confirmImportHtml() : confirmImportCsv()" class="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700">Insert</button>
+            </div>
+          </div>
+        </div>
+      </template>
+    </section>
+
+  </main>
+
+  <!--#include partials/footer.html-->
+
+  <script>
+    const SAMPLE_MD = [
+      '# Draft: Weekly Update',
+      '',
+      "A quick note before Friday's review — **please skim before the call**, or at",
+      "least the *highlights*. ~~Ignore last week's version~~ this one replaces it.",
+      "Inline code like `npm run build` and bare links like https://example.com both",
+      'autolink. See the [Q3 roadmap](https://example.com/roadmap) for details.',
+      '',
+      '## Highlights',
+      '',
+      '- Shipped the *new* onboarding flow',
+      '  - Includes a redesigned welcome screen',
+      '  - Analytics dashboard is still **in progress**',
+      '- Fixed the checkout bug reported last week',
+      '- Started scoping the Q3 roadmap',
+      '',
+      '## Open questions',
+      '',
+      '1. Do we need sign-off from legal before launch?',
+      '2. Who owns the migration doc?',
+      '3. Can support handle the ticket volume?',
+      '',
+      '## Launch checklist',
+      '',
+      '- [x] Draft written',
+      '- [x] Reviewed by design',
+      '- [ ] Sign-off from legal',
+      '- [ ] Scheduled release notes',
+      '',
+      '## Status by team',
+      '',
+      '| Team       | Status      | Owner |',
+      '| ---------- | ----------- | ----- |',
+      '| Onboarding | Done        | Ana   |',
+      '| Checkout   | Done        | Priya |',
+      '| Migration  | In progress | Sam   |',
+      '',
+      '> If anything above needs more detail, reply inline and I\'ll expand it.',
+      '',
+      '```js',
+      "console.log('draft saved locally, not on a server');",
+      '```',
+      '',
+      '---',
+      '',
+      'Rollout is projected to reach $95\\%$ of users by the deadline:',
+      '',
+      '$$P(\\text{success}) = 1 - (1 - p)^n$$',
+      '',
+      '```mermaid',
+      'graph TD',
+      '  A[Draft] --> B{Legal sign-off?}',
+      '  B -->|Yes| C[Publish]',
+      '  B -->|No| D[Revise]',
+      '```',
+      '',
+    ].join('\n');
+
+    const STORAGE_KEY = 'markdown-editor-draft-v1';
+
+    const MERMAID_TEMPLATES = {
+      flowchart: 'graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Do thing]\n  B -->|No| D[Skip]',
+      sequence: 'sequenceDiagram\n  participant A as Client\n  participant B as Server\n  A->>B: Request\n  B-->>A: Response',
+      class: 'classDiagram\n  class Animal {\n    +String name\n    +makeSound()\n  }\n  Animal <|-- Dog',
+      state: 'stateDiagram-v2\n  [*] --> Idle\n  Idle --> Running: start\n  Running --> Idle: stop\n  Running --> [*]',
+      er: 'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  ORDER ||--|{ LINE_ITEM : contains',
+      gantt: 'gantt\n  title Project plan\n  section Phase 1\n  Design :a1, 2026-01-01, 5d\n  Build :after a1, 7d',
+      pie: 'pie title Traffic sources\n  "Organic search" : 45\n  "Direct" : 30\n  "Referral" : 25',
+      mindmap: 'mindmap\n  root((Project))\n    Idea A\n    Idea B\n      Sub-idea',
+    };
+
+    function toolWidget() {
+      return {
+        ...paneResizer({ split: 33, paneHeight: 720, maxHeight: 1400 }),
+        ...toolActionsMixin(),
+        input: '', fragment: '', error: '', toast: '',
+        view: 'split', restored: false, savedAt: '',
+        _saveTimer: null, _renderGen: 0,
+        currentHeadingLevel: '',
+        opts: {
+          smartypants: false, math: false, mermaid: false,
+          gfmBreaks: false,
+          fullDocument: true,
+        },
+        importKind: null,
+        importHtml: { text: '', bulletListMarker: '-', codeBlockStyle: 'fenced', headingStyle: 'atx', error: '' },
+        importCsv: { text: '', mode: 'csv', align: 'left', header: true, error: '' },
+
+        get wordCount() { return (this.input.match(/\S+/g) || []).length; },
+        get charCount() { return this.input.length; },
+        get readingTime() { return Math.max(1, Math.round(this.wordCount / 200)); },
+        get inputLineCount() { return this.input.split('\n').length; },
+
+        init() {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            this.input = saved;
+            this.restored = true;
+          } else {
+            this.input = SAMPLE_MD;
+          }
+          this.$watch('input', (val) => {
+            clearTimeout(this._saveTimer);
+            this._saveTimer = setTimeout(() => {
+              if (val.trim()) {
+                localStorage.setItem(STORAGE_KEY, val);
+                this.savedAt = new Date().toLocaleTimeString();
+              } else {
+                localStorage.removeItem(STORAGE_KEY);
+                this.savedAt = '';
+              }
+            }, 500);
+          });
+          ensureHljsLoaded().catch(() => {}); // best-effort; run() re-checks readiness itself
+          // $nextTick: x-init can fire before Alpine registers x-ref="preview",
+          // which run() writes into.
+          this.$nextTick(() => this.run());
+        },
+
+        async run() {
+          this.error = '';
+          const myGen = ++this._renderGen;
+          try {
+            const loadErrors = await autoEnableRichFeatures(this.input, this.opts);
+            if (myGen !== this._renderGen) return;
+            if (loadErrors.length) this.error = loadErrors.join(' ');
+            const html = await convertMarkdown(this.input, this.opts);
+            if (myGen !== this._renderGen) return; // a newer run() already superseded this one
+            this.fragment = html;
+            this.$refs.preview.innerHTML = sanitizeHtml(this.fragment);
+            // Colors the preview only — Copy/Download/Print HTML keep marked's
+            // plain `language-*` class untouched.
+            ensureHljsLoaded().then(() => {
+              if (myGen === this._renderGen) highlightCodeBlocks(this.$refs.preview);
+            }).catch(() => {});
+          } catch (e) {
+            if (myGen !== this._renderGen) return;
+            this.error = e.message || 'Preview failed';
+          }
+        },
+
+        onInputScroll(e) {
+          this.$refs.mdGutter.scrollTop = e.target.scrollTop;
+          if (this.view === 'split') this.mirrorScroll(e.target, this.$refs.preview);
+        },
+        onPreviewScroll(e) {
+          if (this.view === 'split') this.mirrorScroll(e.target, this.$refs.mdTextarea);
+        },
+
+        // ---- toolbar formatting helpers ----
+        wrapSelection(prefix, suffix, placeholder) {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const selected = this.input.slice(start, end) || placeholder;
+          this.input = this.input.slice(0, start) + prefix + selected + suffix + this.input.slice(end);
+          const newStart = start + prefix.length;
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newStart, newStart + selected.length); });
+          this.run();
+        },
+        setHeading(level) {
+          const ta = this.$refs.mdTextarea;
+          const pos = ta.selectionStart;
+          const lineStart = this.input.lastIndexOf('\n', pos - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', pos);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const line = this.input.slice(lineStart, lineEnd);
+          const stripped = line.replace(/^#{1,6}\s+/, '');
+          const marker = level ? '#'.repeat(level) + ' ' : '';
+          const newLine = marker + stripped;
+          this.input = this.input.slice(0, lineStart) + newLine + this.input.slice(lineEnd);
+          const newPos = lineStart + newLine.length;
+          this.$nextTick(() => {
+            ta.focus();
+            ta.setSelectionRange(newPos, newPos);
+            this.updateHeadingLevel();
+          });
+          this.run();
+        },
+        updateHeadingLevel() {
+          const ta = this.$refs.mdTextarea;
+          const pos = ta.selectionStart;
+          const lineStart = this.input.lastIndexOf('\n', pos - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', pos);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const match = this.input.slice(lineStart, lineEnd).match(/^(#{1,6})\s+/);
+          this.currentHeadingLevel = match ? String(match[1].length) : '';
+        },
+        prefixLines(marker) {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const lineStart = this.input.lastIndexOf('\n', start - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', end);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const block = this.input.slice(lineStart, lineEnd)
+            .split('\n').map((l) => marker + l).join('\n');
+          this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(lineStart, lineStart + block.length); });
+          this.run();
+        },
+        insertNumberedList() {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const lineStart = this.input.lastIndexOf('\n', start - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', end);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const block = this.input.slice(lineStart, lineEnd)
+            .split('\n').map((l, i) => `${i + 1}. ${l}`).join('\n');
+          this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(lineStart, lineStart + block.length); });
+          this.run();
+        },
+        onKeydown(e) {
+          const mod = e.ctrlKey || e.metaKey;
+          if (!mod) return;
+          if (e.key === 'b') { e.preventDefault(); this.wrapSelection('**', '**', 'bold text'); }
+          else if (e.key === 'i') { e.preventDefault(); this.wrapSelection('*', '*', 'italic text'); }
+          else if (e.key === 'k') { e.preventDefault(); this.wrapSelection('[', '](https://)', 'link text'); }
+        },
+
+        insertCodeBlock(lang) {
+          this.wrapSelection('```' + lang + '\n', '\n```', 'code');
+        },
+        insertDiagram(type) {
+          if (!type) return;
+          this.wrapSelection('```mermaid\n', '\n```', MERMAID_TEMPLATES[type] || MERMAID_TEMPLATES.flowchart);
+        },
+        insertMath() {
+          this.wrapSelection('$$\n', '\n$$', 'E = mc^2');
+        },
+        insertTable() {
+          const ta = this.$refs.mdTextarea;
+          const pos = ta.selectionStart;
+          const lineStart = this.input.lastIndexOf('\n', pos - 1) + 1;
+          const needsBlankBefore = lineStart > 0 && this.input[lineStart - 1] !== '\n';
+          const table = (needsBlankBefore ? '\n\n' : '') +
+            '| Header | Header |\n| --- | --- |\n| Cell | Cell |\n| Cell | Cell |\n';
+          this.input = this.input.slice(0, lineStart) + table + this.input.slice(lineStart);
+          const newPos = lineStart + table.length;
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
+          this.run();
+        },
+        insertHr() {
+          const ta = this.$refs.mdTextarea;
+          const pos = ta.selectionStart;
+          const lineStart = this.input.lastIndexOf('\n', pos - 1) + 1;
+          const needsBlankBefore = lineStart > 0 && this.input[lineStart - 1] !== '\n';
+          const hr = (needsBlankBefore ? '\n\n' : '') + '---\n';
+          this.input = this.input.slice(0, lineStart) + hr + this.input.slice(lineStart);
+          const newPos = lineStart + hr.length;
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
+          this.run();
+        },
+
+        clearDraft() {
+          if (!confirm("Clear the editor and delete your saved draft? This can't be undone.")) return;
+          this.input = '';
+          localStorage.removeItem(STORAGE_KEY);
+          this.savedAt = '';
+          this.restored = false;
+          this.run();
+        },
+
+        async copyMarkdown() {
+          await navigator.clipboard.writeText(this.input);
+          this.flash('Copied');
+        },
+        exportAction(kind) {
+          ({
+            'copy-html': () => this.copyHtml(),
+            'copy-rich': () => this.copyRichClick(),
+            'download-md': () => this.downloadMd(),
+            'download-html': () => this.downloadHtml(),
+            'print-pdf': () => this.printPdf(),
+          })[kind]?.();
+        },
+        downloadMd() {
+          window.downloadFile(this.input, 'document.md', 'text/markdown;charset=utf-8');
+          this.flash('Downloaded');
+        },
+        downloadHtml() {
+          const html = this.opts.fullDocument ? this.wrapDocument(this.fragment) : this.fragment;
+          window.downloadFile(html, 'document.html', 'text/html;charset=utf-8');
+          this.flash('Downloaded');
+        },
+        async copyHtml() {
+          const html = this.opts.fullDocument ? this.wrapDocument(this.fragment) : this.fragment;
+          await navigator.clipboard.writeText(html);
+          this.flash('HTML copied');
+        },
+        async printPdf() {
+          this.error = '';
+          try {
+            const html = sanitizeHtml(await convertMarkdown(this.input, this.opts));
+            const doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title><style>'
+              + '@page { size: A4; margin: 2cm; }'
+              + "body { font: 11pt/1.55 Georgia, 'Times New Roman', serif; color:#1a1a1a; }"
+              + 'h1,h2,h3 { font-family: Helvetica, Arial, sans-serif; line-height:1.25; break-after: avoid; }'
+              + 'pre { background:#f6f6f6; padding:.75em; font:9pt/1.4 ui-monospace,monospace; white-space:pre-wrap; word-wrap:break-word; break-inside: avoid; }'
+              + 'code { font-family: ui-monospace, monospace; font-size:.9em; }'
+              + 'table { border-collapse: collapse; width:100%; break-inside: avoid; }'
+              + 'th,td { border:1px solid #999; padding:.35em .6em; text-align:left; }'
+              + 'blockquote { border-left:3px solid #ccc; margin-left:0; padding-left:1em; color:#555; }'
+              + 'img { max-width:100%; }'
+              + '.mermaid-diagram { overflow-x:auto; }'
+              + '.mermaid-diagram svg { max-width:100%; height:auto; }'
+              + '.mermaid-error { background:#fef2f2; color:#b91c1c; padding:.75em; border-radius:.375em; }'
+              + (this.opts.math ? getKatexCssText() : '')
+              + '</style></head><body>' + html + '</body></html>';
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+            document.body.appendChild(f);
+            f.srcdoc = doc;
+            f.onload = () => {
+              f.contentWindow.focus();
+              f.contentWindow.print();
+              setTimeout(() => f.remove(), 60000);
+            };
+            this.flash('Opening print dialog…');
+          } catch (e) {
+            this.error = e.message || 'Could not prepare the PDF — try again.';
+          }
+        },
+
+        // ---- shared insert-at-cursor, used by both import flows ----
+        insertAtCursor(text) {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          this.input = this.input.slice(0, start) + text + this.input.slice(end);
+          const newPos = start + text.length;
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
+          this.run();
+        },
+
+        // ---- import: HTML / CSV / JSON ----
+        openImport(kind) {
+          this.importKind = kind;
+          if (kind === 'html') {
+            this.importHtml.text = '';
+            this.importHtml.error = '';
+            ensureTurndownLoaded().catch(() => {}); // warm the lazy load while the user pastes
+          } else {
+            this.importCsv.text = '';
+            this.importCsv.error = '';
+            ensurePapaParseLoaded().catch(() => {});
+          }
+        },
+        closeImport() {
+          this.importKind = null;
+        },
+        async onImportFile(kind, event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          const text = await file.text();
+          if (kind === 'html') this.importHtml.text = text;
+          else this.importCsv.text = text;
+        },
+        async confirmImportHtml() {
+          this.importHtml.error = '';
+          try {
+            await ensureTurndownLoaded();
+            const td = new TurndownService({
+              headingStyle: this.importHtml.headingStyle,
+              codeBlockStyle: this.importHtml.codeBlockStyle,
+              bulletListMarker: this.importHtml.bulletListMarker,
+            });
+            turndownPluginGfm.gfm(td);
+            const result = td.turndown(this.importHtml.text);
+            this.insertAtCursor(result);
+            this.closeImport();
+          } catch (e) {
+            this.importHtml.error = e.message || 'Conversion failed';
+          }
+        },
+        async confirmImportCsv() {
+          this.importCsv.error = '';
+          try {
+            if (!this.importCsv.text.trim()) throw new Error('Paste or upload some CSV or JSON first.');
+            let header, rows;
+            if (this.importCsv.mode === 'csv') {
+              await ensurePapaParseLoaded();
+              const parsed = Papa.parse(this.importCsv.text.trim(), { skipEmptyLines: true });
+              if (parsed.errors.length) throw new Error(parsed.errors[0].message);
+              const data = parsed.data;
+              if (this.importCsv.header) {
+                header = data[0] || [];
+                rows = data.slice(1);
+              } else {
+                const cols = (data[0] || []).length;
+                header = Array.from({ length: cols }, (_, i) => `Column ${i + 1}`);
+                rows = data;
+              }
+            } else {
+              const arr = JSON.parse(this.importCsv.text);
+              if (!Array.isArray(arr)) throw new Error('JSON input must be an array of objects');
+              header = [...new Set(arr.flatMap((o) => Object.keys(o)))];
+              rows = arr.map((o) => header.map((c) => o[c] ?? ''));
+            }
+            const result = rowsToMdTable(header, rows, this.importCsv.align);
+            this.insertAtCursor(result);
+            this.closeImport();
+          } catch (e) {
+            this.importCsv.error = e.message || 'Conversion failed';
+          }
+        },
+      };
+    }
+  </script>
+</body>
+</html>
