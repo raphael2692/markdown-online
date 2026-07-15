@@ -33,7 +33,9 @@ natively — this wiki is for engineering depth, not visitor-facing content.
 - **Icons**: Lucide, inlined as static `<svg>` markup (not the JS runtime),
   so icons stay themeable via `currentColor`/Tailwind classes and keep
   working with JavaScript disabled. Reference/source copies of each icon
-  used on the site live in `site/assets/vendor/lucide/`.
+  used on the site live in `site/assets/vendor/lucide/`. One exception: the
+  header/footer GitHub link uses the GitHub brand mark (a fill-based path,
+  not a Lucide stroke icon) since Lucide doesn't ship brand logos.
 
 ## Markdown extensions (smart typography, math, diagrams)
 
