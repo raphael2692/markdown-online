@@ -1,8 +1,11 @@
-<!-- docs-sync: 5f5de07 -->
+<!-- docs-sync: 5a41c38 -->
 
 # Changelog
 
 ## [Unreleased]
+
+### Added
+- Dark mode: a header toggle on every page, persisted via `localStorage` (falling back to OS preference) and applied before first paint to avoid a flash of the wrong theme. The editor's generated content follows the theme too — Mermaid diagrams re-render under Mermaid's own dark theme and highlight.js code blocks swap to a vendored `github-dark` stylesheet — while Print/PDF export and the rich clipboard copy intentionally stay light-only (`5a41c38`)
 
 ### Fixed
 - Header nav no longer shows an "Open Editor" link while already on the editor page (`5f5de07`)

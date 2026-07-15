@@ -32,9 +32,11 @@ natively — this wiki is for engineering depth, not visitor-facing content.
   see below — and `pinesSelect()`, a themeable button+listbox mixin that
   replaces every native `<select>` on the site, since a native select's open
   option list is drawn by the OS and can't be styled to match the rest of
-  the Pines UI), `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify,
-  KaTeX, Mermaid, highlight.js, turndown, turndown-plugin-gfm, PapaParse —
-  vendored locally, no CDN hotlinking in production).
+  the Pines UI), `site/assets/theme.js` (the dark-mode toggle — see below),
+  `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify, KaTeX, Mermaid,
+  highlight.js — light **and** dark stylesheets — turndown,
+  turndown-plugin-gfm, PapaParse — vendored locally, no CDN hotlinking in
+  production).
 - **Icons**: Lucide, inlined as static `<svg>` markup (not the JS runtime),
   so icons stay themeable via `currentColor`/Tailwind classes and keep
   working with JavaScript disabled. Reference/source copies of each icon
@@ -218,6 +220,66 @@ elsewhere to avoid a stale async load racing a newer edit.
   script's own `src` (`ASSETS_BASE`, top of the file) — if a custom domain
   or root repo replaces this setup, set `BASE_PATH = ""` and `ASSETS_BASE`
   resolves to `""` automatically.
+
+## Dark mode
+
+A header toggle (`#theme-toggle`, in `site/partials/header.html`, so it's on
+every page) flips a `.dark` class on `<html>`. Tailwind's `dark:` variant is
+remapped in `site/assets/input.css` to key off that class
+(`@custom-variant dark (&:where(.dark, .dark *));`) rather than the default
+`prefers-color-scheme` media query, so the toggle can override the OS
+setting — every color utility across the site (and the two hand-rolled
+non-Tailwind stylesheets, `.md-preview`'s inline styles and the Mermaid
+error box) has a `dark:`/`.dark` counterpart.
+
+- **No flash of the wrong theme**: `site/partials/theme-init.html` is
+  included at the very top of every page's `<head>`, before the stylesheet
+  link. It's a small inline (not deferred) `<script>` that reads
+  `localStorage.getItem('theme')`, falls back to
+  `matchMedia('(prefers-color-scheme: dark)')` if nothing's stored, and
+  toggles the `.dark` class immediately — synchronously, before the parser
+  reaches `<body>`, so there's nothing to flash.
+- **The toggle itself** lives in `site/assets/theme.js`, deferred and loaded
+  on every page (not just `/editor/`) since the button is in the shared
+  header. Clicking it writes the explicit choice to `localStorage` and
+  dispatches a `themechange` `CustomEvent` on `document`. Until the user
+  makes an explicit choice, a `matchMedia` change listener keeps following
+  the OS setting live. The sun/moon icons swap via plain `dark:hidden` /
+  `dark:block` on the two SVGs — no icon-swapping JS needed.
+- **Generated content follows the theme too**, which needs more than a CSS
+  swap since two of the three lazy-loaded rich features bake colors in at
+  render/highlight time rather than referencing them via a stylesheet:
+  - **Mermaid diagrams** bake their theme's colors directly into the
+    rendered SVG's attributes, so a `themechange` listener isn't enough by
+    itself — `toolWidget()` (in `site/editor/index.html`) listens for the
+    event, awaits `syncMermaidTheme()` (re-runs `mermaid.initialize()` with
+    `theme: 'dark'`/`'default'`, from `site.js`), then calls `run()` again to
+    regenerate every diagram currently on screen. The explicit `await`
+    matters: it's what guarantees `mermaid.initialize()` lands before the
+    regenerated `mermaid.render()` calls, rather than relying on two
+    separate `themechange` listeners (this one and site.js's own, below)
+    firing in a particular order.
+  - **highlight.js** code coloring is plain CSS classes
+    (`hljs-keyword`, `hljs-string`, …) painted once by
+    `hljs.highlightElement()`, so following the theme is just swapping which
+    stylesheet is active — `syncHljsTheme()` (`site.js`) flips the loaded
+    `<link>`'s `href` between `github.min.css` and the newly-vendored
+    `github-dark.min.css` (same pinned highlight.js version). No
+    re-highlighting needed.
+  - **KaTeX** math needs no theme-awareness at all — its CSS already colors
+    everything via `currentColor`, so it inherits `.md-preview`'s text color
+    automatically.
+  - A page-wide `themechange` listener in `site.js` calls both sync
+    functions (as no-ops if that feature was never lazy-loaded on the
+    current page).
+- **Print/PDF export and the rich clipboard copy (`printPdf()`,
+  `copyRich()`) intentionally stay light-only**, regardless of the on-page
+  theme — both already hardcode their own print-appropriate/paste-appropriate
+  styles, since they're meant to look like a printed document or a plain
+  Word/Docs paste, not a mirror of the editor's on-screen theme.
+- `:root { color-scheme: light; } .dark { color-scheme: dark; }` in
+  `input.css` lets native form controls (checkboxes, scrollbars) pick up the
+  browser's own dark rendering too.
 
 ## Known gaps (tracked, not hidden)
 
