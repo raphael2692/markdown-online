@@ -379,6 +379,36 @@ async function renderMermaidDiagrams(html) {
   return tpl.innerHTML;
 }
 
+// DBML integration follows the same "post-process marked's plain
+// <pre><code class="language-dbml">" pattern as Mermaid above, for the same
+// reason (marked's renderer merge is synchronous-only). Unlike Mermaid,
+// this isn't a translation into another diagram grammar — dbml.js parses
+// real DBML and draws its own SVG — so there's no intermediate render()
+// call into a vendored library, just window.DbmlRenderer from that
+// lazily-loaded first-party module.
+async function renderDbmlDiagrams(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const blocks = tpl.content.querySelectorAll('code.language-dbml');
+  for (const code of blocks) {
+    const pre = code.closest('pre');
+    try {
+      const { svg } = window.DbmlRenderer.render(code.textContent, { dark: mermaidTheme() === 'dark' });
+      const div = document.createElement('div');
+      div.className = 'mermaid-diagram';
+      // Built entirely from document.createElementNS + textContent (see
+      // dbml.js), never from concatenated HTML strings, so there's nothing
+      // for DOMPurify to catch here — this pass is defense-in-depth, kept
+      // for the same reason every other render site sanitizes its output.
+      div.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
+      pre.replaceWith(div);
+    } catch (e) {
+      pre.outerHTML = `<pre class="mermaid-error">DBML error: ${DOMPurify.sanitize(e.message || String(e))}</pre>`;
+    }
+  }
+  return tpl.innerHTML;
+}
+
 // Single shared conversion pipeline used by every tool widget and by
 // copyRich(), so the markdown -> HTML rules stay identical everywhere
 // instead of being reimplemented at each call site.
@@ -388,6 +418,7 @@ async function convertMarkdown(input, opts) {
   let html = marked.parse(input, { gfm: true, breaks: !!opts.gfmBreaks });
   if (opts.smartypants) html = smartyPants(html);
   if (opts.mermaid) html = await renderMermaidDiagrams(html);
+  if (opts.dbml) html = await renderDbmlDiagrams(html);
   return html;
 }
 window.convertMarkdown = convertMarkdown;
@@ -487,12 +518,29 @@ function syncMermaidTheme() {
 }
 window.syncMermaidTheme = syncMermaidTheme;
 
+let dbmlReadyPromise = null;
+
+// dbml.js is first-party code, not a third-party vendor library — but it's
+// a non-trivial parser/layout/renderer that only a fraction of visitors
+// will ever trigger, so it follows the same lazy-load-on-first-use
+// discipline as the vendored libraries above rather than shipping in the
+// deferred head-script bundle every page pays for.
+function ensureDbmlLoaded() {
+  if (!dbmlReadyPromise) {
+    dbmlReadyPromise = loadScript(`${ASSETS_BASE}/assets/dbml.js`)
+      .catch((e) => { dbmlReadyPromise = null; throw e; });
+  }
+  return dbmlReadyPromise;
+}
+window.ensureDbmlLoaded = ensureDbmlLoaded;
+
 // Rich features (math, diagrams) turn on automatically the moment their
 // syntax appears in the document, rather than behind a manual checkbox the
 // user has to remember to flip first. Once enabled they stay enabled for the
 // rest of the session, even if the triggering syntax is later deleted.
 const MATH_RE = /\$\$[^$]+\$\$|\$[^\s$][^$]*\$/;
 const MERMAID_RE = /```mermaid\b/;
+const DBML_RE = /```dbml\b/;
 
 async function autoEnableRichFeatures(input, opts) {
   const errors = [];
@@ -510,6 +558,14 @@ async function autoEnableRichFeatures(input, opts) {
       opts.mermaid = true;
     } catch (e) {
       errors.push('Could not load Mermaid — check your connection and try again.');
+    }
+  }
+  if (DBML_RE.test(input) && !opts.dbml) {
+    try {
+      await ensureDbmlLoaded();
+      opts.dbml = true;
+    } catch (e) {
+      errors.push('Could not load the DBML renderer — check your connection and try again.');
     }
   }
   return errors;

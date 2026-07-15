@@ -18,6 +18,10 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   straight onto your clipboard for pasting into Word or Google Docs.
 - **Math and diagrams** — inline/block KaTeX math and Mermaid diagrams,
   auto-detected as you type.
+- **Database schema diagrams** — write real DBML in a fenced code block and
+  get an auto-rendered, auto-laid-out entity-relationship diagram (tables,
+  columns, keys, enums, and crow's-foot relationships), no dbdiagram.io
+  round-trip needed.
 - **Syntax-highlighted code blocks** in the live preview.
 
 Every conversion runs on vetted, open-source JavaScript libraries loaded

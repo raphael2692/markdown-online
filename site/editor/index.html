@@ -334,6 +334,7 @@
 
           <div x-data="pinesSelect({
                   items: [
+                    { header: 'Mermaid diagrams' },
                     { value: 'flowchart', label: 'Flowchart' },
                     { value: 'sequence', label: 'Sequence diagram' },
                     { value: 'class', label: 'Class diagram' },
@@ -342,6 +343,8 @@
                     { value: 'gantt', label: 'Gantt chart' },
                     { value: 'pie', label: 'Pie chart' },
                     { value: 'mindmap', label: 'Mind map' },
+                    { header: 'Database schema' },
+                    { value: 'dbml', label: 'DBML (auto-rendered ER diagram)' },
                   ],
                   value: () => null,
                   onSelect: (v) => insertDiagram(v),
@@ -351,7 +354,7 @@
                @keydown.down.prevent="open ? moveActive(1) : openMenu()"
                @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
                @keydown.enter.prevent="open ? chooseActive() : openMenu()"
-               class="relative inline-block w-32" title="Insert diagram — inserts a Mermaid diagram template at the cursor">
+               class="relative inline-block w-32" title="Insert diagram — inserts a Mermaid or DBML diagram template at the cursor">
             <button type="button" x-ref="pinesSelectButton" @click="toggle()"
               :aria-expanded="open" aria-haspopup="listbox" aria-label="Insert diagram"
               class="flex min-h-[30px] w-full items-center gap-1.5 rounded border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs hover:bg-neutral-50 dark:hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500">
@@ -764,6 +767,25 @@
       mindmap: 'mindmap\n  root((Project))\n    Idea A\n    Idea B\n      Sub-idea',
     };
 
+    const DBML_TEMPLATE = [
+      'Table users {',
+      '  id int [pk, increment]',
+      '  email varchar [unique, not null]',
+      '  role user_role',
+      '}',
+      '',
+      'Table posts {',
+      '  id int [pk, increment]',
+      '  user_id int [not null, ref: > users.id]',
+      '  title varchar [not null]',
+      '}',
+      '',
+      'Enum user_role {',
+      '  admin',
+      '  member',
+      '}',
+    ].join('\n');
+
     function toolWidget() {
       return {
         ...paneResizer({ split: 33, paneHeight: 720, maxHeight: 1400 }),
@@ -773,7 +795,7 @@
         _saveTimer: null, _renderGen: 0,
         currentHeadingLevel: '',
         opts: {
-          smartypants: true, math: false, mermaid: false,
+          smartypants: true, math: false, mermaid: false, dbml: false,
           gfmBreaks: true,
         },
         importKind: null,
@@ -817,7 +839,11 @@
           // run first) so mermaid.initialize() always lands before run()'s
           // mermaid.render() calls, regardless of listener registration order.
           document.addEventListener('themechange', async () => {
-            if (this.opts.mermaid) { await syncMermaidTheme(); this.run(); }
+            if (this.opts.mermaid) await syncMermaidTheme();
+            // DBML diagrams bake their theme's colors into the SVG at
+            // render time too (see dbml.js) — no separate "re-init" step
+            // like Mermaid's, just a re-run of the pipeline below.
+            if (this.opts.mermaid || this.opts.dbml) this.run();
           });
         },
 
@@ -926,6 +952,7 @@
         },
         insertDiagram(type) {
           if (!type) return;
+          if (type === 'dbml') { this.wrapSelection('```dbml\n', '\n```', DBML_TEMPLATE); return; }
           this.wrapSelection('```mermaid\n', '\n```', MERMAID_TEMPLATES[type] || MERMAID_TEMPLATES.flowchart);
         },
         insertMath() {
