@@ -494,7 +494,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
               </button>
               <span class="mx-0.5 h-5 w-px bg-neutral-200 dark:bg-neutral-700" aria-hidden="true"></span>
-              <button type="button" @click="zoomToFit()" title="Zoom to fit — scales the preview so everything is visible" aria-label="Zoom to fit"
+              <button type="button" @click="zoomToFit()" title="Fit width — scales the preview to fill the pane's full width" aria-label="Fit width"
                 class="flex h-6 w-6 items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M21 8V5a2 2 0 0 0-2-2h-3" /><path d="M3 16v3a2 2 0 0 0 2 2h3" /><path d="M16 21h3a2 2 0 0 0 2-2v-3" /></svg>
               </button>
@@ -1119,16 +1119,17 @@
         zoomIn() { this.previewZoom = Math.min(this.zoomMax, this.previewZoom + ZOOM_STEP); },
         zoomOut() { this.previewZoom = Math.max(this.zoomMin, this.previewZoom - ZOOM_STEP); },
         resetZoom() { this.previewZoom = 100; },
-        // Scales the preview so its full (unzoomed) content fits inside the
-        // visible viewport on both axes. The measurement must happen with
-        // zoom forced to 1: scrollWidth/Height inside the zoomed subtree are
-        // reported in its own logical units, but inner is an auto-width
-        // block whose *layout* width resolves to viewportWidth / zoom — so
-        // measured at, say, 27% zoom, inner.scrollWidth inflates to exactly
-        // "whatever fits right now" and the computed fit can never scale
-        // back up (and text has reflowed to the wrong width for scrollHeight
-        // too). Forcing zoom: 1 for the reads is synchronous, so nothing
-        // paints in between.
+        // Fit to width: scales the preview so the widest content exactly
+        // fills the pane's width — the full horizontal space is always
+        // used, and anything taller than the pane scrolls vertically.
+        // The measurement must happen with zoom forced to 1:
+        // scrollWidth/Height inside the zoomed subtree are reported in its
+        // own logical units, but inner is an auto-width block whose
+        // *layout* width resolves to viewportWidth / zoom — so measured at,
+        // say, 27% zoom, inner.scrollWidth inflates to exactly "whatever
+        // fits right now" and the computed fit can never scale back up.
+        // Forcing zoom: 1 for the reads is synchronous, so nothing paints
+        // in between.
         // inner.scrollWidth alone isn't enough, either: diagrams/tables/code
         // blocks set their own overflow-x so they scroll independently
         // instead of pushing inner's scrollWidth out, so an oversized one's
@@ -1138,18 +1139,15 @@
           if (!viewport || !inner) return;
           const zoomStyle = inner.style.zoom;
           inner.style.zoom = 1;
-          let naturalWidth = inner.scrollWidth, naturalHeight = inner.scrollHeight;
+          let naturalWidth = inner.scrollWidth;
           inner.querySelectorAll('.mermaid-diagram, pre, table').forEach((el) => {
             naturalWidth = Math.max(naturalWidth, el.scrollWidth);
-            naturalHeight = Math.max(naturalHeight, el.scrollHeight);
           });
           inner.style.zoom = zoomStyle;
-          if (!naturalWidth || !naturalHeight) return;
+          if (!naturalWidth) return;
           const cs = getComputedStyle(viewport);
           const availWidth = viewport.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-          const availHeight = viewport.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-          const fitScale = Math.min(availWidth / naturalWidth, availHeight / naturalHeight);
-          this.previewZoom = Math.min(this.zoomMax, Math.max(this.zoomMin, Math.floor(fitScale * 100)));
+          this.previewZoom = Math.min(this.zoomMax, Math.max(this.zoomMin, Math.floor((availWidth / naturalWidth) * 100)));
           this.$nextTick(() => { viewport.scrollTop = 0; viewport.scrollLeft = 0; });
         },
         // Same drag-to-track idiom as startDrag/startVDrag in paneResizer,
