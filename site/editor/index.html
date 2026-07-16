@@ -97,6 +97,28 @@
               <span x-text="syncScroll ? 'Sync on' : 'Sync off'"></span>
             </button>
 
+            <button type="button" x-show="view !== 'preview'" @click="toolbarOpen = !toolbarOpen"
+              :aria-expanded="toolbarOpen"
+              class="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+              :title="toolbarOpen ? 'Hide the formatting toolbar' : 'Show the formatting toolbar'">
+              <svg x-show="toolbarOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="m7 20 5-5 5 5" /><path d="m7 4 5 5 5-5" /></svg>
+              <svg x-show="!toolbarOpen" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="m7 15 5 5 5-5" /><path d="m7 9 5-5 5 5" /></svg>
+              Toolbar
+            </button>
+
+            <input type="file" x-ref="mdFileInput" accept=".md,.markdown,.mdown,.mkd,.txt"
+              class="hidden" @change="onOpenMarkdownFile($event)">
+
+            <button type="button" @click="clearDraft()" title="Clear the editor and delete your saved draft"
+              class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+              Clear
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span x-show="toast" x-transition.opacity x-cloak class="mr-1 text-xs text-green-700 dark:text-green-400" x-text="toast"></span>
+
             <div x-data="pinesSelect({
                     items: [
                       { value: 'md', label: 'Open Markdown file…' },
@@ -122,7 +144,7 @@
               <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
                 x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
                 :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
-                class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-1 text-xs shadow-lg focus:outline-none"
+                class="absolute right-0 z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-1 text-xs shadow-lg focus:outline-none"
                 role="listbox">
                 <template x-for="(item, idx) in items" :key="idx">
                   <li :data-idx="idx" role="presentation">
@@ -139,23 +161,8 @@
               </ul>
             </div>
 
-            <input type="file" x-ref="mdFileInput" accept=".md,.markdown,.mdown,.mkd,.txt"
-              class="hidden" @change="onOpenMarkdownFile($event)">
-
-            <button type="button" @click="clearDraft()" title="Clear the editor and delete your saved draft"
-              class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-              Clear
-            </button>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="mr-2 text-xs text-neutral-500 dark:text-neutral-400"
-              title="Token count is an estimate for LLMs (common heuristic: ≈4 characters per token)"
-              x-text="`${wordCount} words · ${charCount} characters · ~${tokenCount} tokens`"></span>
-
             <button type="button" @click="copyMarkdown()" title="Copy the raw Markdown source"
-              class="flex items-center gap-1.5 rounded-md bg-neutral-900 dark:bg-neutral-100 px-2.5 py-1.5 text-xs text-white dark:text-neutral-900 hover:bg-neutral-700 dark:hover:bg-neutral-300">
+              class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
               Copy Markdown
             </button>
@@ -203,11 +210,10 @@
               </ul>
             </div>
 
-            <span x-show="toast" x-transition.opacity x-cloak class="text-xs text-green-700 dark:text-green-400" x-text="toast"></span>
           </div>
         </div>
 
-        <div x-show="view !== 'preview'" class="flex flex-wrap items-center gap-1 border-b border-neutral-200 dark:border-neutral-800 p-2">
+        <div x-show="view !== 'preview' && toolbarOpen" class="flex flex-wrap items-center gap-1 border-b border-neutral-200 dark:border-neutral-800 p-2">
           <div x-data="pinesSelect({
                   items: [
                     { value: '', label: 'Paragraph' },
@@ -419,8 +425,11 @@
                 class="editor-backdrop pointer-events-none absolute inset-0 select-none overflow-hidden whitespace-pre py-2 pl-12 pr-2 font-mono text-sm leading-6 text-neutral-800 dark:text-neutral-200"></div>
               <!-- z-10 keeps the gutter painting above the (now position:relative)
                    textarea, so horizontally scrolled text still slides under it. -->
+              <!-- Seamless gutter: same background as the editor (opaque, so
+                   horizontally scrolled text still hides beneath it) with a
+                   subtle right divider instead of a tinted panel. -->
               <div x-ref="mdGutter" aria-hidden="true"
-                class="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 select-none overflow-hidden bg-neutral-50 dark:bg-neutral-800 py-2 text-right font-mono text-sm leading-6 text-neutral-400 dark:text-neutral-500">
+                class="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 select-none overflow-hidden border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-2 text-right font-mono text-sm leading-6 text-neutral-400 dark:text-neutral-500">
                 <template x-for="n in inputLineCount" :key="n">
                   <div class="pr-2 leading-6" x-text="n"></div>
                 </template>
@@ -514,9 +523,55 @@
           <div class="h-px w-8 bg-neutral-400 dark:bg-neutral-600"></div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3 border-t border-neutral-200 dark:border-neutral-800 p-3 text-xs text-neutral-500 dark:text-neutral-400">
-          <span x-show="restored" x-cloak>Draft restored from your last visit.</span>
-          <span x-show="savedAt" x-cloak x-text="'Saved ' + savedAt"></span>
+        <!-- Diagram mini-map: one thumbnail per diagram in the document
+             (per table for DBML blocks). Click jumps the editor to the
+             corresponding code block; hover shows a zoomed popover. -->
+        <div x-show="minimap.length" x-cloak>
+          <div class="flex items-center px-2 py-1">
+            <button type="button" @click="minimapOpen = !minimapOpen" :aria-expanded="minimapOpen"
+              class="flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[11px] text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"
+              :title="minimapOpen ? 'Collapse the diagram map' : 'Expand the diagram map'">
+              <svg x-show="minimapOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3 w-3" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              <svg x-show="!minimapOpen" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3 w-3" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+              <span x-text="`Diagrams (${minimap.length})`"></span>
+            </button>
+          </div>
+          <div x-show="minimapOpen" class="flex gap-2 overflow-x-auto px-3 pb-2">
+            <template x-for="(item, idx) in minimap" :key="idx">
+              <button type="button" @click="gotoMinimapItem(item)"
+                @mouseenter="showMinimapPopover(item, $event)" @mouseleave="hideMinimapPopover()"
+                :title="`Jump to ${item.label} in the editor`"
+                class="flex w-28 shrink-0 flex-col overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-400 dark:hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500">
+                <span class="minimap-thumb block h-16 w-full p-1" aria-hidden="true" x-html="item.svg"></span>
+                <span class="block truncate border-t border-neutral-100 dark:border-neutral-800 px-1.5 py-0.5 text-left text-[10px] text-neutral-500 dark:text-neutral-400" x-text="item.label"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Hover-zoom popover for the mini-map: fixed-positioned (computed
+             from the thumbnail's rect) so the strip's own overflow-x scroll
+             container can't clip it. -->
+        <div x-show="minimapPopover" x-cloak :style="minimapPopover ? minimapPopover.style : ''"
+          class="minimap-popover pointer-events-none fixed z-50 flex flex-col overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl">
+          <span class="block border-b border-neutral-100 dark:border-neutral-800 px-2 py-1 text-[11px] font-medium text-neutral-500 dark:text-neutral-400" x-text="minimapPopover ? minimapPopover.label : ''"></span>
+          <span class="block min-h-0 flex-1 p-2" x-html="minimapPopover ? minimapPopover.svg : ''"></span>
+        </div>
+
+        <!-- Status bar: document statistics, cursor position, and encoding
+             live here (VS Code-style) so the main toolbar stays actions-only. -->
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-0.5 border-t border-neutral-200 dark:border-neutral-800 px-3 py-1 text-[11px] text-neutral-400 dark:text-neutral-500">
+          <div class="flex flex-wrap items-center gap-x-3">
+            <span x-show="restored" x-cloak>Draft restored from your last visit.</span>
+            <span x-show="savedAt" x-cloak x-text="'Saved ' + savedAt"></span>
+          </div>
+          <div class="flex flex-wrap items-center gap-x-3 tabular-nums">
+            <span x-text="`Ln ${cursorLine}, Col ${cursorCol}`"></span>
+            <span title="Token count is an estimate for LLMs (common heuristic: ≈4 characters per token)"
+              x-text="`${wordCount} words · ${charCount} characters · ~${tokenCount} tokens`"></span>
+            <span>UTF-8</span>
+            <span>Markdown</span>
+          </div>
         </div>
 
       </div>
@@ -840,6 +895,7 @@
     ].join('\n');
 
     const STORAGE_KEY = 'markdown-editor-draft-v1';
+    const UI_KEY = 'markdown-editor-ui-v1';
     const ZOOM_MIN = 25, ZOOM_MAX = 400, ZOOM_STEP = 10;
 
     const MERMAID_TEMPLATES = {
@@ -886,6 +942,9 @@
         _saveTimer: null, _renderGen: 0, _hl: null,
         composing: false,
         currentHeadingLevel: '',
+        cursorLine: 1, cursorCol: 1,
+        toolbarOpen: true,
+        minimap: [], minimapOpen: true, minimapPopover: null,
         previewZoom: 100, panMode: false, panDragging: false,
         zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX,
         opts: {
@@ -913,6 +972,13 @@
             this.input = SAMPLE_MD;
           }
           this.initHistory();
+          try {
+            const ui = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
+            if (ui.toolbarOpen === false) this.toolbarOpen = false;
+            if (ui.minimapOpen === false) this.minimapOpen = false;
+          } catch (e) { /* corrupt prefs — keep defaults */ }
+          this.$watch('toolbarOpen', () => this._saveUiPrefs());
+          this.$watch('minimapOpen', () => this._saveUiPrefs());
           this.$watch('input', (val) => {
             clearTimeout(this._saveTimer);
             this._saveTimer = setTimeout(() => {
@@ -972,6 +1038,7 @@
             if (myGen !== this._renderGen) return; // a newer run() already superseded this one
             this.fragment = html;
             this.$refs.previewInner.innerHTML = sanitizeHtml(this.fragment);
+            this.buildMinimap();
             // Colors the preview only — Copy/Download/Print HTML keep marked's
             // plain `language-*` class untouched.
             ensureHljsLoaded().then(() => {
@@ -1199,6 +1266,110 @@
           document.addEventListener('touchend', onUp);
         },
 
+        // ---- diagram mini-map ----
+        // One entry per diagram in the document — and one per *table* for
+        // DBML blocks, so each thumbnail maps to a `Table name { ... }`
+        // block the editor can jump to. Mermaid thumbnails reuse the SVGs
+        // already rendered into the preview (matching k-th diagram fence to
+        // k-th rendered .mermaid-diagram/.mermaid-error element, both being
+        // in document order); DBML tables are re-rendered individually via
+        // the first-party DbmlRenderer, which is cheap and yields a clean
+        // single-table diagram (refs to absent tables are dropped by the
+        // renderer, not errors).
+        buildMinimap() {
+          try {
+            if (!this.opts.mermaid && !this.opts.dbml) { this.minimap = []; return; }
+            const dark = document.documentElement.classList.contains('dark');
+            const rendered = this.$refs.previewInner.querySelectorAll('.mermaid-diagram, .mermaid-error');
+            const lines = this.input.split('\n');
+            const items = [];
+            let diagIdx = 0;
+            for (let i = 0; i < lines.length; i++) {
+              const m = /^ {0,3}(`{3,}|~{3,})\s*(mermaid|dbml)\s*$/.exec(lines[i]);
+              if (!m) continue;
+              const fenceChar = m[1][0], fenceLen = m[1].length, lang = m[2];
+              let j = i + 1;
+              while (j < lines.length) {
+                const t = lines[j].trim();
+                if (t.length >= fenceLen && t === fenceChar.repeat(t.length)) break;
+                j++;
+              }
+              const body = lines.slice(i + 1, j).join('\n');
+              if (lang === 'dbml' && window.DbmlRenderer) {
+                for (const snip of this._dbmlTableSnippets(body)) {
+                  try {
+                    const { svg } = window.DbmlRenderer.render(snip.text, { dark });
+                    items.push({
+                      label: snip.name,
+                      svg: DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } }),
+                      line: i + 1 + snip.startLine,
+                    });
+                  } catch (e) { /* unparseable table — no thumbnail for it */ }
+                }
+              } else if (lang === 'mermaid') {
+                const el = rendered[diagIdx];
+                const svg = el && el.querySelector ? el.querySelector('svg') : null;
+                // Rendered at generation time through sanitizeMermaidSvg, so
+                // outerHTML here is already-sanitized markup.
+                if (svg) items.push({ label: body.trim().split(/\s+/)[0] || 'diagram', svg: svg.outerHTML, line: i });
+              }
+              diagIdx++;
+              i = j;
+            }
+            this.minimap = items;
+          } catch (e) {
+            this.minimap = []; // the mini-map is an extra — never let it break the preview
+          }
+        },
+        // Regex-scan (not the full parser) so tables still get thumbnails
+        // even when another statement in the block fails to parse.
+        _dbmlTableSnippets(body) {
+          const lines = body.split('\n');
+          const out = [];
+          let i = 0;
+          while (i < lines.length) {
+            const m = /^\s*Table\s+"?([\w.]+)"?.*\{/i.exec(lines[i]);
+            if (!m) { i++; continue; }
+            let depth = 0, j = i;
+            for (; j < lines.length; j++) {
+              depth += (lines[j].match(/\{/g) || []).length - (lines[j].match(/\}/g) || []).length;
+              if (depth <= 0) break;
+            }
+            out.push({ name: m[1], startLine: i, text: lines.slice(i, j + 1).join('\n') });
+            i = j + 1;
+          }
+          return out;
+        },
+        gotoMinimapItem(item) {
+          if (this.view === 'preview') this.view = 'split';
+          const lines = this.input.split('\n');
+          let pos = 0;
+          for (let k = 0; k < item.line && k < lines.length; k++) pos += lines[k].length + 1;
+          // $nextTick: the textarea may have just been un-hidden by the view
+          // switch above and can't take focus/scroll until it renders.
+          this.$nextTick(() => {
+            const ta = this.$refs.mdTextarea;
+            ta.focus();
+            ta.setSelectionRange(pos, pos);
+            // Same fixed pane metrics as revealFindMatch: leading-6 (24px)
+            // lines under py-2 (8px) padding.
+            ta.scrollTop = Math.max(0, 8 + item.line * 24 - 24);
+            this.updateHeadingLevel();
+          });
+        },
+        showMinimapPopover(item, ev) {
+          const r = ev.currentTarget.getBoundingClientRect();
+          const W = 384, H = 288, GAP = 10;
+          const left = Math.min(Math.max(8, r.left + r.width / 2 - W / 2), Math.max(8, window.innerWidth - W - 8));
+          const top = r.top - H - GAP >= 8 ? r.top - H - GAP : r.bottom + GAP;
+          this.minimapPopover = { svg: item.svg, label: item.label, style: `left:${left}px;top:${top}px;width:${W}px;height:${H}px` };
+        },
+        hideMinimapPopover() { this.minimapPopover = null; },
+
+        _saveUiPrefs() {
+          localStorage.setItem(UI_KEY, JSON.stringify({ toolbarOpen: this.toolbarOpen, minimapOpen: this.minimapOpen }));
+        },
+
         // ---- toolbar formatting helpers ----
         wrapSelection(prefix, suffix, placeholder) {
           const ta = this.$refs.mdTextarea;
@@ -1240,6 +1411,10 @@
           if (lineEnd === -1) lineEnd = this.input.length;
           const match = this.input.slice(lineStart, lineEnd).match(/^(#{1,6})\s+/);
           this.currentHeadingLevel = match ? String(match[1].length) : '';
+          // Cursor position for the status bar — same caret the heading
+          // detection above already resolved, so track it here.
+          this.cursorLine = (this.input.slice(0, pos).match(/\n/g) || []).length + 1;
+          this.cursorCol = pos - lineStart + 1;
         },
         prefixLines(marker) {
           const ta = this.$refs.mdTextarea;

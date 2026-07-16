@@ -2,6 +2,16 @@
 @source not "assets/vendor/**";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Prefer developer-centric monospace faces where the visitor has them
+   installed, falling back to the platform's own. No webfont is shipped —
+   the page stays dependency-light and the editor's fixed line metrics
+   (leading-6) hold for any monospace face. Ligatures are already disabled
+   for the editor layers below, so Fira Code et al. can't break caret
+   alignment. */
+@theme {
+  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
 /* Lets native form controls (checkboxes, scrollbars, the file-input button)
    render with the browser's own dark palette instead of staying light. */
 :root { color-scheme: light; }
@@ -68,6 +78,15 @@
    uncolored — but responsive — textarea. */
 .overlay-off #tw-in { color: inherit; }
 .overlay-off .editor-backdrop { display: none; }
+
+/* Diagram mini-map thumbnails and their hover-zoom popover: the SVGs keep
+   their viewBox, so forcing width/height to fill the box letterboxes them
+   (preserveAspectRatio "meet") instead of rendering at natural size. */
+.minimap-thumb svg,
+.minimap-popover svg {
+  width: 100%;
+  height: 100%;
+}
 
 /* Rendered Markdown preview panes. Hand-rolled instead of the Tailwind
    Typography plugin, which the standalone (no-Node) CLI build can't resolve. */

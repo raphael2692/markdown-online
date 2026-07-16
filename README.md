@@ -13,8 +13,9 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
 - **Write, split, or preview** — a live editor with a synced side-by-side
   preview (scroll sync can be toggled off), or full-width writing/preview
   modes. Ctrl/Cmd+F opens an in-editor find bar with match highlighting,
-  and the status bar shows live word, character, and estimated LLM token
-  counts.
+  the formatting toolbar collapses out of the way when you just want to
+  write, and a slim status bar shows cursor line/column plus live word,
+  character, and estimated LLM token counts.
 - **Zoom, pan, and fit-to-view** in the rendered preview — zoom in/out or
   reset to 100%, a hand tool to drag-pan instead of scroll, and a
   zoom-to-fit button for oversized tables or diagrams.
@@ -29,6 +30,9 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   get an auto-rendered, auto-laid-out entity-relationship diagram (tables,
   columns, keys, enums, and crow's-foot relationships), no dbdiagram.io
   round-trip needed.
+- **Diagram mini-map** — a collapsible thumbnail strip of every diagram in
+  the document (one per table for DBML schemas): click a thumbnail to jump
+  the editor to its code block, hover for a zoomed-in preview.
 - **Syntax highlighting everywhere** — code blocks are colored in the live
   preview *and* in the write pane itself (Markdown structure plus fenced
   code in ~35 languages, including first-party Mermaid and DBML grammars).
