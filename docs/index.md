@@ -343,11 +343,17 @@ parts:
   relative bounds afterward. This matters because the pane is a plain
   `<textarea>`, which browsers otherwise treat Tab as a focus-change key —
   without this override, indenting code fences or nested lists would be
-  impossible from the keyboard. Ctrl/Cmd+F is intercepted too (`openFind()`,
-  below), and Escape closes the find bar when it's open.
-- **Find in document**: Ctrl/Cmd+F over the write pane opens a floating
-  find bar (absolute top-right inside the pane wrapper) instead of the
-  browser's page-wide find, which can't see into a scrolled textarea.
+  impossible from the keyboard. Escape in the textarea closes the find bar
+  when it's open.
+- **Find in document**: Ctrl/Cmd+F opens a floating find bar (absolute
+  top-right inside the pane wrapper) instead of the browser's page-wide
+  find, which can't see into a scrolled textarea. The shortcut is captured
+  at the **window** level (`onGlobalKeydown()`, a `@keydown.window` binding
+  on the tool section) — a textarea-scoped binding loses to the browser
+  find whenever focus is on a toolbar button or nowhere at all. Native find
+  stays available in preview-only view (no write pane to search) and while
+  the import modal is open; the find input stops propagation of its own
+  Ctrl+F so the window handler doesn't re-open over it.
   Matching is case-insensitive plain-text (`updateFindMatches()`), with an
   "N of M" counter, Enter/Shift+Enter (or the arrow buttons) cycling, and
   Escape closing. Because the pane's metrics are fixed by the highlight

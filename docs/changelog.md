@@ -1,11 +1,11 @@
-<!-- docs-sync: b254105 -->
+<!-- docs-sync: a6813dc -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
-- Find in the editor: Ctrl/Cmd+F over the write pane opens a floating find bar — case-insensitive matching with an "N of M" counter, Enter/Shift+Enter cycling, Escape to close, and a highlight painted over the current match via the pane's fixed monospace metrics (no third mirrored copy of the document) (`b254105`)
+- Find in the editor: Ctrl/Cmd+F anywhere on the editor page (captured at window level so it wins over the browser's page find; native find remains in preview-only view and the import modal) opens a floating find bar — case-insensitive matching with an "N of M" counter, Enter/Shift+Enter cycling, Escape to close, and a highlight painted over the current match via the pane's fixed monospace metrics (no third mirrored copy of the document) (`b254105`)
 - Scroll-sync toggle in split view: a "Sync on"/"Sync off" button next to the stack-panels toggle enables/disables the proportional scroll mirroring between the write and preview panes (`b254105`)
 - LLM token estimate in the status counters, alongside words and characters, using the common ≈4-characters-per-token heuristic (`b254105`)
 - Plain code-fence toolbar button: wraps the selection in `` ``` `` fences pushed onto their own lines, or inserts an empty fenced block with the cursor inside when nothing is selected (`b254105`)
