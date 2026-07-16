@@ -466,7 +466,7 @@
           class="flex flex-col md:flex-row"
           :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
           <div x-show="view !== 'preview'" class="min-w-0 border-b border-neutral-200 dark:border-neutral-800 p-3 md:border-b-0 md:border-r"
-            :class="view === 'split' ? 'split-pane-left' : 'md:w-full'">
+            :class="{'split-pane-left': view === 'split', 'md:w-full': view !== 'split', 'has-find': find.open}">
             <label for="tw-in" class="sr-only">Markdown input</label>
             <div class="pane-height relative w-full overflow-hidden rounded-md border border-neutral-300 dark:border-neutral-700"
               :class="composing && 'is-composing'">
@@ -660,7 +660,8 @@
             <span x-show="savedAt" x-cloak x-text="'Saved ' + savedAt"></span>
           </div>
           <div class="flex flex-wrap items-center gap-x-3 tabular-nums">
-            <span x-text="`Ln ${cursorLine}, Col ${cursorCol}`"></span>
+            <span title="Token count is an estimate for LLMs (common heuristic: ≈4 characters per token)"
+              x-text="`Ln ${cursorLine}, Col ${cursorCol}` + (selectedChars > 0 ? ` (${selectedWords} word${selectedWords === 1 ? '' : 's'}, ${selectedChars} char${selectedChars === 1 ? '' : 's'}, ~${selectedTokens} tokens selected)` : '')"></span>
             <span title="Token count is an estimate for LLMs (common heuristic: ≈4 characters per token)"
               x-text="`${wordCount} words · ${charCount} characters · ~${tokenCount} tokens`"></span>
             <span>UTF-8</span>
@@ -1038,7 +1039,7 @@
         _saveTimer: null, _renderGen: 0, _hl: null,
         composing: false,
         currentHeadingLevel: '',
-        cursorLine: 1, cursorCol: 1,
+        cursorLine: 1, cursorCol: 1, selectedChars: 0, selectedWords: 0, selectedTokens: 0,
         toolbarOpen: true,
         minimap: [], minimapOpen: true, minimapPopover: null,
         outline: [], outlineOpen: true,
@@ -1710,6 +1711,11 @@
           // detection above already resolved, so track it here.
           this.cursorLine = (this.input.slice(0, pos).match(/\n/g) || []).length + 1;
           this.cursorCol = pos - lineStart + 1;
+          const selStart = ta.selectionStart, selEnd = ta.selectionEnd;
+          this.selectedChars = selEnd - selStart;
+          this.selectedWords = this.selectedChars
+            ? (this.input.slice(selStart, selEnd).match(/\S+/g) || []).length : 0;
+          this.selectedTokens = Math.ceil(this.selectedChars / 4);
         },
         prefixLines(marker) {
           const ta = this.$refs.mdTextarea;

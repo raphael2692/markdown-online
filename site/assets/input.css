@@ -23,6 +23,15 @@
   .split-pane-left {
     flex: 0 0 var(--split, 50%);
   }
+  /* While the find/replace bar is open (.has-find, bound to find.open) the
+     pane must never get narrower than the bar plus the line-number gutter
+     and a little margin — the bar floats absolutely, so nothing in normal
+     layout would stop the split drag (or a window resize) from shrinking
+     the pane underneath it. min-width beats flex-basis in flex sizing, so
+     this holds on every layout pass with no JS measurement. */
+  .split-pane-left.has-find {
+    min-width: min(28rem, 100%);
+  }
 }
 
 /* User toggle to stack the right pane below the left one instead of side
