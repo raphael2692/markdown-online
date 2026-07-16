@@ -342,13 +342,13 @@
       components.push({ nodeIds, maxLayer });
     }
 
-    // 2. Lay out each component's columns left to right, then place
-    // components side by side. Column width = its widest node; column
-    // height = sum of its nodes' heights + gaps. Columns within a component
-    // are top-aligned (all start at the same y) rather than centered, so
-    // every table originates from the same horizontal row and grows
-    // downward by however many columns/rows it has.
-    let originX = 0;
+    // 2. Lay out each component's columns left to right at a local (0,0)
+    // origin. Column width = its widest node; column height = sum of its
+    // nodes' heights + gaps. Columns within a component are top-aligned
+    // (all start at the same y) rather than centered, so every table
+    // originates from the same horizontal row and grows downward by
+    // however many columns/rows it has.
+    const placed = [];
     for (const comp of components) {
       const columns = [];
       for (const id of comp.nodeIds) {
@@ -359,18 +359,42 @@
 
       const colWidths = columns.map((col) => Math.max(...col.map((id) => nodeById.get(id).width)));
 
-      let colX = originX;
+      const local = new Map();
+      let colX = 0, compHeight = 0;
       columns.forEach((col, ci) => {
         const x = colX + colWidths[ci] / 2;
         let y = 0;
         for (const id of col) {
           const node = nodeById.get(id);
-          pos.set(id, { x, y: y + node.height / 2 });
+          local.set(id, { x, y: y + node.height / 2 });
           y += node.height + ROW_GAP;
         }
+        compHeight = Math.max(compHeight, y - ROW_GAP);
         colX += colWidths[ci] + COL_GAP;
       });
-      originX = colX + COL_GAP;
+      placed.push({ local, width: colX - COL_GAP, height: compHeight });
+    }
+
+    // 3. Pack components into vertical stacks capped at the tallest
+    // component's height, tallest first, instead of one top-aligned
+    // horizontal strip. A typical schema is one big connected component
+    // plus a few disconnected stragglers; strung out in a strip those
+    // stragglers leave a mostly-empty region under themselves that
+    // inflates the diagram's bounding box (and shrinks zoom-to-fit) for
+    // nothing. Stable sort + greedy fill keeps this deterministic.
+    placed.sort((a, b) => b.height - a.height);
+    const targetHeight = placed.length ? placed[0].height : 0;
+    const COMP_GAP = ROW_GAP * 2;
+    let stackX = 0, stackY = 0, stackWidth = 0;
+    for (const p of placed) {
+      if (stackY > 0 && stackY + p.height > targetHeight) {
+        stackX += stackWidth + COL_GAP;
+        stackY = 0;
+        stackWidth = 0;
+      }
+      for (const [id, lp] of p.local) pos.set(id, { x: stackX + lp.x, y: stackY + lp.y });
+      stackY += p.height + COMP_GAP;
+      stackWidth = Math.max(stackWidth, p.width);
     }
 
     return pos;
