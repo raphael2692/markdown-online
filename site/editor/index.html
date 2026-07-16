@@ -430,8 +430,10 @@
                    line/column with the pane's fixed monospace metrics. -->
               <div x-show="find.open && findMarkStyle" x-cloak aria-hidden="true" :style="findMarkStyle"
                 class="pointer-events-none absolute z-10 rounded-sm bg-amber-400/40 dark:bg-amber-300/30"></div>
+              <!-- right-6: clears the textarea's own vertical scrollbar
+                   (~15-17px on non-overlay platforms) instead of sitting on it. -->
               <div x-show="find.open" x-cloak
-                class="absolute right-2 top-2 z-20 flex items-center gap-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 p-1 shadow-md backdrop-blur"
+                class="absolute right-6 top-2 z-20 flex items-center gap-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 p-1 shadow-md backdrop-blur"
                 @keydown.escape.stop.prevent="closeFind()">
                 <input type="text" x-ref="findInput" x-model="find.query" placeholder="Find…"
                   @input="updateFindMatches(true)"
