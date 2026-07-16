@@ -319,7 +319,20 @@ parts:
   `x-ref="paneRow"` on the flex-row ancestor plus the `.split-pane-left` /
   `.pane-height` CSS classes (`site/assets/input.css`) on its panes. Keep
   building on this mixin rather than re-implementing drag-resize or
-  scroll-sync by hand. `paneResizer()` also carries a `stacked` boolean
+  scroll-sync by hand. The *initial* pane height comes from
+  `fitPaneHeight()` (`site/editor/index.html`), not a flat constant: at
+  `md`+ widths it sizes the pane to `innerHeight - 340px` (a rough estimate
+  of header + toolbar + status bar + footer chrome), clamped to
+  `[300, 1000]`px, so the whole editor (header through footer) fits one
+  viewport with no scrolling the moment the page loads — the user can still
+  drag it to any size afterward via the existing vertical divider. Below
+  `md` the panes stack (doubling in the document), so this single-pane
+  formula doesn't apply and a flat `720px` default is kept instead. The
+  `.pane-height` CSS fallback in `input.css` (used for the instant before
+  Alpine sets `--pane-height` inline) mirrors the same `md`+ formula via
+  `calc(100vh - 340px)` — the two must stay in sync, or the pane visibly
+  resizes right after load once Alpine's value overrides a mismatched CSS
+  default. `paneResizer()` also carries a `stacked` boolean
   (default off), toggled by a "Stack panels" / "Side by side" button in the
   top toolbar, immediately next to the Write/Split/Preview view control
   (only shown once `view === 'split'`, since it has nothing to do outside
@@ -361,7 +374,27 @@ parts:
   the language-less sibling of the Code block dropdown: with a selection it
   wraps it in `` ``` `` fences pushed onto their own lines; with no selection it
   drops an empty fenced block and parks the cursor inside. Each button's
-  tooltip spells out which behavior it uses. The whole formatting bar is
+  tooltip spells out which behavior it uses. A "Number sections" toggle
+  sits next to the paragraph-style picker: when on, `numberHeadings()`
+  (`site.js`, run last in `convertMarkdown()`'s pipeline) prepends a
+  hierarchical number (`1`, `1.1`, `1.2.1`, …) to every rendered `h2`
+  through `h6`. The lone top-level `#` is left alone and `##` becomes
+  section "1" — Markdown has no dedicated document-title style, so `#`
+  conventionally plays that role, and numbering it too would read oddly.
+  Numbering is display-only (applied to the rendered HTML, never written
+  back into the Markdown source) and per-level independent, so a stray
+  `####` with no parent `###` still gets a sane, if flat, number instead of
+  throwing. It flows through every output channel that shares the
+  pipeline — preview, copy-rich, download, print — identically. The
+  paragraph-style picker itself previews each heading level at something
+  close to its actual rendered size/weight (a `cls` field per option),
+  Word-style-gallery fashion, rather than a flat list of same-sized labels.
+  Pasting a URL over a selected range (`onPaste()`) wraps the selection as
+  that URL's link label (`[selection](url)`) instead of overwriting it —
+  gated on there being a non-empty selection and the clipboard payload
+  being nothing but a bare `http(s)`/`mailto` URL (`_isUrl()`), so pasting a
+  URL with nothing selected still just inserts the URL as plain text. The
+  whole formatting bar is
   collapsible: a "Toolbar" chevron button in the top bar's left cluster
   flips a `toolbarOpen` boolean gating the bar's `x-show`, and the choice
   persists across visits in the `markdown-editor-ui-v1` localStorage key
@@ -690,6 +723,30 @@ error box) has a `dark:`/`.dark` counterpart.
 - `:root { color-scheme: light; } .dark { color-scheme: dark; }` in
   `input.css` lets native form controls (checkboxes, scrollbars) pick up the
   browser's own dark rendering too.
+
+## Confirmation dialogs and the shortcuts cheat sheet
+
+- **No `window.confirm()`/`alert()` anywhere in the editor.** Destructive
+  actions — delete a document, clear the current draft, replace a document
+  via "Open Markdown file" over unsaved content — go through
+  `confirmDialog(message, opts)`, a small promise-based helper on the
+  `toolWidget()` component (`site/editor/index.html`). It sets a shared
+  `confirmState` object (`open`, `title`, `message`, `confirmLabel`,
+  `danger`, `resolve`) and awaits the user's choice; a teleported modal
+  (cloned from the existing shortcuts/import dialog markup — same overlay,
+  transitions, and `x-trap` focus handling) resolves the promise true/false
+  from its Cancel/Confirm buttons. Call sites just `await this.confirmDialog(...)`
+  in place of the old `if (!confirm(...))` guard. `danger: true` (the
+  default) renders a red confirm button for anything that discards content;
+  pass `danger: false` for a neutral one if a future non-destructive
+  confirmation needs this same plumbing.
+- **Keyboard shortcuts cheat sheet**: `?` (outside a text field/textarea)
+  opens a modal listing the editor's shortcuts (`shortcutsOpen`,
+  `shortcutList` getter), also reachable from a toolbar button. `Ctrl/Cmd+S`
+  is caught globally and shows a "already saved locally" toast instead of
+  letting the browser pop its native save-page dialog — autosave already
+  persists every edit to `localStorage`, so the shortcut has nothing left
+  to do but reassure the user.
 
 ## Known gaps (tracked, not hidden)
 

@@ -1,10 +1,14 @@
-<!-- docs-sync: 1c36dc2 -->
+<!-- docs-sync: 7856fbb -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- Keyboard-shortcuts cheat sheet: press `?` (outside a text field) or use the new toolbar button to see every editor shortcut in one modal (`7856fbb`)
+- Numbered sections: a toolbar toggle numbers `##` and deeper as sections (`1`, `1.1`, `1.2` …) in the preview and every export channel — display-only, never written into the Markdown source; the paragraph-style picker now also previews each heading level at its real size/weight (`7856fbb`)
+- Pasting a URL over selected text wraps the selection as that URL's link label instead of overwriting it (`7856fbb`)
+- Ctrl/Cmd+S now shows an "already saved locally" toast instead of triggering the browser's save-page dialog, since every edit already autosaves (`7856fbb`)
 - Status bar reports word/char/token counts for the current selection alongside cursor position (`1c36dc2`)
 - Document outline: a collapsible list of the document's headings above the diagram mini-map — indented by level, click a heading to jump the editor to it; skips headings inside fenced code blocks (`93550d2`)
 - Smart list continuation: Enter carries bullet/numbered/task/blockquote markers onto the next line (ordered lists renumber themselves, task items start unchecked), Enter on an empty item exits the list, Tab nests the list item under the caret; disabled inside fenced code blocks (`4195d89`)
@@ -21,6 +25,7 @@
 - DBML fences now colorize column definitions distinctly — column name blue, type orange, keywords red — in the write pane's highlighting (`9b17c66`)
 
 ### Changed
+- Destructive confirmations (delete a document, clear the current draft, replace a document by opening a Markdown file over unsaved content) now use an in-app modal styled like the rest of the editor's dialogs, instead of the browser's native `confirm()` popup (`7856fbb`)
 - The About link was removed from the header nav — the About page remains reachable from the footer (`895f1fe`)
 - Import, Copy Markdown, and Export are now one consistently-styled actions cluster on the right of the top bar (Copy Markdown loses its heavy fill — the three are equal-weight peers), and the document statistics moved out of the top bar into the new status bar (`408ecba`)
 - Editor line-number gutter is now seamless — same background as the text area with a subtle divider line instead of a tinted panel — and the monospace stack prefers locally installed developer fonts (JetBrains Mono, Fira Code, SF Mono) before the platform defaults (`408ecba`)
@@ -28,6 +33,7 @@
 - DBML diagram palette desaturated to a more professional look: steel-blue table headers, muted-plum enum headers, and softened primary-key/relationship-line accents, in both light and dark themes (`9b17c66`)
 
 ### Fixed
+- The write/preview panes no longer visibly grow right after the page loads (a mismatched CSS fallback height briefly showed before Alpine set the real one); on desktop widths the initial pane height is now sized to fit the whole editor — header, toolbar, panes, and footer — in one viewport with no scrolling, while staying fully drag-resizable afterward (`7856fbb`)
 - The write pane no longer shrinks the find/replace bar off the edge of a narrowed split pane — the pane now enforces a minimum width while the bar is open (`1c36dc2`)
 - DBML enum values (bare identifiers inside an `Enum { ... }` block) are now syntax-colored in the write pane like column names, instead of rendering as plain text (`ebc5f59`)
 - The diagram mini-map now shows DBML enums as thumbnails alongside tables — the snippet scanner matches `Enum` blocks and the renderer accepts enum-only sources (`ebc5f59`)
