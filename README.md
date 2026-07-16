@@ -12,10 +12,17 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
 
 - **Write, split, or preview** — a live editor with a synced side-by-side
   preview (scroll sync can be toggled off), or full-width writing/preview
-  modes. Ctrl/Cmd+F opens an in-editor find bar with match highlighting,
-  the formatting toolbar collapses out of the way when you just want to
-  write, and a slim status bar shows cursor line/column plus live word,
-  character, and estimated LLM token counts.
+  modes. Ctrl/Cmd+F opens an in-editor find bar with match highlighting —
+  and Ctrl/Cmd+H adds replace-one / replace-all — the formatting toolbar
+  collapses out of the way when you just want to write, and a slim status
+  bar shows cursor line/column plus live word, character, and estimated
+  LLM token counts.
+- **Smart lists** — pressing Enter continues bullet, numbered, task-list,
+  and blockquote lines (numbered items renumber themselves); Enter on an
+  empty item ends the list, and Tab/Shift+Tab nest or un-nest an item.
+- **Multiple documents** — create, rename, switch between, and delete named
+  documents from the toolbar; each autosaves to your browser's local
+  storage, so nothing ever leaves your machine.
 - **Zoom, pan, and fit-to-view** in the rendered preview — zoom in/out or
   reset to 100%, a hand tool to drag-pan instead of scroll, and a
   zoom-to-fit button for oversized tables or diagrams.

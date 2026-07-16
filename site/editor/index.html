@@ -58,6 +58,59 @@
       <div class="rounded-lg border border-neutral-200 dark:border-neutral-800">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 dark:border-neutral-800 p-3">
           <div class="flex flex-wrap items-center gap-2">
+            <!-- Document switcher: every document lives in localStorage —
+                 switching, creating, and deleting never touches the network. -->
+            <div class="relative inline-block" @click.away="docsOpen = false" @keydown.escape.stop="docsOpen = false">
+              <button type="button" @click="docsOpen = !docsOpen; docRenaming = false"
+                :aria-expanded="docsOpen" aria-haspopup="menu"
+                title="Documents — switch, rename, create, or delete (all stored locally in your browser)"
+                class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /></svg>
+                <span class="max-w-[10rem] truncate font-medium text-neutral-800 dark:text-neutral-200" x-text="docName"></span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              <div x-show="docsOpen" x-cloak
+                x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                class="absolute left-0 top-full z-30 mt-1 w-64 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-1 text-xs shadow-lg"
+                role="menu">
+                <template x-for="doc in docs" :key="doc.id">
+                  <div class="group flex items-center gap-0.5 px-1">
+                    <button type="button" @click="switchDoc(doc.id)" role="menuitem"
+                      class="flex min-w-0 flex-1 items-center gap-1.5 rounded px-2 py-1.5 text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                      <svg x-show="doc.id === docsActive" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-500 dark:text-neutral-400" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                      <span x-show="doc.id !== docsActive" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></span>
+                      <span class="truncate" x-text="doc.name"></span>
+                    </button>
+                    <button type="button" @click.stop="deleteDoc(doc.id)" :aria-label="`Delete ${doc.name}`" :title="`Delete ${doc.name}`"
+                      class="rounded p-1 text-neutral-400 opacity-0 hover:bg-neutral-100 hover:text-red-600 group-hover:opacity-100 focus:opacity-100 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-red-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                    </button>
+                  </div>
+                </template>
+                <div class="my-1 border-t border-neutral-200 dark:border-neutral-800" role="separator"></div>
+                <div x-show="docRenaming" x-cloak class="flex items-center gap-1 px-2 py-1">
+                  <input type="text" x-ref="docRenameInput" x-model="docRenameValue"
+                    @keydown.enter.prevent="confirmRename()" @keydown.escape.stop="docRenaming = false"
+                    class="w-full rounded border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500"
+                    aria-label="New document name">
+                  <button type="button" @click="confirmRename()" title="Save name" aria-label="Save name"
+                    class="rounded p-1 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                  </button>
+                </div>
+                <button type="button" x-show="!docRenaming" @click="startRename()" role="menuitem"
+                  class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-1.5 rounded px-2 py-1.5 text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></svg>
+                  Rename current…
+                </button>
+                <button type="button" @click="newDoc()" role="menuitem"
+                  class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-1.5 rounded px-2 py-1.5 text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                  New document
+                </button>
+              </div>
+            </div>
+
             <div class="flex rounded-md border border-neutral-300 dark:border-neutral-700 text-xs">
               <button type="button" @click="view = 'write'"
                 :class="view === 'write' ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900' : 'text-neutral-600 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-800'"
@@ -109,7 +162,7 @@
             <input type="file" x-ref="mdFileInput" accept=".md,.markdown,.mdown,.mkd,.txt"
               class="hidden" @change="onOpenMarkdownFile($event)">
 
-            <button type="button" @click="clearDraft()" title="Clear the editor and delete your saved draft"
+            <button type="button" @click="clearDraft()" title="Empty the current document (other documents are untouched)"
               class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
               Clear
@@ -442,8 +495,15 @@
               <!-- right-6: clears the textarea's own vertical scrollbar
                    (~15-17px on non-overlay platforms) instead of sitting on it. -->
               <div x-show="find.open" x-cloak
-                class="absolute right-6 top-2 z-20 flex items-center gap-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 p-1 shadow-md backdrop-blur"
+                class="absolute right-6 top-2 z-20 flex flex-col gap-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 p-1 shadow-md backdrop-blur"
                 @keydown.escape.stop.prevent="closeFind()">
+                <div class="flex items-center gap-1">
+                <button type="button" @click="find.replaceOpen = !find.replaceOpen" :aria-expanded="find.replaceOpen"
+                  :title="find.replaceOpen ? 'Hide replace' : 'Show replace (Ctrl+H)'" aria-label="Toggle replace"
+                  class="rounded p-1 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  <svg x-show="!find.replaceOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                  <svg x-show="find.replaceOpen" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
                 <input type="text" x-ref="findInput" x-model="find.query" placeholder="Find…"
                   @input="updateFindMatches(true)"
                   @keydown.enter.prevent="$event.shiftKey ? gotoFindMatch(-1) : gotoFindMatch(1)"
@@ -464,6 +524,17 @@
                   class="rounded p-1 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                 </button>
+                </div>
+                <div x-show="find.replaceOpen" x-cloak class="flex items-center gap-1 pl-[26px]">
+                  <input type="text" x-model="find.replace" placeholder="Replace with…"
+                    @keydown.enter.prevent="replaceCurrent()"
+                    class="w-40 rounded border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 font-sans text-xs text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500"
+                    aria-label="Replace with">
+                  <button type="button" @click="replaceCurrent()" :disabled="!find.count" title="Replace the current match (Enter)"
+                    class="rounded px-1.5 py-1 font-sans text-[11px] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40 disabled:hover:bg-transparent">Replace</button>
+                  <button type="button" @click="replaceAll()" :disabled="!find.count" title="Replace all matches"
+                    class="rounded px-1.5 py-1 font-sans text-[11px] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40 disabled:hover:bg-transparent">All</button>
+                </div>
               </div>
               <textarea id="tw-in" x-ref="mdTextarea" x-model="input"
                 @input="onTypedInput()" @input.debounce.250ms="run()" @keydown="onKeydown($event)" @scroll="onInputScroll($event)"
@@ -894,7 +965,9 @@
       '',
     ].join('\n');
 
-    const STORAGE_KEY = 'markdown-editor-draft-v1';
+    const STORAGE_KEY = 'markdown-editor-draft-v1'; // legacy single-draft key, migrated into the docs index
+    const DOCS_KEY = 'markdown-editor-docs-v1';
+    const DOC_PREFIX = 'markdown-editor-doc-';
     const UI_KEY = 'markdown-editor-ui-v1';
     const ZOOM_MIN = 25, ZOOM_MAX = 400, ZOOM_STEP = 10;
 
@@ -936,7 +1009,7 @@
         input: '', fragment: '', error: '', toast: '',
         view: 'split', restored: false, savedAt: '',
         syncScroll: true,
-        find: { open: false, query: '', index: -1, count: 0 },
+        find: { open: false, query: '', index: -1, count: 0, replace: '', replaceOpen: false },
         findMarkStyle: '',
         _findMatches: [], _charW: 0,
         _saveTimer: null, _renderGen: 0, _hl: null,
@@ -951,6 +1024,8 @@
           smartypants: true, math: false, mermaid: false, dbml: false,
           gfmBreaks: true,
         },
+        docs: [], docsActive: null, docsOpen: false,
+        docRenaming: false, docRenameValue: '',
         importKind: null,
         importHtml: { text: '', bulletListMarker: '-', codeBlockStyle: 'fenced', headingStyle: 'atx', error: '' },
         importCsv: { text: '', mode: 'csv', align: 'left', header: true, error: '' },
@@ -964,13 +1039,7 @@
         get inputLineCount() { return this.input.split('\n').length; },
 
         init() {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) {
-            this.input = saved;
-            this.restored = true;
-          } else {
-            this.input = SAMPLE_MD;
-          }
+          this._loadDocs();
           this.initHistory();
           try {
             const ui = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
@@ -979,17 +1048,9 @@
           } catch (e) { /* corrupt prefs — keep defaults */ }
           this.$watch('toolbarOpen', () => this._saveUiPrefs());
           this.$watch('minimapOpen', () => this._saveUiPrefs());
-          this.$watch('input', (val) => {
+          this.$watch('input', () => {
             clearTimeout(this._saveTimer);
-            this._saveTimer = setTimeout(() => {
-              if (val.trim()) {
-                localStorage.setItem(STORAGE_KEY, val);
-                this.savedAt = new Date().toLocaleTimeString();
-              } else {
-                localStorage.removeItem(STORAGE_KEY);
-                this.savedAt = '';
-              }
-            }, 500);
+            this._saveTimer = setTimeout(() => this._persistActiveDoc(), 500);
           });
           // Keep find results in step with edits made while the bar is open.
           this.$watch('input', () => { if (this.find.open) this.updateFindMatches(false); });
@@ -1025,6 +1086,128 @@
             // like Mermaid's, just a re-run of the pipeline below.
             if (this.opts.mermaid || this.opts.dbml) this.run();
           });
+        },
+
+        // ---- documents: multiple named docs, all in localStorage ----
+        // The index (names + active id) lives under DOCS_KEY; each document's
+        // content lives under its own DOC_PREFIX+id key so autosaving one
+        // doc never rewrites the others.
+        get docName() {
+          const d = this.docs.find((d) => d.id === this.docsActive);
+          return d ? d.name : 'Untitled';
+        },
+        _newDocId() {
+          return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        },
+        _loadDocs() {
+          let idx = null;
+          try { idx = JSON.parse(localStorage.getItem(DOCS_KEY)); } catch (e) { /* corrupt index — rebuild below */ }
+          if (!idx || !Array.isArray(idx.docs) || !idx.docs.length) {
+            // First visit on this scheme — migrate the legacy single draft
+            // (if any) into a named document.
+            const legacy = localStorage.getItem(STORAGE_KEY);
+            const id = this._newDocId();
+            idx = { active: id, docs: [{ id, name: 'Untitled' }] };
+            if (legacy !== null) {
+              localStorage.setItem(DOC_PREFIX + id, legacy);
+              localStorage.removeItem(STORAGE_KEY);
+            }
+          }
+          if (!idx.docs.some((d) => d.id === idx.active)) idx.active = idx.docs[0].id;
+          this.docs = idx.docs;
+          this.docsActive = idx.active;
+          const saved = localStorage.getItem(DOC_PREFIX + this.docsActive);
+          if (saved !== null) {
+            this.input = saved;
+            this.restored = true;
+          } else {
+            this.input = SAMPLE_MD;
+          }
+          this._saveDocsIndex();
+        },
+        _saveDocsIndex() {
+          localStorage.setItem(DOCS_KEY, JSON.stringify({ active: this.docsActive, docs: this.docs }));
+        },
+        _persistActiveDoc() {
+          localStorage.setItem(DOC_PREFIX + this.docsActive, this.input);
+          this.savedAt = new Date().toLocaleTimeString();
+          this._saveDocsIndex();
+        },
+        // Write any pending (debounced) edit to storage right now — called
+        // before the active document changes out from under the timer.
+        _flushSave() {
+          clearTimeout(this._saveTimer);
+          this._persistActiveDoc();
+        },
+        // Load a document into the editor: content, fresh undo history,
+        // caret at the top. Shared by switch/new/delete.
+        _activateDoc(id) {
+          this.docsActive = id;
+          this.input = localStorage.getItem(DOC_PREFIX + id) ?? '';
+          this.savedAt = '';
+          this.restored = false;
+          this.initHistory();
+          this._saveDocsIndex();
+          this.run();
+          this.$nextTick(() => {
+            const ta = this.$refs.mdTextarea;
+            ta.focus();
+            ta.setSelectionRange(0, 0);
+            this.updateHeadingLevel();
+          });
+        },
+        switchDoc(id) {
+          this.docsOpen = false;
+          if (id === this.docsActive) return;
+          this._flushSave();
+          this._activateDoc(id);
+        },
+        newDoc() {
+          this.docsOpen = false;
+          this._flushSave();
+          const id = this._newDocId();
+          const names = new Set(this.docs.map((d) => d.name));
+          let name = 'Untitled', n = 2;
+          while (names.has(name)) name = `Untitled ${n++}`;
+          this.docs.push({ id, name });
+          localStorage.setItem(DOC_PREFIX + id, '');
+          this._activateDoc(id);
+        },
+        deleteDoc(id) {
+          const doc = this.docs.find((d) => d.id === id);
+          if (!doc) return;
+          if (!confirm(`Delete "${doc.name}"? Its content is removed from this browser and can't be recovered.`)) return;
+          // A pending autosave for the deleted doc must not resurrect its key.
+          if (id === this.docsActive) clearTimeout(this._saveTimer);
+          localStorage.removeItem(DOC_PREFIX + id);
+          this.docs = this.docs.filter((d) => d.id !== id);
+          if (!this.docs.length) {
+            const nid = this._newDocId();
+            this.docs.push({ id: nid, name: 'Untitled' });
+            localStorage.setItem(DOC_PREFIX + nid, '');
+            this._activateDoc(nid);
+          } else if (id === this.docsActive) {
+            this._activateDoc(this.docs[0].id);
+          } else {
+            this._saveDocsIndex();
+          }
+        },
+        startRename() {
+          this.docRenaming = true;
+          this.docRenameValue = this.docName;
+          this.$nextTick(() => {
+            this.$refs.docRenameInput.focus();
+            this.$refs.docRenameInput.select();
+          });
+        },
+        confirmRename() {
+          const name = this.docRenameValue.trim();
+          if (name) {
+            const d = this.docs.find((d) => d.id === this.docsActive);
+            if (d) d.name = name;
+            this._saveDocsIndex();
+          }
+          this.docRenaming = false;
         },
 
         async run() {
@@ -1068,9 +1251,11 @@
         // the import modal is open.
         onGlobalKeydown(e) {
           if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
-          if (e.key.toLowerCase() !== 'f') return;
+          const k = e.key.toLowerCase();
+          if (k !== 'f' && k !== 'h') return;
           if (this.view === 'preview' || this.importKind !== null) return;
           e.preventDefault();
+          if (k === 'h') this.find.replaceOpen = true;
           this.openFind();
         },
         openFind() {
@@ -1124,6 +1309,49 @@
           if (!n) return;
           this.find.index = (this.find.index + dir + n) % n;
           this.revealFindMatch();
+        },
+        // Replace the current match, then advance to the next one at or
+        // after the replacement. Matching is case-insensitive (same as
+        // find); the replacement text is inserted as typed.
+        replaceCurrent() {
+          if (this.find.index < 0 || !this._findMatches.length) return;
+          const start = this._findMatches[this.find.index];
+          const r = this.find.replace;
+          this.commitHistory();
+          this.input = this.input.slice(0, start) + r + this.input.slice(start + this.find.query.length);
+          const caret = start + r.length;
+          this.commitHistory(caret, caret);
+          this.run();
+          // $nextTick: x-model writes the new value into the DOM on the next
+          // tick, resetting the caret — position it (and recompute matches
+          // from it) only after that. jump=true restarts from the caret, so
+          // it lands on the next match and skips any new occurrence the
+          // replacement itself introduced.
+          this.$nextTick(() => {
+            this.$refs.mdTextarea.setSelectionRange(caret, caret);
+            this.updateFindMatches(true);
+          });
+        },
+        replaceAll() {
+          const n = this._findMatches.length;
+          if (!n) return;
+          const r = this.find.replace;
+          this.commitHistory();
+          let out = '', last = 0;
+          for (const s of this._findMatches) {
+            out += this.input.slice(last, s) + r;
+            last = s + this.find.query.length;
+          }
+          out += this.input.slice(last);
+          const caret = Math.min(this.$refs.mdTextarea.selectionStart, out.length);
+          this.input = out;
+          this.commitHistory(caret, caret);
+          this.run();
+          this.$nextTick(() => {
+            this.$refs.mdTextarea.setSelectionRange(caret, caret);
+            this.updateFindMatches(false);
+          });
+          this.flash(`Replaced ${n} occurrence${n === 1 ? '' : 's'}`);
         },
         // Selects the match in the textarea (without stealing focus from the
         // find input) and scrolls it into view. The pane's metrics are fixed
@@ -1450,6 +1678,7 @@
             this.closeFind();
             return;
           }
+          if (e.key === 'Enter' && this.onEnterKey(e)) return;
           if (e.key === 'Tab') {
             e.preventDefault();
             e.shiftKey ? this.outdentSelection() : this.indentSelection();
@@ -1466,13 +1695,119 @@
           else if (key === 'i') { e.preventDefault(); this.wrapSelection('*', '*', 'italic text'); }
           else if (key === 'k') { e.preventDefault(); this.wrapSelection('[', '](https://)', 'link text'); }
         },
+        // ---- smart list continuation ----
+        // Enter on a list / task / blockquote line carries the marker onto
+        // the new line (with the next number for ordered lists); Enter on an
+        // *empty* item removes the marker instead — the way out of a list is
+        // just pressing Enter twice. Returns true when it handled the key.
+        onEnterKey(e) {
+          if (e.isComposing || this.composing) return false;
+          if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return false;
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          if (start !== end) return false;
+          const lineStart = this.input.lastIndexOf('\n', start - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', start);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const line = this.input.slice(lineStart, lineEnd);
+          // "- item" inside a code fence is code, not a list.
+          if (this._inFence(lineStart)) return false;
+
+          const list = /^(\s*)([-*+]|\d+[.)])(\s+)(\[[ xX]\]\s+)?(.*)$/.exec(line);
+          const quote = !list && /^(\s*)((?:>[ ]?)+)(.*)$/.exec(line);
+          const m = list || quote;
+          if (!m) return false;
+          const markerLen = m[1].length + m[2].length + (list ? m[3].length + (m[4] || '').length : 0);
+          // Caret inside the marker itself — plain newline is what's expected.
+          if (start < lineStart + markerLen) return false;
+
+          e.preventDefault();
+          const content = list ? m[5] : m[3];
+          this.commitHistory();
+          if (!content.trim() && start >= lineEnd) {
+            // Empty item: remove the marker, leaving a blank line (exit).
+            this.input = this.input.slice(0, lineStart) + this.input.slice(lineEnd);
+            this.commitHistory(lineStart, lineStart);
+            this.$nextTick(() => { ta.focus(); ta.setSelectionRange(lineStart, lineStart); this.updateHeadingLevel(); });
+            this.run();
+            return true;
+          }
+          let next;
+          if (quote) {
+            next = '\n' + m[1] + m[2];
+          } else if (/\d/.test(m[2])) {
+            const num = parseInt(m[2], 10) + 1;
+            next = '\n' + m[1] + num + m[2].slice(-1) + m[3];
+          } else {
+            next = '\n' + m[1] + m[2] + m[3] + (m[4] ? '[ ] ' : '');
+          }
+          this.input = this.input.slice(0, start) + next + this.input.slice(start);
+          let caret = start + next.length;
+          if (list && /\d/.test(m[2])) {
+            const renumbered = this._renumberOrderedList(caret, m[1]);
+            caret = renumbered !== null ? renumbered : caret;
+          }
+          this.commitHistory(caret, caret);
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(caret, caret); this.updateHeadingLevel(); });
+          this.run();
+          return true;
+        },
+        // True when pos sits inside an unclosed ``` / ~~~ fence.
+        _inFence(pos) {
+          let fence = null;
+          for (const l of this.input.slice(0, pos).split('\n')) {
+            const m = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(l);
+            if (!m) continue;
+            if (!fence) fence = { ch: m[1][0], len: m[1].length };
+            else if (m[1][0] === fence.ch && m[1].length >= fence.len && !m[2].trim()) fence = null;
+          }
+          return !!fence;
+        },
+        // Renumber the ordered items that follow the (just-inserted) item
+        // containing fromPos, at the same indent. Deeper-indented lines pass
+        // through untouched; a blank line or shallower text ends the list.
+        // Returns the adjusted caret position (numbers can change width).
+        _renumberOrderedList(fromPos, indent) {
+          const lines = this.input.split('\n');
+          const caretLine = (this.input.slice(0, fromPos).match(/\n/g) || []).length;
+          const itemRe = /^(\s*)(\d+)([.)])(\s+.*)$/;
+          const cur = itemRe.exec(lines[caretLine]);
+          if (!cur || cur[1] !== indent) return null;
+          let num = parseInt(cur[2], 10);
+          let changed = false;
+          for (let i = caretLine + 1; i < lines.length; i++) {
+            const m = itemRe.exec(lines[i]);
+            if (m && m[1] === indent) {
+              num++;
+              if (parseInt(m[2], 10) !== num) {
+                lines[i] = m[1] + num + m[3] + m[4];
+                changed = true;
+              }
+            } else if (lines[i].trim() === '' || !lines[i].startsWith(indent + ' ')) {
+              break; // list ended
+            }
+            // deeper-indented continuation/sub-item — skip it
+          }
+          if (!changed) return null;
+          this.input = lines.join('\n');
+          return fromPos; // edits are all after the caret — position unchanged
+        },
         indentSelection() {
           const ta = this.$refs.mdTextarea;
           const start = ta.selectionStart, end = ta.selectionEnd;
           const INDENT = '  ';
           this.commitHistory();
           if (start === end) {
-            this.input = this.input.slice(0, start) + INDENT + this.input.slice(end);
+            // On a list item, Tab indents the whole line (nest the item);
+            // elsewhere it inserts spaces at the caret.
+            let insertAt = start;
+            const lineStart = this.input.lastIndexOf('\n', start - 1) + 1;
+            let lineEnd = this.input.indexOf('\n', start);
+            if (lineEnd === -1) lineEnd = this.input.length;
+            if (/^\s*(?:[-*+]|\d+[.)])\s/.test(this.input.slice(lineStart, lineEnd)) && !this._inFence(lineStart)) {
+              insertAt = lineStart;
+            }
+            this.input = this.input.slice(0, insertAt) + INDENT + this.input.slice(insertAt);
             const newPos = start + INDENT.length;
             this.commitHistory(newPos, newPos);
             this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
@@ -1572,12 +1907,11 @@
         },
 
         clearDraft() {
-          if (!confirm("Clear the editor and delete your saved draft? This can't be undone.")) return;
+          if (!confirm(`Clear "${this.docName}"? This empties the document (undo still works until you leave the page); other documents are untouched.`)) return;
           this.commitHistory();
           this.input = '';
           this.commitHistory(0, 0);
-          localStorage.removeItem(STORAGE_KEY);
-          this.savedAt = '';
+          this._flushSave();
           this.restored = false;
           this.run();
         },
@@ -1688,7 +2022,7 @@
         async onOpenMarkdownFile(event) {
           const file = event.target.files[0];
           if (!file) return;
-          if (this.input.trim() && !confirm(`Replace the current document with "${file.name}"? This will overwrite what's in the editor, including your saved draft.`)) {
+          if (this.input.trim() && !confirm(`Replace "${this.docName}" with "${file.name}"? This overwrites the current document; other documents are untouched.`)) {
             event.target.value = '';
             return;
           }
@@ -1696,6 +2030,12 @@
           this.input = await file.text();
           this.commitHistory(0, 0);
           this.restored = false;
+          // An untouched "Untitled" doc takes the file's name.
+          const doc = this.docs.find((d) => d.id === this.docsActive);
+          if (doc && /^Untitled( \d+)?$/.test(doc.name)) {
+            doc.name = file.name.replace(/\.(md|markdown|mdown|mkd|txt)$/i, '');
+            this._saveDocsIndex();
+          }
           this.run();
           const ta = this.$refs.mdTextarea;
           this.$nextTick(() => { ta.focus(); ta.setSelectionRange(0, 0); this.updateHeadingLevel(); });
