@@ -163,19 +163,28 @@ a small first-party module (lazy-loaded like the vendored libraries, via
   design, and skipped rather than mis-rendered: composite (multi-column)
   refs/PKs, `TableGroup`, `Project` settings, quoted identifiers containing
   spaces.
-- **Layout** — force-directed (Fruchterman-Reingold style): circular-radius
-  repulsion between every node pair, a spring pulling ref-connected tables
-  together, a centering pull strong enough (`0.15` per iteration) to stop
-  weakly-connected tables drifting off to infinity over 250 iterations, then
-  an AABB overlap-cleanup pass since the circular approximation can still
-  leave two very-non-square boxes overlapping. An enum gets a soft
-  layout-only edge toward any table whose column uses it as a type (weight
-  `1.1`, no line drawn — DBML doesn't model "uses this enum" as a `Ref`), so
-  it settles near its users instead of landing wherever repulsion happens to
-  push it. The `+90` clearance term in the repulsion's `minSep` isn't
-  arbitrary: two boxes linked by one strong edge otherwise converge close
-  enough that the crow's-foot marker pair at each end visually crams
-  together.
+- **Layout** — deterministic, layered (Sugiyama-lite), not force-directed.
+  An earlier version used a randomized force-directed (Fruchterman-Reingold)
+  simulation, which for small schemas frequently left tables overlapping or
+  connectors crossing through boxes — a different, sometimes-broken result
+  on every render of the same source. The current `layoutGraph()` instead
+  splits the graph into connected components and, within each, assigns every
+  table/enum a column via BFS distance from a minimum-degree seed (seeding
+  from a leaf rather than the highest-degree hub is what turns a simple
+  chain into separate columns instead of collapsing a hub's neighbors into
+  one column). Each column is then reordered with a few barycenter passes
+  (`orderColumns()`) against its already-fixed neighboring column to reduce
+  edge crossings, and finally positioned left to right with column width/row
+  height taken from actual box sizes — no overlap is possible by
+  construction, so there's no separate cleanup pass. An enum still gets a
+  layout-only edge toward any table whose column uses it as a type (DBML
+  doesn't model "uses this enum" as a `Ref`), so it lands in its own column
+  near its users. A `Ref`'s FK column is derived from which side the DBML
+  operator marks as "many" — `>` and `-`/`<>` (ambiguous cases, kept as the
+  historical default) put it on the from-side, `<` reverses that onto the
+  to-side (`one.col < many.col`); getting this backwards for `<` refs was a
+  real bug that mislabeled the one-side as FK and left the actual FK column
+  unmarked.
 - **Drawing** — plain SVG built via `document.createElementNS` +
   `.textContent` (never string-concatenated HTML), so table/column/enum/note
   text is inert against injection by construction; `renderDbmlDiagrams()` in
@@ -313,14 +322,38 @@ scrolling element itself avoids the box that reports its size to
   to 100%) / zoom in, then a fit-to-view button and a hand-tool toggle.
   Zoom steps by 10, clamped to 25–400% (`zoomMin`/`zoomMax`/`ZOOM_STEP` in
   `toolWidget()`).
-- **Zoom to fit** (`zoomToFit()`) reads `previewInner.scrollWidth/Height`,
-  divides out the *current* zoom factor to recover the unzoomed ("natural")
-  content size, then scales to the smaller of the width/height ratios
-  against the viewport's padding-adjusted `clientWidth`/`clientHeight`.
-  Since normal text already reflows to the container's width, this is
-  mostly a vertical fit in practice — it's for the case where a wide table,
-  long Mermaid/DBML diagram, or tall document would otherwise need
-  scrolling to see in full.
+- **Zoom to fit** (`zoomToFit()`) reads `scrollWidth`/`scrollHeight` off
+  `previewInner` and every `.mermaid-diagram`/`pre`/`table` inside it (the
+  max across all of them, not just `previewInner`), then scales to the
+  smaller of the width/height ratios against the viewport's
+  padding-adjusted `clientWidth`/`clientHeight`. Two things make this less
+  obvious than it looks: first, `scrollWidth`/`scrollHeight` read on
+  anything *inside* the zoomed element are already in natural, pre-zoom
+  units — CSS `zoom` keeps a subtree's own box-model measurements in its
+  own logical space, only `getBoundingClientRect()` crosses back out to
+  physical/on-screen pixels, so there's no dividing out the current zoom
+  factor (an earlier version did divide, which undid the zoom in the wrong
+  direction and made the button zoom *in* instead of shrinking to fit).
+  Second, `previewInner.scrollWidth` alone misses an oversized diagram/
+  table/code block entirely: each of those sets its own `overflow-x`, which
+  means it scrolls independently instead of pushing `previewInner`'s own
+  `scrollWidth` outward — its true extent only shows up by measuring the
+  element itself. Since normal text already reflows to the container's
+  width, fitting is mostly about these independently-scrolling elements in
+  practice.
+- **Diagram sizing and zoom**: both Mermaid and `dbml.js` diagrams render
+  with an explicit, absolute `width`/`height` on the `<svg>` (dbml.js always
+  did; Mermaid's own output defaults to a responsive `width="100%"` plus a
+  `max-width` inline style matching its natural size, so `renderMermaidDiagrams()`
+  in `site.js` overwrites both attributes from the svg's `viewBox` right
+  after render). Either responsive form looks identical at the default 100%
+  zoom, but it clamps the diagram's rendered size to the pane width
+  regardless of the zoom level — the zoom controls scale a diagram by its
+  actual rendered box, so a diagram that's already clamped to the pane has
+  no room left to visibly grow or shrink. The same reasoning is why
+  `.md-preview .mermaid-diagram svg` carries no `max-width` rule in
+  `input.css`: `.mermaid-diagram`'s own `overflow-x: auto` is what keeps an
+  oversized, unzoomed diagram from blowing out the rest of the page.
 - **Hand tool** (`panMode`) reuses the same drag-tracking idiom as
   `paneResizer()`'s `startDrag()`/`startVDrag()` (mousedown/touchstart →
   document-level move/up listeners), just writing `scrollLeft`/`scrollTop`

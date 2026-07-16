@@ -1,4 +1,4 @@
-<!-- docs-sync: e142a0c -->
+<!-- docs-sync: 54022a9 -->
 
 # Changelog
 
@@ -16,6 +16,8 @@
 - Dark mode: a header toggle on every page, persisted via `localStorage` (falling back to OS preference) and applied before first paint to avoid a flash of the wrong theme. The editor's generated content follows the theme too — Mermaid diagrams re-render under Mermaid's own dark theme and highlight.js code blocks swap to a vendored `github-dark` stylesheet — while Print/PDF export and the rich clipboard copy intentionally stay light-only (`5a41c38`)
 
 ### Fixed
+- DBML diagram layout replaced with a deterministic, layered algorithm — the previous randomized force-directed layout frequently left tables overlapping or connectors crossing through boxes, especially on small schemas. Also fixes FK badges being attributed to the wrong side of a `<` ref (the one-side was mislabeled FK while the actual FK column went unmarked) (`1569d9a`)
+- Preview zoom in/out and "zoom to fit" had no visible effect on Mermaid/DBML diagrams wider than the pane — a `max-width:100%` rule (and, for Mermaid, its own equivalent inline sizing) pinned every diagram's rendered size to the pane width regardless of zoom. Zoom to fit's measurement was also fixed — it read the wrong element and undid the zoom in the wrong direction, so clicking it could zoom in instead of shrinking to fit (`54022a9`)
 - Preview zoom toolbar repositioned from bottom-left to bottom-center (was clipped/overlapping the pane's scrollbar when tried at bottom-right); word/character/reading-time counter in the top toolbar gained right margin so it no longer crowds the "Copy Markdown" button (`430d57f`)
 - Header nav no longer shows an "Open Editor" link while already on the editor page (`5f5de07`)
 - Header's GitHub link now uses the actual GitHub brand mark instead of a generic external-link arrow icon (`13fcb51`)
