@@ -179,7 +179,15 @@ a small first-party module (lazy-loaded like the vendored libraries, via
   construction, so there's no separate cleanup pass. Columns within a
   component are top-aligned (every column starts at the same y) rather than
   vertically centered against the tallest, so all tables originate from one
-  horizontal row and grow downward. An enum still gets a
+  horizontal row and grow downward. Separate connected components are then
+  packed, tallest first, into vertical stacks capped at the tallest
+  component's height rather than strung out in one top-aligned horizontal
+  strip — a real schema is usually one big connected component plus a few
+  disconnected stragglers, and the strip layout left a mostly-empty region
+  under the stragglers that inflated the diagram's bounding box (and
+  shrank the preview's zoom-to-fit result) for nothing. The stable
+  height-descending sort plus greedy fill keeps this deterministic like
+  the rest of the layout. An enum still gets a
   layout-only edge toward any table whose column uses it as a type (DBML
   doesn't model "uses this enum" as a `Ref`), so it lands in its own column
   near its users. A `Ref`'s FK column is derived from which side the DBML
@@ -436,21 +444,29 @@ scrolling element itself avoids the box that reports its size to
   `previewInner` and every `.mermaid-diagram`/`pre`/`table` inside it (the
   max across all of them, not just `previewInner`), then scales to the
   smaller of the width/height ratios against the viewport's
-  padding-adjusted `clientWidth`/`clientHeight`. Two things make this less
-  obvious than it looks: first, `scrollWidth`/`scrollHeight` read on
-  anything *inside* the zoomed element are already in natural, pre-zoom
-  units — CSS `zoom` keeps a subtree's own box-model measurements in its
-  own logical space, only `getBoundingClientRect()` crosses back out to
-  physical/on-screen pixels, so there's no dividing out the current zoom
-  factor (an earlier version did divide, which undid the zoom in the wrong
-  direction and made the button zoom *in* instead of shrinking to fit).
+  padding-adjusted `clientWidth`/`clientHeight` (floored, not rounded, so
+  the result never overshoots into a scrollbar). Three things make this
+  less obvious than it looks. First, the measurement happens with
+  `previewInner.style.zoom` temporarily forced to `1` — the reads are
+  synchronous, so nothing paints in between. `scrollWidth`/`scrollHeight`
+  inside a zoomed subtree are reported in the subtree's own logical units
+  (only `getBoundingClientRect()` crosses out to on-screen pixels), but
+  `previewInner` is an auto-width block whose *layout* width resolves to
+  `viewportWidth / zoom`: measured while zoomed out, its `scrollWidth`
+  inflates to exactly "whatever fits at the current zoom", which pinned the
+  computed fit at the current value so the button could never scale back
+  up (e.g. after widening the pane by stacking the panels), and text had
+  reflowed to the wrong width for `scrollHeight` too. Measuring at 100%
+  gives the one canonical layout. (An even earlier version instead divided
+  the measurements by the current zoom, which undid the zoom in the wrong
+  direction and made the button zoom *in* instead of shrinking to fit.)
   Second, `previewInner.scrollWidth` alone misses an oversized diagram/
   table/code block entirely: each of those sets its own `overflow-x`, which
   means it scrolls independently instead of pushing `previewInner`'s own
   `scrollWidth` outward — its true extent only shows up by measuring the
-  element itself. Since normal text already reflows to the container's
-  width, fitting is mostly about these independently-scrolling elements in
-  practice.
+  element itself. Third, since normal text already reflows to the
+  container's width, fitting is mostly about these independently-scrolling
+  elements in practice.
 - **Diagram sizing and zoom**: both Mermaid and `dbml.js` diagrams render
   with an explicit, absolute `width`/`height` on the `<svg>` (dbml.js always
   did; Mermaid's own output defaults to a responsive `width="100%"` plus a
