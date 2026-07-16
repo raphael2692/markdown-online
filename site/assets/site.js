@@ -122,6 +122,92 @@ function toolActionsMixin() {
 }
 window.toolActionsMixin = toolActionsMixin;
 
+// Shared undo/redo change-history for a plain-textarea-backed input string.
+// Mix into an Alpine component with: ...historyMixin(), alongside the
+// page's own `input` state and a textarea x-ref (default "mdTextarea").
+//
+// Wiring:
+//   - call initHistory() once init() has set the starting `input` value
+//   - bind the textarea's native, non-debounced 'input' event to
+//     onTypedInput() so free typing coalesces into one undo step per pause
+//     instead of one entry per keystroke
+//   - around any programmatic edit to `input` (toolbar buttons, imports,
+//     etc.), call commitHistory() right before the mutation (closes out
+//     whatever undo step was in progress) and again right after — passing
+//     the mutation's own newly-computed selection, since the textarea's
+//     DOM selectionStart/End won't reflect it until Alpine's next tick
+//   - bind undo()/redo() to Ctrl/Cmd+Z and Ctrl+Y / Ctrl+Shift+Z / Cmd+Shift+Z
+function historyMixin(opts) {
+  opts = opts || {};
+  const limit = opts.limit || 200;
+  const coalesceMs = opts.coalesceMs || 400;
+  const textareaRef = opts.textareaRef || 'mdTextarea';
+  return {
+    _history: [],
+    _historyIndex: -1,
+    _historyTimer: null,
+
+    initHistory() {
+      this._history = [{ value: this.input, start: this.input.length, end: this.input.length }];
+      this._historyIndex = 0;
+    },
+
+    commitHistory(start, end) {
+      const ta = this.$refs[textareaRef];
+      if (start === undefined) {
+        start = ta ? ta.selectionStart : this.input.length;
+        end = ta ? ta.selectionEnd : start;
+      }
+      const current = this._history[this._historyIndex];
+      if (current && current.value === this.input) {
+        current.start = start;
+        current.end = end;
+        return;
+      }
+      this._history = this._history.slice(0, this._historyIndex + 1);
+      this._history.push({ value: this.input, start, end });
+      this._historyIndex = this._history.length - 1;
+      if (this._history.length > limit) {
+        const excess = this._history.length - limit;
+        this._history.splice(0, excess);
+        this._historyIndex -= excess;
+      }
+    },
+
+    onTypedInput() {
+      clearTimeout(this._historyTimer);
+      this._historyTimer = setTimeout(() => this.commitHistory(), coalesceMs);
+    },
+
+    undo() {
+      clearTimeout(this._historyTimer);
+      const current = this._history[this._historyIndex];
+      if (current && current.value !== this.input) this.commitHistory();
+      if (this._historyIndex <= 0) return;
+      this._historyIndex--;
+      this._restoreHistoryEntry();
+    },
+    redo() {
+      clearTimeout(this._historyTimer);
+      if (this._historyIndex >= this._history.length - 1) return;
+      this._historyIndex++;
+      this._restoreHistoryEntry();
+    },
+    _restoreHistoryEntry() {
+      const entry = this._history[this._historyIndex];
+      this.input = entry.value;
+      const ta = this.$refs[textareaRef];
+      this.$nextTick(() => {
+        if (!ta) return;
+        ta.focus();
+        ta.setSelectionRange(entry.start, entry.end);
+      });
+      if (typeof this.run === 'function') this.run();
+    },
+  };
+}
+window.historyMixin = historyMixin;
+
 // Pines-styled replacement for a native <select>: a native <select>'s open
 // option list is drawn by the OS, not the page, so it can never be themed —
 // this renders the closed button AND the open list as plain DOM (Tailwind +
@@ -658,9 +744,78 @@ function ensureHljsLoaded() {
     hljsReadyPromise = Promise.all([
       loadScript(`${ASSETS_BASE}/assets/vendor/highlightjs-11.11.1/highlight.min.js`),
       loadStylesheet(hljsStylesheetHref()),
-    ]).catch((e) => { hljsReadyPromise = null; throw e; });
+    ]).then(() => {
+      // Chained into the ready promise (not fired separately) so any
+      // ensureHljsLoaded().then(highlight...) caller is guaranteed to see
+      // the extra grammars already registered.
+      registerExtraHljsLanguages();
+    }).catch((e) => { hljsReadyPromise = null; throw e; });
   }
   return hljsReadyPromise;
+}
+
+// highlight.js ships no grammar for DBML or Mermaid, but this site renders
+// both as first-class fence languages (diagram renderers in the preview,
+// colored source in the editor's write pane) — so register small
+// display-grade grammars. These aim for "the common vocabulary reads
+// clearly", not full-language fidelity.
+function registerExtraHljsLanguages() {
+  if (hljs.getLanguage('dbml')) return;
+
+  // Keyword set mirrors what our own parser understands (see dbml.js).
+  hljs.registerLanguage('dbml', (h) => ({
+    name: 'DBML',
+    case_insensitive: true,
+    keywords: {
+      keyword: 'table ref enum tablegroup project note indexes as',
+      literal: 'true false null',
+    },
+    contains: [
+      h.COMMENT('//', '$'),
+      h.COMMENT(/\/\*/, /\*\//),
+      { className: 'string', begin: /'''/, end: /'''/ },
+      h.QUOTE_STRING_MODE,
+      h.APOS_STRING_MODE,
+      // Column settings: [pk, not null, unique, ref: > users.id, ...]
+      {
+        className: 'meta',
+        begin: /\[/, end: /\]/,
+        keywords: 'pk primary key unique not null increment default ref note',
+        contains: [h.QUOTE_STRING_MODE, h.APOS_STRING_MODE, h.C_NUMBER_MODE],
+      },
+      // Relationship cardinality in Ref lines: > < - <>
+      { className: 'operator', begin: /<>|[<>-]/ },
+      h.C_NUMBER_MODE,
+    ],
+  }));
+
+  hljs.registerLanguage('mermaid', (h) => ({
+    name: 'Mermaid',
+    case_insensitive: true,
+    keywords: {
+      // $pattern must admit hyphens for stateDiagram-v2 et al.
+      $pattern: /[\w-]+/,
+      keyword:
+        'graph flowchart sequenceDiagram classDiagram stateDiagram stateDiagram-v2 '
+        + 'erDiagram gantt pie journey gitGraph mindmap timeline quadrantChart '
+        + 'subgraph end participant actor loop alt else opt par and rect '
+        + 'note over of activate deactivate class classDef click style '
+        + 'linkStyle direction title section state accTitle accDescr',
+      built_in: 'TB TD BT LR RL',
+    },
+    contains: [
+      // %%{init: ...}%% directives before plain %% comments.
+      { className: 'meta', begin: /%%\{/, end: /\}%%/ },
+      h.COMMENT(/%%/, /$/),
+      h.QUOTE_STRING_MODE,
+      // Arrows/edges before |edge label|, so ||--o{ reads as one operator
+      // instead of the leading || opening an empty label.
+      { className: 'operator', begin: /[<ox]?(?:--+|==+|-\.+-?)[>ox]?|-{1,2}>>?|<<?-{1,2}|[|}][|o]--[|o][{|]?/ },
+      // |edge label|
+      { className: 'string', begin: /\|/, end: /\|/ },
+      h.C_NUMBER_MODE,
+    ],
+  }));
 }
 
 // A no-op if highlight.js's stylesheet was never loaded on this page.

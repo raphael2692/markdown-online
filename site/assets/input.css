@@ -32,6 +32,43 @@
   height: var(--pane-height, 288px);
 }
 
+/* Editor write-pane highlighting overlay (see editor-highlight.js): a
+   colored backdrop div behind a transparent-text textarea. The two layers
+   must measure identically down to the glyph, so pin every rendering knob
+   that could differ between a <textarea> and a <div>. */
+.editor-backdrop,
+#tw-in {
+  font-variant-ligatures: none;
+  tab-size: 4;
+  -moz-tab-size: 4;
+}
+/* The github/github-dark hljs themes bold .hljs-strong and italicize
+   .hljs-emphasis/.hljs-section — but bold/italic monospace glyphs change
+   advance widths, which would break caret alignment. Color only, in the
+   editor. */
+.editor-backdrop .hljs-strong,
+.editor-backdrop .hljs-emphasis,
+.editor-backdrop .hljs-section,
+.editor-backdrop [class^="hljs-"],
+.editor-backdrop [class*=" hljs-"] {
+  font-weight: inherit;
+  font-style: inherit;
+}
+/* text-transparent on the textarea would blank the placeholder too. */
+#tw-in::placeholder { color: #a3a3a3; }
+.dark #tw-in::placeholder { color: #737373; }
+/* Selection highlight paints inside the textarea, above the backdrop —
+   keep it translucent so the colored text stays readable through it. */
+#tw-in::selection { background: rgba(59, 130, 246, 0.30); }
+/* IME composition text is drawn by the textarea itself; make it visible
+   for the duration and dim the (now-stale) backdrop underneath. */
+.is-composing #tw-in { color: inherit; }
+.is-composing .editor-backdrop { opacity: 0.3; }
+/* Documents past editor-highlight.js's size cutoff fall back to a plain,
+   uncolored — but responsive — textarea. */
+.overlay-off #tw-in { color: inherit; }
+.overlay-off .editor-backdrop { display: none; }
+
 /* Rendered Markdown preview panes. Hand-rolled instead of the Tailwind
    Typography plugin, which the standalone (no-Node) CLI build can't resolve. */
 .md-preview {

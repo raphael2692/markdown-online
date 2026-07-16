@@ -29,6 +29,7 @@
        instant its own deferred script runs — so paneResizer must already
        be defined by then. -->
   <script defer src="/assets/site.js"></script>
+  <script defer src="/assets/editor-highlight.js"></script>
   <script defer src="/assets/vendor/alpine-3.15.12.min.js"></script>
 
   <script type="application/ld+json">
@@ -395,18 +396,28 @@
           <div x-show="view !== 'preview'" class="min-w-0 border-b border-neutral-200 dark:border-neutral-800 p-3 md:border-b-0 md:border-r"
             :class="view === 'split' ? 'split-pane-left' : 'md:w-full'">
             <label for="tw-in" class="sr-only">Markdown input</label>
-            <div class="pane-height relative w-full overflow-hidden rounded-md border border-neutral-300 dark:border-neutral-700">
+            <div class="pane-height relative w-full overflow-hidden rounded-md border border-neutral-300 dark:border-neutral-700"
+              :class="composing && 'is-composing'">
+              <!-- Syntax-highlight backdrop: same text as the textarea, colored.
+                   Metric-affecting classes (font, size, leading, padding,
+                   whitespace) MUST stay identical to the textarea's or the
+                   caret drifts off the colors. See editor-highlight.js. -->
+              <div x-ref="mdHighlight" aria-hidden="true"
+                class="editor-backdrop pointer-events-none absolute inset-0 select-none overflow-hidden whitespace-pre py-2 pl-12 pr-2 font-mono text-sm leading-6 text-neutral-800 dark:text-neutral-200"></div>
+              <!-- z-10 keeps the gutter painting above the (now position:relative)
+                   textarea, so horizontally scrolled text still slides under it. -->
               <div x-ref="mdGutter" aria-hidden="true"
-                class="pointer-events-none absolute inset-y-0 left-0 w-10 select-none overflow-hidden bg-neutral-50 dark:bg-neutral-800 py-2 text-right font-mono text-sm leading-6 text-neutral-400 dark:text-neutral-500">
+                class="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 select-none overflow-hidden bg-neutral-50 dark:bg-neutral-800 py-2 text-right font-mono text-sm leading-6 text-neutral-400 dark:text-neutral-500">
                 <template x-for="n in inputLineCount" :key="n">
                   <div class="pr-2 leading-6" x-text="n"></div>
                 </template>
               </div>
               <textarea id="tw-in" x-ref="mdTextarea" x-model="input"
-                @input.debounce.250ms="run()" @keydown="onKeydown($event)" @scroll="onInputScroll($event)"
+                @input="onTypedInput()" @input.debounce.250ms="run()" @keydown="onKeydown($event)" @scroll="onInputScroll($event)"
                 @click="updateHeadingLevel()" @keyup="updateHeadingLevel()" @select="updateHeadingLevel()"
+                @compositionstart="composing = true" @compositionend="composing = false"
                 spellcheck="true" wrap="off"
-                class="h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 focus:outline-none focus:ring-0"
+                class="relative h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent py-2 pl-12 pr-2 font-mono text-sm leading-6 text-transparent caret-neutral-800 dark:caret-neutral-200 focus:outline-none focus:ring-0"
                 placeholder="Start writing Markdown, or paste some in…"></textarea>
             </div>
           </div>
@@ -821,9 +832,11 @@
       return {
         ...paneResizer({ split: 33, paneHeight: 720, maxHeight: 1400 }),
         ...toolActionsMixin(),
+        ...historyMixin(),
         input: '', fragment: '', error: '', toast: '',
         view: 'split', restored: false, savedAt: '',
-        _saveTimer: null, _renderGen: 0,
+        _saveTimer: null, _renderGen: 0, _hl: null,
+        composing: false,
         currentHeadingLevel: '',
         previewZoom: 100, panMode: false, panDragging: false,
         zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX,
@@ -848,6 +861,7 @@
           } else {
             this.input = SAMPLE_MD;
           }
+          this.initHistory();
           this.$watch('input', (val) => {
             clearTimeout(this._saveTimer);
             this._saveTimer = setTimeout(() => {
@@ -863,7 +877,21 @@
           ensureHljsLoaded().catch(() => {}); // best-effort; run() re-checks readiness itself
           // $nextTick: x-init can fire before Alpine registers x-ref="preview",
           // which run() writes into.
-          this.$nextTick(() => this.run());
+          this.$nextTick(() => {
+            this.run();
+            // Write-pane highlighting: a colored backdrop mirrors the
+            // textarea (see editor-highlight.js). The input watcher covers
+            // every mutation path — typing, toolbar insertions, undo/redo,
+            // imports, clear — with no per-call-site wiring.
+            this._hl = EditorHighlight.attach({
+              textarea: this.$refs.mdTextarea,
+              backdrop: this.$refs.mdHighlight,
+            });
+            this.$watch('input', () => this._hl.schedule());
+            // Fence interiors upgrade from plain text once hljs (and the
+            // dbml/mermaid grammars registered with it) finish loading.
+            ensureHljsLoaded().then(() => this._hl.schedule()).catch(() => {});
+          });
           // Mermaid bakes its theme's colors into each diagram's SVG at
           // render time, so following the header's dark-mode toggle means
           // regenerating any diagram currently on screen, not just a CSS
@@ -976,8 +1004,10 @@
           const ta = this.$refs.mdTextarea;
           const start = ta.selectionStart, end = ta.selectionEnd;
           const selected = this.input.slice(start, end) || placeholder;
+          this.commitHistory();
           this.input = this.input.slice(0, start) + prefix + selected + suffix + this.input.slice(end);
           const newStart = start + prefix.length;
+          this.commitHistory(newStart, newStart + selected.length);
           this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newStart, newStart + selected.length); });
           this.run();
         },
@@ -991,8 +1021,10 @@
           const stripped = line.replace(/^#{1,6}\s+/, '');
           const marker = level ? '#'.repeat(level) + ' ' : '';
           const newLine = marker + stripped;
+          this.commitHistory();
           this.input = this.input.slice(0, lineStart) + newLine + this.input.slice(lineEnd);
           const newPos = lineStart + newLine.length;
+          this.commitHistory(newPos, newPos);
           this.$nextTick(() => {
             ta.focus();
             ta.setSelectionRange(newPos, newPos);
@@ -1017,7 +1049,9 @@
           if (lineEnd === -1) lineEnd = this.input.length;
           const block = this.input.slice(lineStart, lineEnd)
             .split('\n').map((l) => marker + l).join('\n');
+          this.commitHistory();
           this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
+          this.commitHistory(lineStart, lineStart + block.length);
           this.$nextTick(() => { ta.focus(); ta.setSelectionRange(lineStart, lineStart + block.length); });
           this.run();
         },
@@ -1029,7 +1063,9 @@
           if (lineEnd === -1) lineEnd = this.input.length;
           const block = this.input.slice(lineStart, lineEnd)
             .split('\n').map((l, i) => `${i + 1}. ${l}`).join('\n');
+          this.commitHistory();
           this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
+          this.commitHistory(lineStart, lineStart + block.length);
           this.$nextTick(() => { ta.focus(); ta.setSelectionRange(lineStart, lineStart + block.length); });
           this.run();
         },
@@ -1041,17 +1077,24 @@
           }
           const mod = e.ctrlKey || e.metaKey;
           if (!mod) return;
-          if (e.key === 'b') { e.preventDefault(); this.wrapSelection('**', '**', 'bold text'); }
-          else if (e.key === 'i') { e.preventDefault(); this.wrapSelection('*', '*', 'italic text'); }
-          else if (e.key === 'k') { e.preventDefault(); this.wrapSelection('[', '](https://)', 'link text'); }
+          const key = e.key.toLowerCase();
+          // Undo: Ctrl/Cmd+Z. Redo: Ctrl+Y (Windows/Linux) or Ctrl/Cmd+Shift+Z
+          // (the Mac convention, also accepted everywhere else).
+          if (key === 'z' && !e.shiftKey) { e.preventDefault(); this.undo(); }
+          else if (key === 'y' || (key === 'z' && e.shiftKey)) { e.preventDefault(); this.redo(); }
+          else if (key === 'b') { e.preventDefault(); this.wrapSelection('**', '**', 'bold text'); }
+          else if (key === 'i') { e.preventDefault(); this.wrapSelection('*', '*', 'italic text'); }
+          else if (key === 'k') { e.preventDefault(); this.wrapSelection('[', '](https://)', 'link text'); }
         },
         indentSelection() {
           const ta = this.$refs.mdTextarea;
           const start = ta.selectionStart, end = ta.selectionEnd;
           const INDENT = '  ';
+          this.commitHistory();
           if (start === end) {
             this.input = this.input.slice(0, start) + INDENT + this.input.slice(end);
             const newPos = start + INDENT.length;
+            this.commitHistory(newPos, newPos);
             this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
             this.run();
             return;
@@ -1064,6 +1107,7 @@
           this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
           const newStart = start + INDENT.length;
           const newEnd = end + INDENT.length * lines.length;
+          this.commitHistory(newStart, newEnd);
           this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newStart, newEnd); });
           this.run();
         },
@@ -1083,9 +1127,11 @@
             return removed ? l.slice(removed) : l;
           });
           const block = lines.join('\n');
+          this.commitHistory();
           this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
           const newStart = Math.max(lineStart, start - Math.min(firstRemoved, start - lineStart));
           const newEnd = Math.max(newStart, end - totalRemoved);
+          this.commitHistory(newStart, newEnd);
           this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newStart, newEnd); });
           this.run();
         },
@@ -1108,8 +1154,10 @@
           const needsBlankBefore = lineStart > 0 && this.input[lineStart - 1] !== '\n';
           const table = (needsBlankBefore ? '\n\n' : '') +
             '| Header | Header |\n| --- | --- |\n| Cell | Cell |\n| Cell | Cell |\n';
+          this.commitHistory();
           this.input = this.input.slice(0, lineStart) + table + this.input.slice(lineStart);
           const newPos = lineStart + table.length;
+          this.commitHistory(newPos, newPos);
           this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
           this.run();
         },
@@ -1119,15 +1167,19 @@
           const lineStart = this.input.lastIndexOf('\n', pos - 1) + 1;
           const needsBlankBefore = lineStart > 0 && this.input[lineStart - 1] !== '\n';
           const hr = (needsBlankBefore ? '\n\n' : '') + '---\n';
+          this.commitHistory();
           this.input = this.input.slice(0, lineStart) + hr + this.input.slice(lineStart);
           const newPos = lineStart + hr.length;
+          this.commitHistory(newPos, newPos);
           this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
           this.run();
         },
 
         clearDraft() {
           if (!confirm("Clear the editor and delete your saved draft? This can't be undone.")) return;
+          this.commitHistory();
           this.input = '';
+          this.commitHistory(0, 0);
           localStorage.removeItem(STORAGE_KEY);
           this.savedAt = '';
           this.restored = false;
@@ -1197,8 +1249,10 @@
         insertAtCursor(text) {
           const ta = this.$refs.mdTextarea;
           const start = ta.selectionStart, end = ta.selectionEnd;
+          this.commitHistory();
           this.input = this.input.slice(0, start) + text + this.input.slice(end);
           const newPos = start + text.length;
+          this.commitHistory(newPos, newPos);
           this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
           this.run();
         },
@@ -1242,7 +1296,9 @@
             event.target.value = '';
             return;
           }
+          this.commitHistory();
           this.input = await file.text();
+          this.commitHistory(0, 0);
           this.restored = false;
           this.run();
           const ta = this.$refs.mdTextarea;

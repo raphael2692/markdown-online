@@ -26,7 +26,9 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   get an auto-rendered, auto-laid-out entity-relationship diagram (tables,
   columns, keys, enums, and crow's-foot relationships), no dbdiagram.io
   round-trip needed.
-- **Syntax-highlighted code blocks** in the live preview.
+- **Syntax highlighting everywhere** — code blocks are colored in the live
+  preview *and* in the write pane itself (Markdown structure plus fenced
+  code in ~35 languages, including first-party Mermaid and DBML grammars).
 
 Every conversion runs on vetted, open-source JavaScript libraries loaded
 from this site — nothing is sent anywhere.
