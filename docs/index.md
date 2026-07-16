@@ -258,6 +258,17 @@ elsewhere to avoid a stale async load racing a newer edit.
   line; Table/Image/Horizontal rule — inserted at the cursor), and **Embed**
   (Code block/Diagram/Math dropdowns — also inserted at the cursor). Each
   button's tooltip spells out which behavior it uses.
+- **Editor keyboard handling**: `onKeydown()` on the textarea covers both
+  formatting shortcuts (Ctrl/Cmd+B/I/K → `wrapSelection()`) and code editing
+  basics — Tab/Shift+Tab call `indentSelection()`/`outdentSelection()`
+  instead of moving focus out of the pane. With no selection, Tab inserts a
+  2-space indent at the cursor; with a selection, both Tab and Shift+Tab
+  operate per line across the full selected range (indenting/removing up to
+  one 2-space unit or a literal tab per line) and preserve the selection's
+  relative bounds afterward. This matters because the pane is a plain
+  `<textarea>`, which browsers otherwise treat Tab as a focus-change key —
+  without this override, indenting code fences or nested lists would be
+  impossible from the keyboard.
 - **Import mechanism**: HTML and CSV/JSON aren't separate tools anymore —
   they're "Import" actions inside the same widget. Import-from-HTML runs
   the pasted/uploaded HTML through `TurndownService` (+ `turndown-plugin-gfm`

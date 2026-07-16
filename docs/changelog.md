@@ -1,10 +1,11 @@
-<!-- docs-sync: 54022a9 -->
+<!-- docs-sync: fc0a635 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- Tab/Shift+Tab now indent/outdent in the write pane instead of moving focus off the textarea — with no selection, Tab inserts a 2-space indent at the cursor; with a selection, both keys apply per line across the full selected range and keep the selection anchored afterward (`fc0a635`)
 - "Open Markdown file…" option in the editor's Import dropdown: loads a
   `.md`/`.markdown`/`.txt` file from disk straight into the document via a
   native file picker. Unlike the HTML/CSV imports, which convert a foreign
