@@ -257,102 +257,122 @@
     return { tables, enums, refs: resolvedRefs };
   }
 
-  // ---- layout (force-directed, à la Fruchterman-Reingold) ----------------
+  // ---- layout (layered/Sugiyama-lite — deterministic, "autocompact"-style) --
+  //
+  // Earlier versions used a force-directed (Fruchterman-Reingold) simulation
+  // with randomized starting positions. That produces a different, sometimes
+  // overlapping or crossing-heavy layout on every render of the same source,
+  // which reads as broken next to dbdiagram.io's deterministic auto-layout.
+  // This instead buckets tables into columns by BFS distance from a low-degree
+  // seed (so a chain like follows–users–posts fans out into three columns
+  // instead of collapsing users' two neighbors into one), orders each column
+  // with a barycenter pass to reduce edge crossings, then stacks/spaces
+  // columns by actual box size — no overlap is possible by construction.
+
+  const COL_GAP = 90, ROW_GAP = 40;
+
+  // Standard Sugiyama layer-ordering heuristic: alternate forward/backward
+  // passes, each re-sorting a column by the average position its neighbors
+  // hold in the already-fixed adjacent column. A few passes are plenty at
+  // ER-diagram scale — this isn't optimal crossing minimization, just enough
+  // to stop obviously-avoidable crossings.
+  function orderColumns(columns, adj) {
+    for (let pass = 0; pass < 4; pass++) {
+      const forward = pass % 2 === 0;
+      const range = [];
+      if (forward) { for (let i = 1; i < columns.length; i++) range.push(i); }
+      else { for (let i = columns.length - 2; i >= 0; i--) range.push(i); }
+      for (const ci of range) {
+        const refCol = columns[forward ? ci - 1 : ci + 1];
+        if (!refCol) continue;
+        const refIndex = new Map(refCol.map((id, i) => [id, i]));
+        const scored = columns[ci].map((id, i) => {
+          const neighbors = [...adj.get(id)].filter((nb) => refIndex.has(nb));
+          const score = neighbors.length
+            ? neighbors.reduce((s, nb) => s + refIndex.get(nb), 0) / neighbors.length
+            : Number.MAX_SAFE_INTEGER;
+          return { id, score, i };
+        });
+        scored.sort((a, b) => a.score - b.score || a.i - b.i);
+        columns[ci] = scored.map((s) => s.id);
+      }
+    }
+  }
 
   function layoutGraph(nodes, edges) {
-    const n = nodes.length;
     const pos = new Map();
-    const R = Math.max(220, n * 70);
-    nodes.forEach((nd, i) => {
-      const angle = (2 * Math.PI * i) / n;
-      pos.set(nd.id, {
-        x: R * Math.cos(angle) + (Math.random() - 0.5) * 30,
-        y: R * Math.sin(angle) + (Math.random() - 0.5) * 30,
-      });
-    });
-    if (n <= 1) return pos;
-
-    const avgArea = nodes.reduce((s, nd) => s + nd.width * nd.height, 0) / n;
-    const k = Math.max(170, Math.sqrt(avgArea) * 1.5);
-    let temp = R / 3;
-    const iterations = 250;
-
-    for (let it = 0; it < iterations; it++) {
-      const disp = new Map(nodes.map((nd) => [nd.id, { x: 0, y: 0 }]));
-
-      for (let a = 0; a < n; a++) {
-        for (let b = a + 1; b < n; b++) {
-          const A = nodes[a], B = nodes[b];
-          const pa = pos.get(A.id), pb = pos.get(B.id);
-          const dx = pa.x - pb.x, dy = pa.y - pb.y;
-          const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-          // The +90 (rather than a tighter fit) leaves enough clearance
-          // between directly-connected boxes for the crow's-foot/tick
-          // marker pair drawn at each end of a connector (see drawMarker) —
-          // without it, two boxes linked by a single strong edge converge
-          // close enough that both ends' markers visually cram together.
-          const minSep = Math.hypot(A.width, A.height) / 2 + Math.hypot(B.width, B.height) / 2 + 90;
-          const force = (k * k) / dist + (dist < minSep ? (minSep - dist) * 3 : 0);
-          const fx = (dx / dist) * force, fy = (dy / dist) * force;
-          disp.get(A.id).x += fx; disp.get(A.id).y += fy;
-          disp.get(B.id).x -= fx; disp.get(B.id).y -= fy;
-        }
-      }
-
-      for (const e of edges) {
-        const pa = pos.get(e.source), pb = pos.get(e.target);
-        if (!pa || !pb) continue;
-        const dx = pa.x - pb.x, dy = pa.y - pb.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        const force = (dist * dist) / k * (e.weight || 1);
-        const fx = (dx / dist) * force, fy = (dy / dist) * force;
-        disp.get(e.source).x -= fx; disp.get(e.source).y -= fy;
-        disp.get(e.target).x += fx; disp.get(e.target).y += fy;
-      }
-
-      for (const nd of nodes) {
-        const p = pos.get(nd.id);
-        disp.get(nd.id).x -= p.x * 0.15;
-        disp.get(nd.id).y -= p.y * 0.15;
-      }
-
-      for (const nd of nodes) {
-        const d = disp.get(nd.id);
-        const len = Math.sqrt(d.x * d.x + d.y * d.y) || 0.01;
-        const capped = Math.min(len, temp);
-        const p = pos.get(nd.id);
-        p.x += (d.x / len) * capped;
-        p.y += (d.y / len) * capped;
-      }
-      temp *= 0.97;
+    const nodeById = new Map(nodes.map((nd) => [nd.id, nd]));
+    const adj = new Map(nodes.map((nd) => [nd.id, new Set()]));
+    for (const e of edges) {
+      if (!adj.has(e.source) || !adj.has(e.target) || e.source === e.target) continue;
+      adj.get(e.source).add(e.target);
+      adj.get(e.target).add(e.source);
     }
 
-    // Residual-overlap cleanup: the circular-radius repulsion above
-    // approximates boxes as circles, which can still leave two
-    // very-non-square boxes' rectangles overlapping. Nudge apart along
-    // whichever axis has the smaller overlap.
-    for (let pass = 0; pass < 60; pass++) {
-      let moved = false;
-      for (let a = 0; a < n; a++) {
-        for (let b = a + 1; b < n; b++) {
-          const A = nodes[a], B = nodes[b];
-          const pa = pos.get(A.id), pb = pos.get(B.id);
-          const gap = 28;
-          const overlapX = Math.min(pa.x + A.width / 2, pb.x + B.width / 2) - Math.max(pa.x - A.width / 2, pb.x - B.width / 2) + gap;
-          const overlapY = Math.min(pa.y + A.height / 2, pb.y + B.height / 2) - Math.max(pa.y - A.height / 2, pb.y - B.height / 2) + gap;
-          if (overlapX > 0 && overlapY > 0) {
-            moved = true;
-            if (overlapX < overlapY) {
-              const push = (overlapX / 2) * (pa.x <= pb.x ? -1 : 1);
-              pa.x += push; pb.x -= push;
-            } else {
-              const push = (overlapY / 2) * (pa.y <= pb.y ? -1 : 1);
-              pa.y += push; pb.y -= push;
-            }
+    // 1. Split into connected components, and within each assign every node
+    // a layer = BFS distance from a minimum-degree seed. Seeding from a leaf
+    // (rather than the highest-degree hub) is what turns a simple chain into
+    // separate columns instead of stacking a hub's neighbors into one.
+    const layerOf = new Map();
+    const visited = new Set();
+    const seeds = nodes.slice().sort((a, b) => adj.get(a.id).size - adj.get(b.id).size);
+    const components = [];
+    for (const seed of seeds) {
+      if (visited.has(seed.id)) continue;
+      const nodeIds = [seed.id];
+      visited.add(seed.id);
+      layerOf.set(seed.id, 0);
+      let frontier = [seed.id];
+      let maxLayer = 0;
+      while (frontier.length) {
+        const next = [];
+        for (const cur of frontier) {
+          for (const nb of adj.get(cur)) {
+            if (visited.has(nb)) continue;
+            visited.add(nb);
+            const l = layerOf.get(cur) + 1;
+            layerOf.set(nb, l);
+            maxLayer = Math.max(maxLayer, l);
+            nodeIds.push(nb);
+            next.push(nb);
           }
         }
+        frontier = next;
       }
-      if (!moved) break;
+      components.push({ nodeIds, maxLayer });
+    }
+
+    // 2. Lay out each component's columns left to right, then place
+    // components side by side. Column width = its widest node; column
+    // height = sum of its nodes' heights + gaps. Shorter columns within a
+    // component are centered against the tallest so the diagram balances
+    // vertically instead of top-hugging.
+    let originX = 0;
+    for (const comp of components) {
+      const columns = [];
+      for (const id of comp.nodeIds) {
+        const l = layerOf.get(id);
+        (columns[l] = columns[l] || []).push(id);
+      }
+      orderColumns(columns, adj);
+
+      const colWidths = columns.map((col) => Math.max(...col.map((id) => nodeById.get(id).width)));
+      const colHeights = columns.map((col) =>
+        col.reduce((s, id) => s + nodeById.get(id).height, 0) + ROW_GAP * Math.max(0, col.length - 1));
+      const tallest = Math.max(...colHeights);
+
+      let colX = originX;
+      columns.forEach((col, ci) => {
+        const x = colX + colWidths[ci] / 2;
+        let y = (tallest - colHeights[ci]) / 2;
+        for (const id of col) {
+          const node = nodeById.get(id);
+          pos.set(id, { x, y: y + node.height / 2 });
+          y += node.height + ROW_GAP;
+        }
+        colX += colWidths[ci] + COL_GAP;
+      });
+      originX = colX + COL_GAP;
     }
 
     return pos;
@@ -491,7 +511,11 @@
   function render(source, opts) {
     opts = opts || {};
     const parsed = parseDbml(source);
-    const fkColumns = new Set(parsed.refs.map((r) => r.fromTable + '.' + r.fromCol));
+    // The FK lives on the "many" side of the ref. For `>` (and the
+    // ambiguous `-`/`<>` cases) that's the from-side; `<` reverses it
+    // (`one.col < many.col`), so the to-side is the one that's actually FK.
+    const fkColumns = new Set(parsed.refs.map((r) =>
+      r.op === '<' ? r.toTable + '.' + r.toCol : r.fromTable + '.' + r.fromCol));
 
     const tableNodes = parsed.tables.map((t) => buildTableNode(t, fkColumns));
     const enumNodes = parsed.enums.map((e) => buildEnumNode(e));
@@ -500,15 +524,15 @@
 
     const edges = parsed.refs
       .filter((r) => nodeById.has(r.fromTable) && nodeById.has(r.toTable))
-      .map((r) => ({ source: r.fromTable, target: r.toTable, weight: 1.4 }));
-    // Soft layout-only pull between a table and an enum type its column
-    // uses, so the enum settles near its users without drawing a line for
-    // it (DBML doesn't model enum usage as a Ref).
+      .map((r) => ({ source: r.fromTable, target: r.toTable }));
+    // Layout-only link between a table and an enum type its column uses, so
+    // the enum lands in its own column near its users without drawing a
+    // line for it (DBML doesn't model enum usage as a Ref).
     const enumByName = new Map(parsed.enums.map((e) => [e.name, e.id]));
     for (const t of parsed.tables) {
       for (const c of t.columns) {
         const eid = enumByName.get(c.type);
-        if (eid) edges.push({ source: t.id, target: eid, weight: 1.1 });
+        if (eid) edges.push({ source: t.id, target: eid });
       }
     }
 
