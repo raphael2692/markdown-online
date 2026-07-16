@@ -1,10 +1,21 @@
-<!-- docs-sync: 4e0578a -->
+<!-- docs-sync: b254105 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- Find in the editor: Ctrl/Cmd+F over the write pane opens a floating find bar — case-insensitive matching with an "N of M" counter, Enter/Shift+Enter cycling, Escape to close, and a highlight painted over the current match via the pane's fixed monospace metrics (no third mirrored copy of the document) (`b254105`)
+- Scroll-sync toggle in split view: a "Sync on"/"Sync off" button next to the stack-panels toggle enables/disables the proportional scroll mirroring between the write and preview panes (`b254105`)
+- LLM token estimate in the status counters, alongside words and characters, using the common ≈4-characters-per-token heuristic (`b254105`)
+- Plain code-fence toolbar button: wraps the selection in `` ``` `` fences pushed onto their own lines, or inserts an empty fenced block with the cursor inside when nothing is selected (`b254105`)
+- DBML fences now colorize column definitions distinctly — column name blue, type orange, keywords red — in the write pane's highlighting (`9b17c66`)
+
+### Changed
+- DBML diagram palette desaturated to a more professional look: steel-blue table headers, muted-plum enum headers, and softened primary-key/relationship-line accents, in both light and dark themes (`9b17c66`)
+
+### Fixed
+- DBML diagram columns are now top-aligned within a component instead of vertically centered, so tables originate from the same row; the preview's hand tool now pans the actual horizontally-overflowing element (a wide table/code block/diagram) instead of the viewport, which markdown text never overflows, and no longer follows a link when a drag ends on one (`11ed7d2`)
 - Write-pane syntax highlighting: the editor's source pane now colors Markdown structure (headings, lists, quotes, tables, links, emphasis) and fenced-code interiors as you type, StackEdit-style, via a color-only backdrop div behind the (transparent-text) textarea — no new vendored editor library; fence interiors reuse the lazy-loaded highlight.js with per-fence memoization, and documents past 200k chars fall back to a plain textarea. Also registers first-party display-grade highlight.js grammars for DBML and Mermaid, so those fences colorize in the preview and exports-preview everywhere hljs runs (`4e0578a`)
 - Tab/Shift+Tab now indent/outdent in the write pane instead of moving focus off the textarea — with no selection, Tab inserts a 2-space indent at the cursor; with a selection, both keys apply per line across the full selected range and keep the selection anchored afterward (`fc0a635`)
 - "Open Markdown file…" option in the editor's Import dropdown: loads a

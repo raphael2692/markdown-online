@@ -176,7 +176,10 @@ a small first-party module (lazy-loaded like the vendored libraries, via
   (`orderColumns()`) against its already-fixed neighboring column to reduce
   edge crossings, and finally positioned left to right with column width/row
   height taken from actual box sizes — no overlap is possible by
-  construction, so there's no separate cleanup pass. An enum still gets a
+  construction, so there's no separate cleanup pass. Columns within a
+  component are top-aligned (every column starts at the same y) rather than
+  vertically centered against the tallest, so all tables originate from one
+  horizontal row and grow downward. An enum still gets a
   layout-only edge toward any table whose column uses it as a type (DBML
   doesn't model "uses this enum" as a `Ref`), so it lands in its own column
   near its users. A `Ref`'s FK column is derived from which side the DBML
@@ -203,7 +206,11 @@ a small first-party module (lazy-loaded like the vendored libraries, via
   `.mermaid-error`) is the same shape either way.
 - **Theme** — colors are baked into the SVG at render time (like Mermaid),
   so the editor's `themechange` listener re-runs the conversion pipeline
-  when `opts.dbml` is on, same as it does for Mermaid.
+  when `opts.dbml` is on, same as it does for Mermaid. The palette
+  (`colors()` in `dbml.js`) is deliberately desaturated — steel-blue table
+  headers, muted-plum enum headers, softened PK/line accents, in both light
+  and dark variants — after the original saturated blue/purple primaries
+  read as toy-like next to dbdiagram.io's output.
 
 ## Syntax highlighting (on-page only, always on)
 
@@ -233,7 +240,13 @@ understands and Mermaid's common cross-diagram vocabulary; the Mermaid
 grammar sets `$pattern: /[\w-]+/` so hyphenated keywords like
 `stateDiagram-v2` match. Class names used are only ones the vendored
 github/github-dark themes actually style (notably: `.hljs-link` is *not*
-styled by those themes — use `.hljs-symbol` for link-ish tokens).
+styled by those themes — use `.hljs-symbol` for link-ish tokens). The DBML
+grammar also tokenizes column definitions with an hljs multi-class matcher
+(`begin: [...]` + `beginScope`): the column name gets `attr` (blue) and the
+type `built_in` (orange) — not `type`, which the github themes color the
+same red as `keyword`, erasing the distinction from `Table`/`Ref`/`Enum`.
+A negative lookahead keeps block openers (`Table users {`) and `Note:`
+lines on the keyword path instead of being eaten as a column.
 
 ### Write-pane highlighting (`editor-highlight.js`)
 
@@ -288,7 +301,12 @@ parts:
   own content instead of `--split`, overriding the responsive side-by-side
   default regardless of viewport width. The horizontal drag divider hides
   while stacked (there's no width to drag); the vertical pane-height
-  divider still works either way.
+  divider still works either way. The proportional scroll-mirroring is
+  itself user-toggleable: a widget-level `syncScroll` boolean (default on),
+  flipped by a "Sync on"/"Sync off" button next to the stack toggle (also
+  split-view-only), gates the `mirrorScroll()` calls in
+  `onInputScroll()`/`onPreviewScroll()` so the panes can scroll
+  independently when comparing distant parts of source and preview.
 - **Shared toast/copy/export behavior**: the tool widget also mixes in
   `toolActionsMixin()` (`site/assets/site.js`) for `flash()` (the toast
   message shown after Copy/Download actions) and `copyRichClick()` (wraps
@@ -306,8 +324,15 @@ parts:
   placeholder if nothing's selected), **Insert** (Bullet/Numbered/Task
   list/Quote — `prefixLines()`/`insertNumberedList()`, applied per selected
   line; Table/Image/Horizontal rule — inserted at the cursor), and **Embed**
-  (Code block/Diagram/Math dropdowns — also inserted at the cursor). Each
-  button's tooltip spells out which behavior it uses.
+  (a plain code-fence button plus Code block/Diagram/Math dropdowns — also
+  inserted at the cursor). The plain-fence button (`insertCodeFence()`) is
+  the language-less sibling of the Code block dropdown: with a selection it
+  wraps it in `` ``` `` fences pushed onto their own lines; with no selection it
+  drops an empty fenced block and parks the cursor inside. Each button's
+  tooltip spells out which behavior it uses. The toolbar's right side also
+  carries live status counters — words, characters, and an LLM token
+  estimate (`tokenCount`, the common ≈4-characters-per-token heuristic;
+  deliberately an estimate, no tokenizer is shipped).
 - **Editor keyboard handling**: `onKeydown()` on the textarea covers both
   formatting shortcuts (Ctrl/Cmd+B/I/K → `wrapSelection()`) and code editing
   basics — Tab/Shift+Tab call `indentSelection()`/`outdentSelection()`
@@ -318,7 +343,25 @@ parts:
   relative bounds afterward. This matters because the pane is a plain
   `<textarea>`, which browsers otherwise treat Tab as a focus-change key —
   without this override, indenting code fences or nested lists would be
-  impossible from the keyboard.
+  impossible from the keyboard. Ctrl/Cmd+F is intercepted too (`openFind()`,
+  below), and Escape closes the find bar when it's open.
+- **Find in document**: Ctrl/Cmd+F over the write pane opens a floating
+  find bar (absolute top-right inside the pane wrapper) instead of the
+  browser's page-wide find, which can't see into a scrolled textarea.
+  Matching is case-insensitive plain-text (`updateFindMatches()`), with an
+  "N of M" counter, Enter/Shift+Enter (or the arrow buttons) cycling, and
+  Escape closing. Because the pane's metrics are fixed by the highlight
+  overlay's own invariants (monospace, `leading-6` = 24px lines, `py-2
+  pl-12` padding, `wrap="off"`), the current match's line/column maps
+  straight to pixels: `revealFindMatch()` centers it via
+  `scrollTop`/`scrollLeft` arithmetic and `updateFindMark()` positions an
+  amber highlight div (between backdrop and textarea, repositioned from
+  `onInputScroll()`) — no DOM measurement of the text, and no third
+  mirrored copy of the document. The textarea's selection is also set to
+  the match without stealing focus, so closing the bar (which refocuses the
+  textarea) lands with the match visibly selected. Edits made while the bar
+  is open refresh the count/mark only — re-anchoring the selection there
+  would fight the user's caret mid-keystroke.
 - **Import mechanism**: HTML and CSV/JSON aren't separate tools anymore —
   they're "Import" actions inside the same widget. Import-from-HTML runs
   the pasted/uploaded HTML through `TurndownService` (+ `turndown-plugin-gfm`
@@ -418,11 +461,15 @@ scrolling element itself avoids the box that reports its size to
 - **Hand tool** (`panMode`) reuses the same drag-tracking idiom as
   `paneResizer()`'s `startDrag()`/`startVDrag()` (mousedown/touchstart →
   document-level move/up listeners), just writing `scrollLeft`/`scrollTop`
-  on the viewport instead of a CSS custom property. While active,
-  `previewInner` gets `pointer-events: none` so a mousedown anywhere over
-  rendered content (a link, a checkbox) falls through to the viewport's own
-  handler and pans instead of following the link or starting a text
-  selection.
+  instead of a CSS custom property. Vertical panning always targets the
+  outer viewport, but horizontal panning walks up from the mousedown target
+  to the nearest ancestor that actually overflows horizontally (a wide
+  table/`pre`/diagram with its own `overflow-x`) and drags *that* —
+  markdown text reflows to fit the pane width, so the viewport itself
+  almost never has horizontal overflow to move. After a real drag (>3px), a
+  one-shot capture-phase click handler swallows the click so dragging
+  across a link doesn't also navigate; `previewInner` gets `select-none`
+  while the tool is active so drags don't start text selections.
 
 ## Dark mode
 
