@@ -1,10 +1,11 @@
-<!-- docs-sync: fc0a635 -->
+<!-- docs-sync: 4e0578a -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- Write-pane syntax highlighting: the editor's source pane now colors Markdown structure (headings, lists, quotes, tables, links, emphasis) and fenced-code interiors as you type, StackEdit-style, via a color-only backdrop div behind the (transparent-text) textarea — no new vendored editor library; fence interiors reuse the lazy-loaded highlight.js with per-fence memoization, and documents past 200k chars fall back to a plain textarea. Also registers first-party display-grade highlight.js grammars for DBML and Mermaid, so those fences colorize in the preview and exports-preview everywhere hljs runs (`4e0578a`)
 - Tab/Shift+Tab now indent/outdent in the write pane instead of moving focus off the textarea — with no selection, Tab inserts a 2-space indent at the cursor; with a selection, both keys apply per line across the full selected range and keep the selection anchored afterward (`fc0a635`)
 - "Open Markdown file…" option in the editor's Import dropdown: loads a
   `.md`/`.markdown`/`.txt` file from disk straight into the document via a

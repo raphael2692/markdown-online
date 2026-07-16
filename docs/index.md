@@ -205,7 +205,7 @@ a small first-party module (lazy-loaded like the vendored libraries, via
   so the editor's `themechange` listener re-runs the conversion pipeline
   when `opts.dbml` is on, same as it does for Mermaid.
 
-## Syntax highlighting (preview-only, always on)
+## Syntax highlighting (on-page only, always on)
 
 Unlike the three extensions above, code-block syntax highlighting is not a
 checkbox and is not part of `convertMarkdown()`'s output. `ensureHljsLoaded()`
@@ -220,6 +220,56 @@ untouched. This is deliberate: the tool promises the HTML you take with you
 isn't opinionated about styling, so coloring only ever gets painted onto
 the on-page preview, guarded by the same `_renderGen` counter pattern used
 elsewhere to avoid a stale async load racing a newer edit.
+
+### First-party DBML and Mermaid grammars
+
+highlight.js ships no grammar for DBML or Mermaid, but both are first-class
+fence languages here, so `registerExtraHljsLanguages()` (site.js) registers
+small display-grade grammars for them. Registration is **chained into
+`ensureHljsLoaded()`'s ready promise** — not fired independently — so any
+`ensureHljsLoaded().then(...)` caller is guaranteed the grammars already
+exist. Keyword sets mirror what the first-party DBML parser (`dbml.js`)
+understands and Mermaid's common cross-diagram vocabulary; the Mermaid
+grammar sets `$pattern: /[\w-]+/` so hyphenated keywords like
+`stateDiagram-v2` match. Class names used are only ones the vendored
+github/github-dark themes actually style (notably: `.hljs-link` is *not*
+styled by those themes — use `.hljs-symbol` for link-ish tokens).
+
+### Write-pane highlighting (`editor-highlight.js`)
+
+The editor's source pane is colored too, StackEdit-style, without replacing
+the `<textarea>`: `site/assets/editor-highlight.js` renders a color-only
+backdrop `<div class="editor-backdrop">` behind the (now
+`text-transparent`, caret-colored) textarea. Key invariants and moving
+parts:
+
+- **Byte-identical text.** The backdrop's text content must equal the
+  textarea value exactly — spans only wrap characters. That, plus identical
+  metric classes on both layers (`font-mono text-sm leading-6 py-2 pl-12
+  pr-2 whitespace-pre`, `font-variant-ligatures: none`, pinned `tab-size`),
+  is what keeps the caret pixel-aligned with the colors. The hljs themes'
+  bold/italic on `.hljs-strong`/`.hljs-emphasis` are reset to `inherit`
+  inside `.editor-backdrop` (input.css) because bold/italic mono glyphs
+  change advance widths.
+- **Tokenizer.** A line-based pass (headings, quotes, HRs, list markers,
+  table pipes) with a single carried fence state, plus a bounded
+  one-scan inline regex (code spans, links, bold, strike, italic).
+  Fence interiors go through `hljs.highlight(body, {language})` and reuse
+  the same hljs theme classes as the preview; bodies are memoized on
+  `(lang, body)` so unchanged blocks cost nothing per keystroke. Results
+  rendered before hljs lazy-loads are *not* cached (they'd stay uncolored
+  after the upgrade pass).
+- **Wiring.** `EditorHighlight.attach({textarea, backdrop})` is called once
+  in widget `init()`; a `$watch('input', ...)` covers every mutation path
+  (typing, toolbar, undo/redo, imports, clear) with rAF-coalesced renders.
+  The attach adds its own scroll listener syncing both `scrollTop` *and*
+  `scrollLeft` (the pane is `wrap="off"`). A trailing U+200B sentinel keeps
+  the backdrop's scrollHeight equal to the textarea's phantom last row.
+- **Fallbacks.** Documents over 200 k chars flip an `overlay-off` class
+  (plain, uncolored, responsive textarea); IME composition flips
+  `is-composing` (textarea text visible, backdrop dimmed); lines over
+  2 000 chars skip the inline pass. The gutter got `z-10` so it still
+  paints above the now-`position:relative` textarea.
 
 - **Shared widget behavior**: the tool widget mixes in `paneResizer()`
   (defined once in `site/assets/site.js`) for the draggable horizontal
