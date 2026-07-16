@@ -1,4 +1,4 @@
-<!-- docs-sync: 60e387b -->
+<!-- docs-sync: 823cb22 -->
 
 # Changelog
 
@@ -12,6 +12,7 @@
 - DBML fences now colorize column definitions distinctly — column name blue, type orange, keywords red — in the write pane's highlighting (`9b17c66`)
 
 ### Changed
+- The preview's fit button is now fit-to-width: it scales the widest content to fill the pane's full width, with taller content scrolling vertically, instead of shrinking everything to be visible at once — which on a tall diagram in a wide pane left most of the pane empty (`823cb22`)
 - DBML diagram palette desaturated to a more professional look: steel-blue table headers, muted-plum enum headers, and softened primary-key/relationship-line accents, in both light and dark themes (`9b17c66`)
 
 ### Fixed

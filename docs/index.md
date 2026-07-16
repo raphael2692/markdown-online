@@ -440,24 +440,27 @@ scrolling element itself avoids the box that reports its size to
   to 100%) / zoom in, then a fit-to-view button and a hand-tool toggle.
   Zoom steps by 10, clamped to 25–400% (`zoomMin`/`zoomMax`/`ZOOM_STEP` in
   `toolWidget()`).
-- **Zoom to fit** (`zoomToFit()`) reads `scrollWidth`/`scrollHeight` off
-  `previewInner` and every `.mermaid-diagram`/`pre`/`table` inside it (the
-  max across all of them, not just `previewInner`), then scales to the
-  smaller of the width/height ratios against the viewport's
-  padding-adjusted `clientWidth`/`clientHeight` (floored, not rounded, so
-  the result never overshoots into a scrollbar). Three things make this
-  less obvious than it looks. First, the measurement happens with
+- **Fit width** (`zoomToFit()`) reads `scrollWidth` off `previewInner`
+  and every `.mermaid-diagram`/`pre`/`table` inside it (the max across all
+  of them, not just `previewInner`), then scales so that widest content
+  exactly fills the viewport's padding-adjusted `clientWidth` (floored,
+  not rounded, so the result never overshoots into a horizontal
+  scrollbar); content taller than the pane scrolls vertically. An earlier
+  both-axes version scaled to the smaller of the width/height ratios so
+  everything was visible at once — on a tall diagram in a wide pane that
+  left most of the pane empty, so it was replaced with fit-to-width,
+  which always uses the full horizontal space. Three things make the
+  measurement less obvious than it looks. First, it happens with
   `previewInner.style.zoom` temporarily forced to `1` — the reads are
-  synchronous, so nothing paints in between. `scrollWidth`/`scrollHeight`
-  inside a zoomed subtree are reported in the subtree's own logical units
+  synchronous, so nothing paints in between. `scrollWidth` inside a
+  zoomed subtree is reported in the subtree's own logical units
   (only `getBoundingClientRect()` crosses out to on-screen pixels), but
   `previewInner` is an auto-width block whose *layout* width resolves to
   `viewportWidth / zoom`: measured while zoomed out, its `scrollWidth`
   inflates to exactly "whatever fits at the current zoom", which pinned the
   computed fit at the current value so the button could never scale back
-  up (e.g. after widening the pane by stacking the panels), and text had
-  reflowed to the wrong width for `scrollHeight` too. Measuring at 100%
-  gives the one canonical layout. (An even earlier version instead divided
+  up (e.g. after widening the pane by stacking the panels). Measuring at
+  100% gives the one canonical layout. (An even earlier version instead divided
   the measurements by the current zoom, which undid the zoom in the wrong
   direction and made the button zoom *in* instead of shrinking to fit.)
   Second, `previewInner.scrollWidth` alone misses an oversized diagram/
