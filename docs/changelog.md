@@ -1,10 +1,16 @@
-<!-- docs-sync: 430d57f -->
+<!-- docs-sync: e142a0c -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- "Open Markdown file…" option in the editor's Import dropdown: loads a
+  `.md`/`.markdown`/`.txt` file from disk straight into the document via a
+  native file picker. Unlike the HTML/CSV imports, which convert a foreign
+  format and insert the result at the cursor, this replaces the whole
+  buffer (confirming first if the current draft is non-empty) since a
+  Markdown file needs no conversion (`e142a0c`)
 - Zoom, pan, and fit-to-view in the rendered preview: a floating control pill with zoom in/out (10% steps, 25–400%), click-to-reset percentage, a fit-to-view button that scales content to fit the visible pane, and a hand-tool toggle to drag-pan instead of scrolling (`3f11610`)
 - Native DBML support: a ` ```dbml ` fence auto-renders as a live entity-relationship diagram (auto-detected the same way Mermaid is), via a new first-party, lazy-loaded renderer (`site/assets/dbml.js`) rather than a translation into Mermaid's narrower `erDiagram` grammar — a hand-written parser for the practical DBML subset, force-directed auto-layout, and a hand-drawn SVG renderer with real crow's-foot connectors, enums, notes, and PK/FK/UK badges. Adds a "Database schema" entry to the editor's Diagram toolbar dropdown (`acf5050`)
 - Dark mode: a header toggle on every page, persisted via `localStorage` (falling back to OS preference) and applied before first paint to avoid a flash of the wrong theme. The editor's generated content follows the theme too — Mermaid diagrams re-render under Mermaid's own dark theme and highlight.js code blocks swap to a vendored `github-dark` stylesheet — while Print/PDF export and the rich clipboard copy intentionally stay light-only (`5a41c38`)

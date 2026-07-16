@@ -257,10 +257,20 @@ elsewhere to avoid a stale async load racing a newer edit.
   runs the input through PapaParse (CSV) or `JSON.parse()` (JSON), then
   `rowsToMdTable(header, rows, align)` — a padded, alignment-aware,
   `|`/newline-escaping Markdown table generator, also in `site.js`. Both
-  import paths insert their result at the cursor in the main Markdown
-  buffer (never replace the whole buffer) — the buffer autosaves to
-  localStorage, so a silent full-buffer replace on an accidental Import
-  click would be the single worst way to lose a draft.
+  are conversions from a foreign format, so they insert their result at the
+  cursor in the main Markdown buffer rather than replacing it — the buffer
+  autosaves to localStorage, so a silent full-buffer replace on an
+  accidental Import click would be the single worst way to lose a draft.
+  The third Import option, "Open Markdown file…", is different on purpose:
+  a `.md`/`.markdown`/`.txt` file is already the target format, so
+  `onOpenMarkdownFile()` skips the conversion step entirely and loads it as
+  the document — it replaces the whole buffer (`confirm()`-gated whenever
+  the current buffer is non-empty, since this is the one Import path that's
+  actually destructive to an in-progress draft) instead of inserting at the
+  cursor like the other two. It's wired as a hidden `<input type="file">`
+  triggered programmatically (`$refs.mdFileInput.click()`) rather than a
+  modal, since there's nothing to configure — no bullet-marker/heading-style
+  options like HTML import has.
 - **Build**: `build.py` expands the two shared partials
   (`site/partials/header.html`, `site/partials/footer.html`) into every
   page, substitutes site-wide tokens (`__SITE_URL__`, `__SITE_NAME__`,
