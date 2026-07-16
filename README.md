@@ -1,8 +1,12 @@
 # Markdown Online
 
-**The definitive free, browser-based Markdown tool.** No ads, no signup,
-no upload — everything you write, paste, or convert stays on your machine
-and never touches a server.
+**Markdown is the glue language of AI.** Every prompt, every LLM response,
+every doc handed between tools passes through it — and the daily reality is
+still copy-pasting it from place to place. The tools to handle that are
+scattered across ad-bloated online converters or locked inside heavy desktop
+apps like Obsidian or VS Code. This puts writing, previewing, importing, and
+exporting Markdown in one free, open-source, browser-only page — no ads, no
+signup, no upload, nothing you write or paste ever leaves your machine.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
@@ -57,6 +61,14 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
 
 Every conversion runs on vetted, open-source JavaScript libraries loaded
 from this site — nothing is sent anywhere.
+
+## Why this exists
+
+Built primarily for one person's own daily Markdown shuffling, then released
+free and open source because the underlying itch — too many single-purpose
+converters, none of them under one roof — isn't unique to one person. The
+project is actively developed; stars and pull requests are what push it
+forward.
 
 ## Try it
 
