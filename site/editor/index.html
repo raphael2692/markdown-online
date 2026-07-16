@@ -594,6 +594,29 @@
           <div class="h-px w-8 bg-neutral-400 dark:bg-neutral-600"></div>
         </div>
 
+        <!-- Document outline: one entry per ATX heading, indented by level.
+             Click jumps the editor to that heading's line. -->
+        <div x-show="outline.length" x-cloak>
+          <div class="flex items-center px-2 py-1">
+            <button type="button" @click="outlineOpen = !outlineOpen" :aria-expanded="outlineOpen"
+              class="flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[11px] text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"
+              :title="outlineOpen ? 'Collapse the document outline' : 'Expand the document outline'">
+              <svg x-show="outlineOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3 w-3" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              <svg x-show="!outlineOpen" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3 w-3" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+              <span x-text="`Outline (${outline.length})`"></span>
+            </button>
+          </div>
+          <div x-show="outlineOpen" class="max-h-32 overflow-y-auto border-b border-neutral-100 dark:border-neutral-800 px-1 pb-2">
+            <template x-for="(item, idx) in outline" :key="idx">
+              <button type="button" @click="gotoOutlineItem(item)"
+                :title="`Jump to “${item.text}”`"
+                :style="`padding-left:${8 + (item.level - 1) * 14}px`"
+                class="block w-full truncate rounded px-2 py-0.5 text-left text-[11px] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500"
+                x-text="item.text"></button>
+            </template>
+          </div>
+        </div>
+
         <!-- Diagram mini-map: one thumbnail per diagram in the document
              (per table for DBML blocks). Click jumps the editor to the
              corresponding code block; hover shows a zoomed popover. -->
@@ -1018,6 +1041,7 @@
         cursorLine: 1, cursorCol: 1,
         toolbarOpen: true,
         minimap: [], minimapOpen: true, minimapPopover: null,
+        outline: [], outlineOpen: true,
         previewZoom: 100, panMode: false, panDragging: false,
         zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX,
         opts: {
@@ -1045,9 +1069,11 @@
             const ui = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
             if (ui.toolbarOpen === false) this.toolbarOpen = false;
             if (ui.minimapOpen === false) this.minimapOpen = false;
+            if (ui.outlineOpen === false) this.outlineOpen = false;
           } catch (e) { /* corrupt prefs — keep defaults */ }
           this.$watch('toolbarOpen', () => this._saveUiPrefs());
           this.$watch('minimapOpen', () => this._saveUiPrefs());
+          this.$watch('outlineOpen', () => this._saveUiPrefs());
           this.$watch('input', () => {
             clearTimeout(this._saveTimer);
             this._saveTimer = setTimeout(() => this._persistActiveDoc(), 500);
@@ -1222,6 +1248,7 @@
             this.fragment = html;
             this.$refs.previewInner.innerHTML = sanitizeHtml(this.fragment);
             this.buildMinimap();
+            this.buildOutline();
             // Colors the preview only — Copy/Download/Print HTML keep marked's
             // plain `language-*` class untouched.
             ensureHljsLoaded().then(() => {
@@ -1585,6 +1612,46 @@
             this.updateHeadingLevel();
           });
         },
+        // ---- document outline ----
+        // Regex-scan for ATX headings (`#`…`######`), same shape as
+        // setHeading/updateHeadingLevel above. Skips fenced code blocks so a
+        // `#` inside a shell script or comment isn't mistaken for a heading.
+        buildOutline() {
+          try {
+            const lines = this.input.split('\n');
+            const items = [];
+            let fence = null;
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              const fenceMatch = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+              if (fenceMatch) {
+                const chars = fenceMatch[1][0], len = fenceMatch[1].length;
+                if (!fence) fence = { chars, len };
+                else if (chars === fence.chars && len >= fence.len) fence = null;
+                continue;
+              }
+              if (fence) continue;
+              const m = /^ {0,3}(#{1,6})\s+(.*?)\s*#*\s*$/.exec(line);
+              if (m) items.push({ level: m[1].length, text: m[2] || `H${m[1].length}`, line: i });
+            }
+            this.outline = items;
+          } catch (e) {
+            this.outline = []; // the outline is an extra — never let it break the preview
+          }
+        },
+        gotoOutlineItem(item) {
+          if (this.view === 'preview') this.view = 'split';
+          const lines = this.input.split('\n');
+          let pos = 0;
+          for (let k = 0; k < item.line && k < lines.length; k++) pos += lines[k].length + 1;
+          this.$nextTick(() => {
+            const ta = this.$refs.mdTextarea;
+            ta.focus();
+            ta.setSelectionRange(pos, pos);
+            ta.scrollTop = Math.max(0, 8 + item.line * 24 - 24);
+            this.updateHeadingLevel();
+          });
+        },
         showMinimapPopover(item, ev) {
           const r = ev.currentTarget.getBoundingClientRect();
           const W = 384, H = 288, GAP = 10;
@@ -1595,7 +1662,7 @@
         hideMinimapPopover() { this.minimapPopover = null; },
 
         _saveUiPrefs() {
-          localStorage.setItem(UI_KEY, JSON.stringify({ toolbarOpen: this.toolbarOpen, minimapOpen: this.minimapOpen }));
+          localStorage.setItem(UI_KEY, JSON.stringify({ toolbarOpen: this.toolbarOpen, minimapOpen: this.minimapOpen, outlineOpen: this.outlineOpen }));
         },
 
         // ---- toolbar formatting helpers ----
