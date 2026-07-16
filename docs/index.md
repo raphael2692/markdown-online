@@ -297,8 +297,9 @@ scrolling element itself avoids the box that reports its size to
 `paneResizer()`'s scroll-mirroring (`mirrorScroll()`, keyed off
 `scrollHeight`/`clientHeight`) from being the same box being magnified.
 
-- **Controls**: a floating pill (`position: absolute`, bottom-left) inside
-  the pane's non-scrolling wrapper — zoom out / percentage (click to reset
+- **Controls**: a floating pill (`position: absolute`, bottom-center via
+  `left-1/2 -translate-x-1/2`) inside the pane's non-scrolling wrapper —
+  zoom out / percentage (click to reset
   to 100%) / zoom in, then a fit-to-view button and a hand-tool toggle.
   Zoom steps by 10, clamped to 25–400% (`zoomMin`/`zoomMax`/`ZOOM_STEP` in
   `toolWidget()`).

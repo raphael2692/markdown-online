@@ -1,4 +1,4 @@
-<!-- docs-sync: 3f11610 -->
+<!-- docs-sync: 430d57f -->
 
 # Changelog
 
@@ -10,6 +10,7 @@
 - Dark mode: a header toggle on every page, persisted via `localStorage` (falling back to OS preference) and applied before first paint to avoid a flash of the wrong theme. The editor's generated content follows the theme too — Mermaid diagrams re-render under Mermaid's own dark theme and highlight.js code blocks swap to a vendored `github-dark` stylesheet — while Print/PDF export and the rich clipboard copy intentionally stay light-only (`5a41c38`)
 
 ### Fixed
+- Preview zoom toolbar repositioned from bottom-left to bottom-center (was clipped/overlapping the pane's scrollbar when tried at bottom-right); word/character/reading-time counter in the top toolbar gained right margin so it no longer crowds the "Copy Markdown" button (`430d57f`)
 - Header nav no longer shows an "Open Editor" link while already on the editor page (`5f5de07`)
 - Header's GitHub link now uses the actual GitHub brand mark instead of a generic external-link arrow icon (`13fcb51`)
 - Markdown input placeholder now mentions pasting as an alternative to typing, not just "Start writing Markdown…" (`5cb87fd`)
