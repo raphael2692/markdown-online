@@ -17,7 +17,17 @@ natively — this wiki is for engineering depth, not visitor-facing content.
   page, including `/editor/` itself — its "Open Editor" link is scoped-CSS
   hidden there (`#page-editor #nav-open-editor{display:none}`, set inline in
   `site/editor/index.html`'s `<head>`) rather than branched out of the shared
-  partial, since it's a plain SSI-style include with no templating.
+  partial, since it's a plain SSI-style include with no templating. The
+  header carries no About link (the About page is footer-only) — instead
+  the GitHub link shows a live star counter: an inline script in the
+  partial makes one unauthenticated GET to GitHub's public repo API
+  (deriving the repo slug from the link's own `__GITHUB_URL__`-substituted
+  href), caches the count in localStorage for 6 hours to stay far under
+  the unauthenticated rate limit, formats ≥1000 as `1.2k`, and leaves the
+  counter hidden if the fetch fails or is blocked. This is the one remote
+  request the site makes beyond loading its own assets — it goes to the
+  same organization that already serves the page (GitHub Pages), carries
+  no user content, and is disclosed on the privacy page.
 - **The tool**, `site/editor/index.html` at `/editor/` — a unified Markdown
   workspace: writing/splitting/previewing Markdown, importing from
   HTML/CSV/JSON, and exporting to Markdown/HTML/rich-clipboard/PDF.

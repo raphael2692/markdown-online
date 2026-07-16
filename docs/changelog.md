@@ -1,10 +1,11 @@
-<!-- docs-sync: ebc5f59 -->
+<!-- docs-sync: 895f1fe -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- GitHub star counter in the header, inside the repository link — fetched once from GitHub's public API, cached in the browser for 6 hours, hidden if the request fails; disclosed on the privacy page (`895f1fe`)
 - Collapsible formatting toolbar: a "Toolbar" chevron button in the top bar hides/shows the whole formatting row, and the choice persists across visits (`408ecba`)
 - Diagram mini-map: a collapsible thumbnail strip under the editor panes with one thumbnail per Mermaid diagram and one per table for DBML schemas — click a thumbnail to jump the editor to its code block, hover for a zoomed-in popover preview (`408ecba`)
 - Status bar at the bottom of the widget (VS Code-style): cursor line/column, live word/character/estimated-token counts, and encoding, plus the existing draft save/restore status (`408ecba`)
@@ -15,6 +16,7 @@
 - DBML fences now colorize column definitions distinctly — column name blue, type orange, keywords red — in the write pane's highlighting (`9b17c66`)
 
 ### Changed
+- The About link was removed from the header nav — the About page remains reachable from the footer (`895f1fe`)
 - Import, Copy Markdown, and Export are now one consistently-styled actions cluster on the right of the top bar (Copy Markdown loses its heavy fill — the three are equal-weight peers), and the document statistics moved out of the top bar into the new status bar (`408ecba`)
 - Editor line-number gutter is now seamless — same background as the text area with a subtle divider line instead of a tinted panel — and the monospace stack prefers locally installed developer fonts (JetBrains Mono, Fira Code, SF Mono) before the platform defaults (`408ecba`)
 - The preview's fit button is now fit-to-width: it scales the widest content to fill the pane's full width, with taller content scrolling vertically, instead of shrinking everything to be visible at once — which on a tall diagram in a wide pane left most of the pane empty (`823cb22`)
