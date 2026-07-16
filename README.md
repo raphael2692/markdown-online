@@ -11,7 +11,10 @@ and never touches a server.
 One tool, everything you need for Markdown — the editor lives at `/editor/`:
 
 - **Write, split, or preview** — a live editor with a synced side-by-side
-  preview, or full-width writing/preview modes.
+  preview (scroll sync can be toggled off), or full-width writing/preview
+  modes. Ctrl/Cmd+F opens an in-editor find bar with match highlighting,
+  and the status bar shows live word, character, and estimated LLM token
+  counts.
 - **Zoom, pan, and fit-to-view** in the rendered preview — zoom in/out or
   reset to 100%, a hand tool to drag-pan instead of scroll, and a
   zoom-to-fit button for oversized tables or diagrams.
