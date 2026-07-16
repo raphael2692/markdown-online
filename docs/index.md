@@ -368,8 +368,8 @@ parts:
   top bar is now strictly actions.
 - **Diagram mini-map**: a collapsible thumbnail strip under the panes,
   built by `buildMinimap()` at the end of every `run()` — one thumbnail per
-  Mermaid diagram and one per *table* for DBML blocks. Clicking a thumbnail
-  jumps the editor to the corresponding fence/`Table` block
+  Mermaid diagram and one per *table or enum* for DBML blocks. Clicking a
+  thumbnail jumps the editor to the corresponding fence/`Table`/`Enum` block
   (`gotoMinimapItem()`, using the same fixed pane metrics as
   `revealFindMatch()`); hovering shows a zoomed popover, fixed-positioned
   from the thumbnail's rect so the strip's own `overflow-x` scroll
@@ -379,9 +379,10 @@ parts:
   rendered `.mermaid-diagram`/`.mermaid-error` element (both lists are in
   document order); DBML tables are re-rendered individually through the
   first-party `DbmlRenderer` — cheap, and the renderer drops refs to absent
-  tables rather than erroring, so a single-table render is always clean.
-  Table blocks are located by a regex/brace-depth scan
-  (`_dbmlTableSnippets()`), not the full parser, so tables still get
+  tables rather than erroring, so a single-node render is always clean
+  (`parseDbml` accepts enum-only sources for exactly this reason).
+  Table/enum blocks are located by a regex/brace-depth scan
+  (`_dbmlNodeSnippets()`), not the full parser, so they still get
   thumbnails when something else in the block fails to parse. The strip
   hides entirely when the document has no diagrams; its collapsed state
   persists via the same `markdown-editor-ui-v1` key as the toolbar. The
