@@ -159,6 +159,12 @@
               Toolbar
             </button>
 
+            <button type="button" @click="shortcutsOpen = true" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"
+              class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="M6 8h.001" /><path d="M10 8h.001" /><path d="M14 8h.001" /><path d="M18 8h.001" /><path d="M8 12h.001" /><path d="M12 12h.001" /><path d="M16 12h.001" /><path d="M7 16h10" /></svg>
+              Shortcuts
+            </button>
+
             <input type="file" x-ref="mdFileInput" accept=".md,.markdown,.mdown,.mkd,.txt"
               class="hidden" @change="onOpenMarkdownFile($event)">
 
@@ -269,13 +275,13 @@
         <div x-show="view !== 'preview' && toolbarOpen" class="flex flex-wrap items-center gap-1 border-b border-neutral-200 dark:border-neutral-800 p-2">
           <div x-data="pinesSelect({
                   items: [
-                    { value: '', label: 'Paragraph' },
-                    { value: '1', label: 'Heading 1' },
-                    { value: '2', label: 'Heading 2' },
-                    { value: '3', label: 'Heading 3' },
-                    { value: '4', label: 'Heading 4' },
-                    { value: '5', label: 'Heading 5' },
-                    { value: '6', label: 'Heading 6' },
+                    { value: '', label: 'Paragraph', cls: 'text-xs' },
+                    { value: '1', label: 'Heading 1', cls: 'text-base font-bold' },
+                    { value: '2', label: 'Heading 2', cls: 'text-sm font-bold' },
+                    { value: '3', label: 'Heading 3', cls: 'text-sm font-semibold' },
+                    { value: '4', label: 'Heading 4', cls: 'text-xs font-semibold' },
+                    { value: '5', label: 'Heading 5', cls: 'text-xs font-semibold' },
+                    { value: '6', label: 'Heading 6', cls: 'text-xs font-semibold text-neutral-500 dark:text-neutral-400' },
                   ],
                   value: () => currentHeadingLevel,
                   onSelect: (v) => setHeading(v ? parseInt(v, 10) : 0),
@@ -294,7 +300,7 @@
             <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
               x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
               :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
-              class="absolute z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-1 text-xs shadow-lg focus:outline-none"
+              class="absolute z-20 max-h-72 w-max min-w-[10rem] overflow-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-1 text-xs shadow-lg focus:outline-none"
               role="listbox">
               <template x-for="(item, idx) in items" :key="idx">
                 <li :data-idx="idx" role="presentation">
@@ -302,14 +308,25 @@
                   <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
                     role="option" :aria-selected="selectedItem === item"
                     :class="{ 'bg-neutral-100 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
-                    class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
-                    <span x-text="item.label"></span>
-                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 text-neutral-500 dark:text-neutral-400" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                    class="flex cursor-default items-center justify-between gap-6 px-3 py-2">
+                    <span class="truncate leading-none" :class="item.cls" x-text="item.label"></span>
+                    <svg x-show="selectedItem === item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-500 dark:text-neutral-400" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
                   </div>
                 </li>
               </template>
             </ul>
           </div>
+
+          <button type="button" @click="opts.numberHeadings = !opts.numberHeadings; run()"
+            :aria-pressed="opts.numberHeadings"
+            :class="opts.numberHeadings
+              ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+              : 'border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'"
+            title="Number sections in the preview — ## becomes 1, ### becomes 1.1, and so on. The # title itself is never numbered (Markdown has no separate title style, so # is treated as one). Display-only, never written into the Markdown source."
+            aria-label="Number sections"
+            class="rounded border p-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M11 5h10" /><path d="M11 12h10" /><path d="M11 19h10" /><path d="M4 4h1v5" /><path d="M4 9h2" /><path d="M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02" /></svg>
+          </button>
           <span class="mx-1 h-5 w-px bg-neutral-200 dark:bg-neutral-700" aria-hidden="true"></span>
 
           <span class="mr-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500 select-none" title="These act on the text you've selected (or insert a placeholder if nothing is selected)">Format</span>
@@ -538,6 +555,7 @@
               </div>
               <textarea id="tw-in" x-ref="mdTextarea" x-model="input"
                 @input="onTypedInput()" @input.debounce.250ms="run()" @keydown="onKeydown($event)" @scroll="onInputScroll($event)"
+                @paste="onPaste($event)"
                 @click="updateHeadingLevel()" @keyup="updateHeadingLevel()" @select="updateHeadingLevel()"
                 @compositionstart="composing = true" @compositionend="composing = false"
                 spellcheck="true" wrap="off"
@@ -924,6 +942,77 @@
           </div>
         </div>
       </template>
+
+      <template x-teleport="body">
+        <div x-show="shortcutsOpen" x-cloak
+          class="fixed inset-0 z-[99] flex items-center justify-center p-4"
+          @keydown.escape.window="shortcutsOpen = false">
+          <div x-show="shortcutsOpen"
+            x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-black/40" @click="shortcutsOpen = false"></div>
+
+          <div x-show="shortcutsOpen"
+            x-trap.inert.noscroll="shortcutsOpen"
+            x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+            class="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
+
+            <div class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 p-4">
+              <h3 class="text-lg font-semibold">Keyboard shortcuts</h3>
+              <button type="button" @click="shortcutsOpen = false" aria-label="Close" class="rounded-full p-1 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-5 w-5" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+              </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4">
+              <dl class="space-y-1.5 text-sm">
+                <template x-for="s in shortcutList" :key="s.combo">
+                  <div class="flex items-center justify-between gap-4">
+                    <dt class="text-neutral-600 dark:text-neutral-400" x-text="s.label"></dt>
+                    <dd class="shrink-0 rounded border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-xs text-neutral-700 dark:text-neutral-300" x-text="s.combo"></dd>
+                  </div>
+                </template>
+              </dl>
+              <p class="mt-4 text-xs text-neutral-500 dark:text-neutral-400">Tip: paste a URL over selected text to wrap it as a link.</p>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template x-teleport="body">
+        <div x-show="confirmState.open" x-cloak
+          class="fixed inset-0 z-[99] flex items-center justify-center p-4"
+          @keydown.escape.window="_settleConfirm(false)">
+          <div x-show="confirmState.open"
+            x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-black/40" @click="_settleConfirm(false)"></div>
+
+          <div x-show="confirmState.open"
+            x-trap.inert.noscroll="confirmState.open"
+            x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+            class="relative flex w-full max-w-sm flex-col overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
+
+            <div class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 p-4">
+              <h3 class="text-lg font-semibold" x-text="confirmState.title"></h3>
+              <button type="button" @click="_settleConfirm(false)" aria-label="Close" class="rounded-full p-1 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-5 w-5" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+              </button>
+            </div>
+
+            <div class="p-4 text-sm text-neutral-600 dark:text-neutral-400" x-text="confirmState.message"></div>
+
+            <div class="flex justify-end gap-2 border-t border-neutral-200 dark:border-neutral-800 p-4">
+              <button type="button" @click="_settleConfirm(false)" class="rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800">Cancel</button>
+              <button type="button" @click="_settleConfirm(true)" x-text="confirmState.confirmLabel"
+                :class="confirmState.danger ? 'bg-red-600 hover:bg-red-500 dark:bg-red-600 dark:hover:bg-red-500' : 'bg-neutral-900 hover:bg-neutral-700 dark:bg-neutral-100 dark:hover:bg-neutral-300 dark:text-neutral-900'"
+                class="rounded-md px-3 py-1.5 text-sm text-white"></button>
+            </div>
+          </div>
+        </div>
+      </template>
     </section>
 
   </main>
@@ -995,6 +1084,18 @@
     const UI_KEY = 'markdown-editor-ui-v1';
     const ZOOM_MIN = 25, ZOOM_MAX = 400, ZOOM_STEP = 10;
 
+    // Initial write/preview pane height, sized so the page (header, toolbar,
+    // panes, status bar, footer) fits one viewport on landing with no
+    // scrolling — the user can still drag-resize afterward. The 340 constant
+    // mirrors the CSS fallback in input.css's md+ .pane-height rule; below
+    // the md breakpoint the panes stack (doubling in the document), so this
+    // single-pane formula doesn't apply and the fixed default is kept.
+    function fitPaneHeight() {
+      if (typeof window === 'undefined' || window.innerWidth < 768) return 720;
+      const CHROME = 340;
+      return Math.min(1000, Math.max(300, window.innerHeight - CHROME));
+    }
+
     const MERMAID_TEMPLATES = {
       flowchart: 'graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Do thing]\n  B -->|No| D[Skip]',
       sequence: 'sequenceDiagram\n  participant A as Client\n  participant B as Server\n  A->>B: Request\n  B-->>A: Response',
@@ -1027,7 +1128,7 @@
 
     function toolWidget() {
       return {
-        ...paneResizer({ split: 33, paneHeight: 720, maxHeight: 1400 }),
+        ...paneResizer({ split: 33, paneHeight: fitPaneHeight(), maxHeight: 1400 }),
         ...toolActionsMixin(),
         ...historyMixin(),
         input: '', fragment: '', error: '', toast: '',
@@ -1041,16 +1142,18 @@
         currentHeadingLevel: '',
         cursorLine: 1, cursorCol: 1, selectedChars: 0, selectedWords: 0, selectedTokens: 0,
         toolbarOpen: true,
+        shortcutsOpen: false,
         minimap: [], minimapOpen: true, minimapPopover: null,
         outline: [], outlineOpen: true,
         previewZoom: 100, panMode: false, panDragging: false,
         zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX,
         opts: {
           smartypants: true, math: false, mermaid: false, dbml: false,
-          gfmBreaks: true,
+          gfmBreaks: true, numberHeadings: false,
         },
         docs: [], docsActive: null, docsOpen: false,
         docRenaming: false, docRenameValue: '',
+        confirmState: { open: false, title: '', message: '', confirmLabel: 'Confirm', danger: true, resolve: null },
         importKind: null,
         importHtml: { text: '', bulletListMarker: '-', codeBlockStyle: 'fenced', headingStyle: 'atx', error: '' },
         importCsv: { text: '', mode: 'csv', align: 'left', header: true, error: '' },
@@ -1062,6 +1165,39 @@
         // English-ish text). An estimate by design; no tokenizer is shipped.
         get tokenCount() { return Math.ceil(this.charCount / 4); },
         get inputLineCount() { return this.input.split('\n').length; },
+        get shortcutList() {
+          return [
+            { label: 'Bold', combo: 'Ctrl/Cmd+B' },
+            { label: 'Italic', combo: 'Ctrl/Cmd+I' },
+            { label: 'Link', combo: 'Ctrl/Cmd+K' },
+            { label: 'Find', combo: 'Ctrl/Cmd+F' },
+            { label: 'Find & replace', combo: 'Ctrl/Cmd+H' },
+            { label: 'Undo', combo: 'Ctrl/Cmd+Z' },
+            { label: 'Redo', combo: 'Ctrl+Y / Ctrl/Cmd+Shift+Z' },
+            { label: 'Indent / un-indent list item', combo: 'Tab / Shift+Tab' },
+            { label: 'Continue list, exit on empty item', combo: 'Enter' },
+            { label: 'This cheat sheet', combo: '?' },
+          ];
+        },
+
+        // Promise-based replacement for window.confirm(), styled to match the
+        // rest of the app's dialogs. Resolves true/false on Confirm/Cancel.
+        confirmDialog(message, opts = {}) {
+          return new Promise((resolve) => {
+            this.confirmState.title = opts.title || 'Are you sure?';
+            this.confirmState.message = message;
+            this.confirmState.confirmLabel = opts.confirmLabel || 'Confirm';
+            this.confirmState.danger = opts.danger !== false;
+            this.confirmState.resolve = resolve;
+            this.confirmState.open = true;
+          });
+        },
+        _settleConfirm(result) {
+          const resolve = this.confirmState.resolve;
+          this.confirmState.open = false;
+          this.confirmState.resolve = null;
+          if (resolve) resolve(result);
+        },
 
         init() {
           this._loadDocs();
@@ -1200,10 +1336,11 @@
           localStorage.setItem(DOC_PREFIX + id, '');
           this._activateDoc(id);
         },
-        deleteDoc(id) {
+        async deleteDoc(id) {
           const doc = this.docs.find((d) => d.id === id);
           if (!doc) return;
-          if (!confirm(`Delete "${doc.name}"? Its content is removed from this browser and can't be recovered.`)) return;
+          const ok = await this.confirmDialog(`Delete "${doc.name}"? Its content is removed from this browser and can't be recovered.`, { title: 'Delete document', confirmLabel: 'Delete' });
+          if (!ok) return;
           // A pending autosave for the deleted doc must not resurrect its key.
           if (id === this.docsActive) clearTimeout(this._saveTimer);
           localStorage.removeItem(DOC_PREFIX + id);
@@ -1278,8 +1415,22 @@
         // available in preview-only view (no write pane to search) and while
         // the import modal is open.
         onGlobalKeydown(e) {
+          // "?" opens the shortcuts cheat sheet — but only away from a
+          // text field, so it still types a literal "?" while writing.
+          if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            const tag = e.target && e.target.tagName;
+            if (tag !== 'TEXTAREA' && tag !== 'INPUT' && !e.target?.isContentEditable) {
+              e.preventDefault();
+              this.shortcutsOpen = true;
+            }
+            return;
+          }
           if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
           const k = e.key.toLowerCase();
+          // Everything here is saved to localStorage as you type — Ctrl/Cmd+S
+          // would otherwise pop the browser's "Save page" dialog mid-flow for
+          // no reason, so it's swallowed with a reassurance toast instead.
+          if (k === 's') { e.preventDefault(); this.flash('Already saved locally ✓'); return; }
           if (k !== 'f' && k !== 'h') return;
           if (this.view === 'preview' || this.importKind !== null) return;
           e.preventDefault();
@@ -1666,6 +1817,36 @@
           localStorage.setItem(UI_KEY, JSON.stringify({ toolbarOpen: this.toolbarOpen, minimapOpen: this.minimapOpen, outlineOpen: this.outlineOpen }));
         },
 
+        // Pasting a bare URL over a selection turns the selection into the
+        // link label instead of overwriting it — the common "select some
+        // words, paste a link" motion. Only fires when there's an actual
+        // (non-empty) selection and the clipboard is nothing but a URL;
+        // anything else falls through to the browser's normal paste so
+        // pasting a URL with no selection still just inserts the URL text.
+        onPaste(e) {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          if (start === end) return;
+          const text = (e.clipboardData || window.clipboardData).getData('text/plain').trim();
+          if (!this._isUrl(text)) return;
+          e.preventDefault();
+          const selected = this.input.slice(start, end);
+          this.commitHistory();
+          this.input = this.input.slice(0, start) + '[' + selected + '](' + text + ')' + this.input.slice(end);
+          const newStart = start + 1;
+          this.commitHistory(newStart, newStart + selected.length);
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newStart, newStart + selected.length); });
+          this.run();
+          this.flash('Wrapped selection as a link');
+        },
+        _isUrl(s) {
+          if (!s || /\s/.test(s)) return false;
+          try {
+            const u = new URL(s);
+            return u.protocol === 'http:' || u.protocol === 'https:' || u.protocol === 'mailto:';
+          } catch (e) { return false; }
+        },
+
         // ---- toolbar formatting helpers ----
         wrapSelection(prefix, suffix, placeholder) {
           const ta = this.$refs.mdTextarea;
@@ -1979,8 +2160,9 @@
           this.run();
         },
 
-        clearDraft() {
-          if (!confirm(`Clear "${this.docName}"? This empties the document (undo still works until you leave the page); other documents are untouched.`)) return;
+        async clearDraft() {
+          const ok = await this.confirmDialog(`Clear "${this.docName}"? This empties the document (undo still works until you leave the page); other documents are untouched.`, { title: 'Clear document', confirmLabel: 'Clear' });
+          if (!ok) return;
           this.commitHistory();
           this.input = '';
           this.commitHistory(0, 0);
@@ -2095,7 +2277,7 @@
         async onOpenMarkdownFile(event) {
           const file = event.target.files[0];
           if (!file) return;
-          if (this.input.trim() && !confirm(`Replace "${this.docName}" with "${file.name}"? This overwrites the current document; other documents are untouched.`)) {
+          if (this.input.trim() && !(await this.confirmDialog(`Replace "${this.docName}" with "${file.name}"? This overwrites the current document; other documents are untouched.`, { title: 'Replace document', confirmLabel: 'Replace' }))) {
             event.target.value = '';
             return;
           }

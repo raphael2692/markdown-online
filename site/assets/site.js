@@ -510,6 +510,33 @@ async function renderDbmlDiagrams(html) {
   return tpl.innerHTML;
 }
 
+// Section numbering: prepends a hierarchical number (1, 1.1, 1.2.1, …) to
+// every heading from h2 down. Markdown has no dedicated "document title"
+// style, so the lone top-level `#` conventionally plays that role — it's
+// left untouched and h2 becomes section "1", matching how a numbered doc
+// actually reads (a title, then numbered sections beneath it). Numbering is
+// tracked per level independently of what came before it — a stray h4 with
+// no parent h3 still gets a sane (if flat) number instead of throwing.
+// Purely a display concern (the numbers live in the rendered HTML only,
+// never written back into the Markdown source), so it runs last and
+// applies to every output channel that shares this pipeline (preview,
+// copy-rich, download, print) identically.
+function numberHeadings(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const counters = [0, 0, 0, 0, 0];
+  for (const h of tpl.content.querySelectorAll('h2, h3, h4, h5, h6')) {
+    const level = parseInt(h.tagName[1], 10) - 1; // h2 -> 1, h3 -> 2, … h6 -> 5
+    counters[level - 1]++;
+    counters.fill(0, level);
+    const span = document.createElement('span');
+    span.className = 'heading-number';
+    span.textContent = counters.slice(0, level).join('.');
+    h.prepend(span, ' ');
+  }
+  return tpl.innerHTML;
+}
+
 // Single shared conversion pipeline used by every tool widget and by
 // copyRich(), so the markdown -> HTML rules stay identical everywhere
 // instead of being reimplemented at each call site.
@@ -520,6 +547,7 @@ async function convertMarkdown(input, opts) {
   if (opts.smartypants) html = smartyPants(html);
   if (opts.mermaid) html = await renderMermaidDiagrams(html);
   if (opts.dbml) html = await renderDbmlDiagrams(html);
+  if (opts.numberHeadings) html = numberHeadings(html);
   return html;
 }
 window.convertMarkdown = convertMarkdown;

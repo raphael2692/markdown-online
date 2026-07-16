@@ -50,6 +50,18 @@
 .pane-height {
   height: var(--pane-height, 288px);
 }
+/* Fallback used only in the instant before Alpine sets --pane-height inline
+   (see toolWidget()'s fitPaneHeight()). Mirrors that function's formula so
+   the pre-hydration paint and the hydrated one land on the same height —
+   without this, the pane visibly shrinks from this default to the fitted
+   size once Alpine's script runs. md+ only: below that breakpoint the panes
+   stack (double the height in the document), which this single-pane formula
+   doesn't account for. */
+@media (min-width: 768px) {
+  .pane-height {
+    height: var(--pane-height, min(1000px, max(300px, calc(100vh - 340px))));
+  }
+}
 
 /* Editor write-pane highlighting overlay (see editor-highlight.js): a
    colored backdrop div behind a transparent-text textarea. The two layers
@@ -192,6 +204,11 @@
   overflow-x: auto;
 }
 .md-preview .katex-display { overflow-x: auto; overflow-y: hidden; }
+.md-preview .heading-number {
+  margin-right: 0.3em;
+  color: #737373;
+  font-variant-numeric: tabular-nums;
+}
 
 /* Dark-mode overrides for the hand-rolled preview styles above — kept as
    plain `.dark` selectors (not Tailwind utilities) since these are already
@@ -207,6 +224,7 @@
   color: #a3a3a3;
 }
 .dark .md-preview a { color: #818cf8; }
+.dark .md-preview .heading-number { color: #a3a3a3; }
 .dark .md-preview .mermaid-error {
   background: #450a0a;
   color: #fca5a5;

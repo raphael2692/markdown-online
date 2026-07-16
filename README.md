@@ -16,7 +16,18 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   and Ctrl/Cmd+H adds replace-one / replace-all — the formatting toolbar
   collapses out of the way when you just want to write, and a slim status
   bar shows cursor line/column plus live word, character, and estimated
-  LLM token counts.
+  LLM token counts. Press `?` any time for a keyboard-shortcuts cheat sheet
+  (Ctrl/Cmd+S is caught too, with a reassuring "already saved locally" toast
+  instead of the browser's save dialog).
+- **Paste a URL over selected text** and it wraps the selection as a link
+  (`[selection](url)`) instead of overwriting it.
+- **Numbered sections** — a toolbar toggle next to the paragraph-style
+  picker numbers `##` and deeper as sections (1, 1.1, 1.2 …); the `#`
+  title itself is never numbered, since Markdown has no separate title
+  style and `#` conventionally fills that role. Display-only, never
+  written into the Markdown source. The paragraph-style picker itself
+  previews each heading level at its actual size and weight, like Word's
+  style gallery.
 - **Smart lists** — pressing Enter continues bullet, numbered, task-list,
   and blockquote lines (numbered items renumber themselves); Enter on an
   empty item ends the list, and Tab/Shift+Tab nest or un-nest an item.
