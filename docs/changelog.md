@@ -1,10 +1,11 @@
-<!-- docs-sync: 4195d89 -->
+<!-- docs-sync: 93550d2 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- Document outline: a collapsible list of the document's headings above the diagram mini-map — indented by level, click a heading to jump the editor to it; skips headings inside fenced code blocks (`93550d2`)
 - Smart list continuation: Enter carries bullet/numbered/task/blockquote markers onto the next line (ordered lists renumber themselves, task items start unchecked), Enter on an empty item exits the list, Tab nests the list item under the caret; disabled inside fenced code blocks (`4195d89`)
 - Find & replace: the find bar gains a collapsible replace row (Ctrl/Cmd+H opens it directly) with replace-current and replace-all — case-insensitive matching, one undo step per action (`4195d89`)
 - Multiple documents: a toolbar switcher creates, renames, switches, and deletes named documents, each autosaved to its own localStorage key; the previous single draft migrates automatically, and opening a `.md` file names an untouched "Untitled" document after it (`4195d89`)

@@ -396,6 +396,19 @@ parts:
   document (confirm-gated), and renames it to the file's basename when the
   name is still an untouched `Untitled`/`Untitled N`. The Clear button is
   scoped to the current document.
+- **Document outline**: a collapsible list of the document's ATX headings
+  (`#` through `######`), built by `buildOutline()` at the end of every
+  `run()`. It regex-scans `input` line by line rather than the rendered
+  preview, tracking fenced code blocks (`` ``` ``/`~~~`, matching fence
+  character and length) so a `#` inside a shell snippet or comment is never
+  mistaken for a heading. Each entry is indented by level (14px per level
+  past H1) and clicking it jumps the editor to that line
+  (`gotoOutlineItem()`, the same fixed pane metrics as `gotoMinimapItem()`
+  and `revealFindMatch()`). The strip hides entirely when the document has
+  no headings; its collapsed state (`outlineOpen`) persists via the same
+  `markdown-editor-ui-v1` key as the toolbar and mini-map. Wrapped in the
+  same try/catch-and-clear pattern as `buildMinimap()` — the outline is an
+  extra and must never break the preview.
 - **Diagram mini-map**: a collapsible thumbnail strip under the panes,
   built by `buildMinimap()` at the end of every `run()` — one thumbnail per
   Mermaid diagram and one per *table or enum* for DBML blocks. Clicking a
