@@ -140,7 +140,7 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <span class="mr-2 text-xs text-neutral-500 dark:text-neutral-400" x-text="`${wordCount} words · ${charCount} characters · ~${readingTime} min read`"></span>
+            <span class="mr-2 text-xs text-neutral-500 dark:text-neutral-400" x-text="`${wordCount} words · ${charCount} characters`"></span>
 
             <button type="button" @click="copyMarkdown()" title="Copy the raw Markdown source"
               class="flex items-center gap-1.5 rounded-md bg-neutral-900 dark:bg-neutral-100 px-2.5 py-1.5 text-xs text-white dark:text-neutral-900 hover:bg-neutral-700 dark:hover:bg-neutral-300">
@@ -435,7 +435,7 @@
             <div x-ref="preview" @scroll="onPreviewScroll($event)" @mousedown="startPan($event)" @touchstart="startPan($event)"
               :class="panMode ? (panDragging ? 'cursor-grabbing' : 'cursor-grab') : ''"
               class="pane-height w-full overflow-auto rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-3 text-sm">
-              <div x-ref="previewInner" class="md-preview" :class="panMode && 'pointer-events-none select-none'" :style="`zoom: ${previewZoom / 100}`"></div>
+              <div x-ref="previewInner" class="md-preview" :class="panMode && 'select-none'" :style="`zoom: ${previewZoom / 100}`"></div>
             </div>
 
             <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 p-1 text-xs text-neutral-600 dark:text-neutral-400 shadow-md backdrop-blur">
@@ -850,7 +850,6 @@
 
         get wordCount() { return (this.input.match(/\S+/g) || []).length; },
         get charCount() { return this.input.length; },
-        get readingTime() { return Math.max(1, Math.round(this.wordCount / 200)); },
         get inputLineCount() { return this.input.split('\n').length; },
 
         init() {
@@ -970,27 +969,45 @@
         },
         // Same drag-to-track idiom as startDrag/startVDrag in paneResizer,
         // just moving scrollLeft/scrollTop instead of a --split/--pane-height var.
+        //
+        // Vertical overflow is almost always on the outer viewport (zoomed-in
+        // text just gets taller). Horizontal overflow usually isn't — markdown
+        // text reflows to fit the width — so the only thing that ever scrolls
+        // sideways is a wide table/pre/mermaid block with its own overflow-x,
+        // nested inside the viewport. Drag those directly instead of the
+        // viewport, or horizontal panning has nothing to move.
         startPan(e) {
           if (!this.panMode) return;
           e.preventDefault();
           const viewport = this.$refs.preview;
+          let hTarget = e.target;
+          while (hTarget && hTarget !== viewport && hTarget.scrollWidth <= hTarget.clientWidth) {
+            hTarget = hTarget.parentElement;
+          }
+          if (!hTarget) hTarget = viewport;
           const startX = e.touches ? e.touches[0].clientX : e.clientX;
           const startY = e.touches ? e.touches[0].clientY : e.clientY;
-          const startLeft = viewport.scrollLeft, startTop = viewport.scrollTop;
+          const startLeft = hTarget.scrollLeft, startTop = viewport.scrollTop;
           this.panDragging = true;
+          let moved = false;
 
           const onMove = (ev) => {
+            ev.preventDefault();
             const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
             const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
-            viewport.scrollLeft = startLeft - (clientX - startX);
+            if (Math.abs(clientX - startX) > 3 || Math.abs(clientY - startY) > 3) moved = true;
+            hTarget.scrollLeft = startLeft - (clientX - startX);
             viewport.scrollTop = startTop - (clientY - startY);
           };
+          // Dragging over a link shouldn't also navigate.
+          const onClick = (ev) => { ev.preventDefault(); ev.stopPropagation(); };
           const onUp = () => {
             this.panDragging = false;
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
             document.removeEventListener('touchmove', onMove);
             document.removeEventListener('touchend', onUp);
+            if (moved) document.addEventListener('click', onClick, { capture: true, once: true });
           };
 
           document.addEventListener('mousemove', onMove);

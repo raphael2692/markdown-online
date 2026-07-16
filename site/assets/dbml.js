@@ -344,9 +344,10 @@
 
     // 2. Lay out each component's columns left to right, then place
     // components side by side. Column width = its widest node; column
-    // height = sum of its nodes' heights + gaps. Shorter columns within a
-    // component are centered against the tallest so the diagram balances
-    // vertically instead of top-hugging.
+    // height = sum of its nodes' heights + gaps. Columns within a component
+    // are top-aligned (all start at the same y) rather than centered, so
+    // every table originates from the same horizontal row and grows
+    // downward by however many columns/rows it has.
     let originX = 0;
     for (const comp of components) {
       const columns = [];
@@ -357,14 +358,11 @@
       orderColumns(columns, adj);
 
       const colWidths = columns.map((col) => Math.max(...col.map((id) => nodeById.get(id).width)));
-      const colHeights = columns.map((col) =>
-        col.reduce((s, id) => s + nodeById.get(id).height, 0) + ROW_GAP * Math.max(0, col.length - 1));
-      const tallest = Math.max(...colHeights);
 
       let colX = originX;
       columns.forEach((col, ci) => {
         const x = colX + colWidths[ci] / 2;
-        let y = (tallest - colHeights[ci]) / 2;
+        let y = 0;
         for (const id of col) {
           const node = nodeById.get(id);
           pos.set(id, { x, y: y + node.height / 2 });
