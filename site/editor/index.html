@@ -1089,9 +1089,21 @@
           const line = (before.match(/\n/g) || []).length;
           const col = start - (before.lastIndexOf('\n') + 1);
           const charW = this._charWidth();
-          const top = 8 + line * 24 - ta.scrollTop;
-          const left = 48 + col * charW - ta.scrollLeft;
-          this.findMarkStyle = `top:${top}px;left:${left}px;width:${this.find.query.length * charW}px;height:24px`;
+          let top = 8 + line * 24 - ta.scrollTop;
+          let left = 48 + col * charW - ta.scrollLeft;
+          let width = this.find.query.length * charW;
+          let height = 24;
+          // Clip to the textarea's content box: the mark lives in the
+          // wrapper above the textarea, so unclipped it would paint over
+          // the scrollbars (bottom/right of clientWidth/Height) and the
+          // line-number gutter (first 40px) that text itself slides under.
+          const minX = 40, maxX = ta.clientWidth, maxY = ta.clientHeight;
+          if (left < minX) { width -= minX - left; left = minX; }
+          if (top < 0) { height += top; top = 0; }
+          if (left + width > maxX) width = maxX - left;
+          if (top + height > maxY) height = maxY - top;
+          if (width <= 0 || height <= 0) { this.findMarkStyle = ''; return; }
+          this.findMarkStyle = `top:${top}px;left:${left}px;width:${width}px;height:${height}px`;
         },
         _charWidth() {
           if (!this._charW) {
