@@ -1,8 +1,11 @@
-<!-- docs-sync: 7856fbb -->
+<!-- docs-sync: 2e34957 -->
 
 # Changelog
 
 ## [Unreleased]
+
+### Changed
+- README, landing-page hero, and About page rewritten around a sharper positioning: Markdown as the glue language of AI workflows, and this site as the lightweight alternative to scattered ad-bloated converters and heavy desktop apps (`2e34957`)
 
 ### Added
 - Keyboard-shortcuts cheat sheet: press `?` (outside a text field) or use the new toolbar button to see every editor shortcut in one modal (`7856fbb`)
