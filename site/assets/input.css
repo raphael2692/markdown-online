@@ -99,7 +99,13 @@
   margin-bottom: 1em;
   overflow-x: auto;
 }
-.md-preview .mermaid-diagram svg { max-width: 100%; height: auto; }
+/* No max-width cap on the svg itself: the diagram is meant to render at its
+   natural size and be scaled by the preview's own zoom controls (zoomIn/
+   zoomOut/zoomToFit — see editor script), which measure that natural size via
+   scrollWidth. A CSS-level cap would pin the svg to the container width
+   regardless of zoom, making those controls a no-op for anything but tiny
+   diagrams. overflow-x above is what keeps an oversized one from blowing out
+   the rest of the page. */
 .md-preview .mermaid-error {
   margin-top: 0;
   margin-bottom: 1em;

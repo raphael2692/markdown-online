@@ -371,6 +371,21 @@ async function renderMermaidDiagrams(html) {
       // user's authored markdown, so it gets the same protection on every
       // output channel (Raw/Copy/Download included), not just the preview.
       div.innerHTML = sanitizeMermaidSvg(svg);
+      // Mermaid sizes its own svg responsively (width="100%" plus a
+      // max-width inline style matching its natural size) — fine at the
+      // default 100% preview zoom, but it means the svg's rendered size is
+      // already clamped to the pane before the zoom controls (which scale a
+      // diagram by its actual rendered box) get a chance to act, making
+      // zoom in/out/to-fit a no-op on anything wider than the pane. Give it
+      // the same explicit, absolute width/height dbml.js's own diagrams
+      // use instead, so it participates in zoom the same way.
+      const svgEl = div.querySelector('svg');
+      const vb = (svgEl?.getAttribute('viewBox') || '').trim().split(/\s+/).map(Number);
+      if (svgEl && vb.length === 4 && vb[2] > 0 && vb[3] > 0) {
+        svgEl.setAttribute('width', vb[2]);
+        svgEl.setAttribute('height', vb[3]);
+        svgEl.style.maxWidth = '';
+      }
       pre.replaceWith(div);
     } catch (e) {
       pre.outerHTML = `<pre class="mermaid-error">Diagram error: ${DOMPurify.sanitize(e.message || String(e))}</pre>`;

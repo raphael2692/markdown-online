@@ -915,14 +915,23 @@
         zoomOut() { this.previewZoom = Math.max(this.zoomMin, this.previewZoom - ZOOM_STEP); },
         resetZoom() { this.previewZoom = 100; },
         // Scales the preview so its full (unzoomed) content fits inside the
-        // visible viewport on both axes — undoes the current zoom on the
-        // measured size first, since scrollWidth/Height already reflect it.
+        // visible viewport on both axes. scrollWidth/Height read on anything
+        // inside the zoomed element are already in natural, pre-zoom units
+        // (CSS zoom keeps a subtree's own box-model measurements in its own
+        // logical space — only getBoundingClientRect crosses back out to
+        // physical/on-screen pixels), so no undoing the current zoom here.
+        // inner.scrollWidth alone isn't enough, either: diagrams/tables/code
+        // blocks set their own overflow-x so they scroll independently
+        // instead of pushing inner's scrollWidth out, so an oversized one's
+        // true extent has to be measured on itself, not on inner.
         zoomToFit() {
           const viewport = this.$refs.preview, inner = this.$refs.previewInner;
           if (!viewport || !inner) return;
-          const scale = this.previewZoom / 100;
-          const naturalWidth = inner.scrollWidth / scale;
-          const naturalHeight = inner.scrollHeight / scale;
+          let naturalWidth = inner.scrollWidth, naturalHeight = inner.scrollHeight;
+          inner.querySelectorAll('.mermaid-diagram, pre, table').forEach((el) => {
+            naturalWidth = Math.max(naturalWidth, el.scrollWidth);
+            naturalHeight = Math.max(naturalHeight, el.scrollHeight);
+          });
           if (!naturalWidth || !naturalHeight) return;
           const cs = getComputedStyle(viewport);
           const availWidth = viewport.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
