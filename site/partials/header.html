@@ -3,10 +3,46 @@
     <a href="/" class="font-semibold text-neutral-900 dark:text-neutral-100">__SITE_NAME__</a>
     <div class="flex items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400">
       <a href="/editor/" id="nav-open-editor" class="font-medium text-neutral-900 dark:text-neutral-100 hover:underline">Open Editor</a>
-      <a href="/about/" class="hover:text-neutral-900 dark:hover:text-neutral-100">About</a>
-      <a href="__GITHUB_URL__" class="inline-flex items-center gap-1 hover:text-neutral-900 dark:hover:text-neutral-100" aria-label="GitHub repository">
+      <a href="__GITHUB_URL__" id="gh-repo-link" class="inline-flex items-center gap-1.5 hover:text-neutral-900 dark:hover:text-neutral-100" aria-label="GitHub repository">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" /></svg>
+        <span id="gh-stars" class="hidden items-center gap-0.5 text-xs tabular-nums" title="GitHub stars">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" /></svg>
+          <span data-count aria-label="GitHub stars"></span>
+        </span>
       </a>
+      <!-- Star counter: one unauthenticated GET to GitHub's public repo API
+           (the same organization that already serves this page on GitHub
+           Pages — no new party sees the visit, and nothing the visitor
+           typed is sent). Cached in localStorage for 6 hours to stay far
+           under the unauthenticated rate limit; hidden entirely if the
+           fetch fails or is blocked. -->
+      <script>
+      (function () {
+        var el = document.getElementById('gh-stars');
+        var link = document.getElementById('gh-repo-link');
+        var m = link && /github\.com\/([^/]+\/[^/]+)/.exec(link.href);
+        if (!el || !m) return;
+        var KEY = 'gh-stars:' + m[1];
+        function show(n) {
+          el.querySelector('[data-count]').textContent =
+            n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n);
+          el.classList.remove('hidden');
+          el.classList.add('inline-flex');
+        }
+        try {
+          var cached = JSON.parse(localStorage.getItem(KEY) || 'null');
+          if (cached && Date.now() - cached.t < 21600000) { show(cached.n); return; }
+        } catch (e) { /* corrupt cache — fall through to a fresh fetch */ }
+        fetch('https://api.github.com/repos/' + m[1])
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            if (!d || typeof d.stargazers_count !== 'number') return;
+            try { localStorage.setItem(KEY, JSON.stringify({ n: d.stargazers_count, t: Date.now() })); } catch (e) {}
+            show(d.stargazers_count);
+          })
+          .catch(function () {});
+      })();
+      </script>
       <button type="button" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode"
         class="inline-flex items-center justify-center rounded-md p-1.5 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide block h-4 w-4 dark:hidden" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>
