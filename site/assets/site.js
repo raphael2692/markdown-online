@@ -776,6 +776,20 @@ function registerExtraHljsLanguages() {
       { className: 'string', begin: /'''/, end: /'''/ },
       h.QUOTE_STRING_MODE,
       h.APOS_STRING_MODE,
+      // Column definition: `name type [...]` — name and type get distinct
+      // scopes (attr = blue, built_in = orange in the github themes; 'type'
+      // itself would collide with the keyword red). The lookahead keeps
+      // block openers (`Table users {`) and Note lines on the keyword path
+      // instead of being eaten as a column.
+      {
+        begin: [
+          /^[ \t]*(?!(?:Table|Enum|Ref|TableGroup|Project|Note|indexes)\b)/,
+          /"?[A-Za-z_][\w]*"?/,
+          /[ \t]+/,
+          /[A-Za-z_][\w]*(?:\([^)\n]*\))?/,
+        ],
+        beginScope: { 2: 'attr', 4: 'built_in' },
+      },
       // Column settings: [pk, not null, unique, ref: > users.id, ...]
       {
         className: 'meta',

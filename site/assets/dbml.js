@@ -426,10 +426,13 @@
     return e;
   }
 
+  // Desaturated, dbdiagram-adjacent palette: steel blue for tables, muted
+  // plum for enums, softened key/line accents — professional rather than
+  // saturated primaries.
   function colors(dark) {
     return dark
-      ? { tableBg: '#262626', tableHeader: '#3b82f6', enumHeader: '#a855f7', border: '#525252', text: '#e5e5e5', muted: '#a3a3a3', pk: '#facc15', line: '#a3a3a3', headerText: '#fff' }
-      : { tableBg: '#ffffff', tableHeader: '#2563eb', enumHeader: '#9333ea', border: '#d4d4d4', text: '#262626', muted: '#737373', pk: '#b45309', line: '#737373', headerText: '#fff' };
+      ? { tableBg: '#262626', tableHeader: '#3d5a80', enumHeader: '#5d5170', border: '#525252', text: '#e5e5e5', muted: '#a3a3a3', pk: '#d3b06b', line: '#8f8f8f', headerText: '#f5f5f5' }
+      : { tableBg: '#ffffff', tableHeader: '#44618b', enumHeader: '#71618c', border: '#d4d4d4', text: '#262626', muted: '#737373', pk: '#8f6a13', line: '#8a8a8a', headerText: '#fdfdfd' };
   }
 
   function drawNode(g, node, pos, c) {
