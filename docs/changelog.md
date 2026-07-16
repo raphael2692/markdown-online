@@ -1,4 +1,4 @@
-<!-- docs-sync: 8a1c9aa -->
+<!-- docs-sync: 60e387b -->
 
 # Changelog
 
@@ -15,6 +15,7 @@
 - DBML diagram palette desaturated to a more professional look: steel-blue table headers, muted-plum enum headers, and softened primary-key/relationship-line accents, in both light and dark themes (`9b17c66`)
 
 ### Fixed
+- Diagrams narrower than the preview pane now center horizontally instead of hugging the left edge, so the width left over after zoom-to-fit on a taller-than-pane diagram reads as symmetric margins rather than a one-sided gap; diagrams wider than the pane scroll from the left exactly as before (`60e387b`)
 - Preview zoom-to-fit now measures the content at 100% zoom, so pressing it while zoomed out (or after resizing/stacking the panes) scales back up to fill the pane instead of sticking at the current zoom; the fitted value is floored so it never overshoots into a scrollbar. DBML diagrams with several disconnected table groups also pack those groups into height-capped vertical stacks instead of one long top-aligned strip, removing the dead space that made the fitted diagram needlessly small (`8a1c9aa`)
 - DBML diagram columns are now top-aligned within a component instead of vertically centered, so tables originate from the same row; the preview's hand tool now pans the actual horizontally-overflowing element (a wide table/code block/diagram) instead of the viewport, which markdown text never overflows, and no longer follows a link when a drag ends on one (`11ed7d2`)
 - Write-pane syntax highlighting: the editor's source pane now colors Markdown structure (headings, lists, quotes, tables, links, emphasis) and fenced-code interiors as you type, StackEdit-style, via a color-only backdrop div behind the (transparent-text) textarea — no new vendored editor library; fence interiors reuse the lazy-loaded highlight.js with per-fence memoization, and documents past 200k chars fall back to a plain textarea. Also registers first-party display-grade highlight.js grammars for DBML and Mermaid, so those fences colorize in the preview and exports-preview everywhere hljs runs (`4e0578a`)

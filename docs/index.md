@@ -479,7 +479,12 @@ scrolling element itself avoids the box that reports its size to
   no room left to visibly grow or shrink. The same reasoning is why
   `.md-preview .mermaid-diagram svg` carries no `max-width` rule in
   `input.css`: `.mermaid-diagram`'s own `overflow-x: auto` is what keeps an
-  oversized, unzoomed diagram from blowing out the rest of the page.
+  oversized, unzoomed diagram from blowing out the rest of the page. The
+  svg does carry `display: block; margin: 0 auto`, though: a fitted
+  diagram whose aspect is taller than the pane's fills the height with
+  width left over, and centering makes that leftover read as symmetric
+  margins instead of a one-sided gap — auto margins collapse to zero once
+  the diagram overflows, so wide diagrams still scroll from x=0.
 - **Hand tool** (`panMode`) reuses the same drag-tracking idiom as
   `paneResizer()`'s `startDrag()`/`startVDrag()` (mousedown/touchstart →
   document-level move/up listeners), just writing `scrollLeft`/`scrollTop`
