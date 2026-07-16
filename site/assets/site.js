@@ -790,6 +790,18 @@ function registerExtraHljsLanguages() {
         ],
         beginScope: { 2: 'attr', 4: 'built_in' },
       },
+      // Enum value: a lone identifier on its own line (optionally followed
+      // by a [...] settings block). Columns always carry a type, so a bare
+      // name like this only occurs inside an Enum block — colored the same
+      // blue as column names so enum bodies don't read as dead text.
+      {
+        begin: [
+          /^[ \t]*(?!(?:Table|Enum|Ref|TableGroup|Project|Note|indexes)\b)/,
+          /"?[A-Za-z_][\w]*"?/,
+          /[ \t]*(?=\[|$)/,
+        ],
+        beginScope: { 2: 'attr' },
+      },
       // Column settings: [pk, not null, unique, ref: > users.id, ...]
       {
         className: 'meta',

@@ -253,7 +253,9 @@
       if (fromId && toId) resolvedRefs.push(Object.assign({}, r, { fromTable: fromId, toTable: toId }));
     }
 
-    if (!tables.length) throw new Error('No tables found — expected at least one `Table name { ... }` block.');
+    // Enums alone are renderable (the mini-map draws single-enum snippets);
+    // only a source with neither is an error.
+    if (!tables.length && !enums.length) throw new Error('No tables found — expected at least one `Table name { ... }` block.');
     return { tables, enums, refs: resolvedRefs };
   }
 

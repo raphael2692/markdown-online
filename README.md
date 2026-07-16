@@ -31,8 +31,8 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   columns, keys, enums, and crow's-foot relationships), no dbdiagram.io
   round-trip needed.
 - **Diagram mini-map** — a collapsible thumbnail strip of every diagram in
-  the document (one per table for DBML schemas): click a thumbnail to jump
-  the editor to its code block, hover for a zoomed-in preview.
+  the document (one per table and enum for DBML schemas): click a thumbnail
+  to jump the editor to its code block, hover for a zoomed-in preview.
 - **Syntax highlighting everywhere** — code blocks are colored in the live
   preview *and* in the write pane itself (Markdown structure plus fenced
   code in ~35 languages, including first-party Mermaid and DBML grammars).

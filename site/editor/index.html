@@ -1296,7 +1296,7 @@
               }
               const body = lines.slice(i + 1, j).join('\n');
               if (lang === 'dbml' && window.DbmlRenderer) {
-                for (const snip of this._dbmlTableSnippets(body)) {
+                for (const snip of this._dbmlNodeSnippets(body)) {
                   try {
                     const { svg } = window.DbmlRenderer.render(snip.text, { dark });
                     items.push({
@@ -1321,14 +1321,14 @@
             this.minimap = []; // the mini-map is an extra — never let it break the preview
           }
         },
-        // Regex-scan (not the full parser) so tables still get thumbnails
-        // even when another statement in the block fails to parse.
-        _dbmlTableSnippets(body) {
+        // Regex-scan (not the full parser) so tables/enums still get
+        // thumbnails even when another statement in the block fails to parse.
+        _dbmlNodeSnippets(body) {
           const lines = body.split('\n');
           const out = [];
           let i = 0;
           while (i < lines.length) {
-            const m = /^\s*Table\s+"?([\w.]+)"?.*\{/i.exec(lines[i]);
+            const m = /^\s*(?:Table|Enum)\s+"?([\w.]+)"?.*\{/i.exec(lines[i]);
             if (!m) { i++; continue; }
             let depth = 0, j = i;
             for (; j < lines.length; j++) {
