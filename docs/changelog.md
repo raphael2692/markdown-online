@@ -1,10 +1,11 @@
-<!-- docs-sync: 93550d2 -->
+<!-- docs-sync: 1c36dc2 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- Status bar reports word/char/token counts for the current selection alongside cursor position (`1c36dc2`)
 - Document outline: a collapsible list of the document's headings above the diagram mini-map — indented by level, click a heading to jump the editor to it; skips headings inside fenced code blocks (`93550d2`)
 - Smart list continuation: Enter carries bullet/numbered/task/blockquote markers onto the next line (ordered lists renumber themselves, task items start unchecked), Enter on an empty item exits the list, Tab nests the list item under the caret; disabled inside fenced code blocks (`4195d89`)
 - Find & replace: the find bar gains a collapsible replace row (Ctrl/Cmd+H opens it directly) with replace-current and replace-all — case-insensitive matching, one undo step per action (`4195d89`)
@@ -27,6 +28,7 @@
 - DBML diagram palette desaturated to a more professional look: steel-blue table headers, muted-plum enum headers, and softened primary-key/relationship-line accents, in both light and dark themes (`9b17c66`)
 
 ### Fixed
+- The write pane no longer shrinks the find/replace bar off the edge of a narrowed split pane — the pane now enforces a minimum width while the bar is open (`1c36dc2`)
 - DBML enum values (bare identifiers inside an `Enum { ... }` block) are now syntax-colored in the write pane like column names, instead of rendering as plain text (`ebc5f59`)
 - The diagram mini-map now shows DBML enums as thumbnails alongside tables — the snippet scanner matches `Enum` blocks and the renderer accepts enum-only sources (`ebc5f59`)
 - Diagrams narrower than the preview pane now center horizontally instead of hugging the left edge, so the width left over after zoom-to-fit on a taller-than-pane diagram reads as symmetric margins rather than a one-sided gap; diagrams wider than the pane scroll from the left exactly as before (`60e387b`)

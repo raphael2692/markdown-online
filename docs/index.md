@@ -376,7 +376,10 @@ parts:
   ≈4-characters-per-token heuristic; deliberately an estimate, no tokenizer
   is shipped), and static `UTF-8` / `Markdown` fields. The counters used to
   float in the middle of the top bar, splitting the action buttons — the
-  top bar is now strictly actions.
+  top bar is now strictly actions. When text is selected, the cursor-position
+  field appends the selection's own word/char/token counts (computed in the
+  same handler that tracks `cursorLine`/`cursorCol`, from `selectionStart`/
+  `selectionEnd`) so you don't have to do the subtraction yourself.
 - **Multiple documents**: the editor holds any number of named documents,
   all in localStorage. The index (doc names + active id) lives under
   `markdown-editor-docs-v1`; each document's content lives under its own
@@ -497,6 +500,12 @@ parts:
   single undo step, and both defer `setSelectionRange` to `$nextTick`,
   because `x-model`'s DOM write (which resets the caret) hasn't happened
   yet at call time.
+  Since the bar floats absolutely instead of taking layout space, nothing
+  in normal flex sizing stops a split-drag or window resize from shrinking
+  the write pane out from under it; a `.split-pane-left.has-find` CSS rule
+  sets `min-width: min(28rem, 100%)` (bound to `find.open` alongside the
+  existing pane classes) so `min-width` — which beats `flex-basis` in flex
+  sizing — enforces the floor on every layout pass with no JS measurement.
 - **Import mechanism**: HTML and CSV/JSON aren't separate tools anymore —
   they're "Import" actions inside the same widget. Import-from-HTML runs
   the pasted/uploaded HTML through `TurndownService` (+ `turndown-plugin-gfm`
