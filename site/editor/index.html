@@ -54,7 +54,7 @@
 
     <h1 class="sr-only">Markdown Editor</h1>
 
-    <section id="tool" class="mt-4" x-data="toolWidget()" x-init="init()">
+    <section id="tool" class="mt-4" x-data="toolWidget()" x-init="init()" @keydown.window="onGlobalKeydown($event)">
       <div class="rounded-lg border border-neutral-200 dark:border-neutral-800">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 dark:border-neutral-800 p-3">
           <div class="flex flex-wrap items-center gap-2">
@@ -436,7 +436,7 @@
                 <input type="text" x-ref="findInput" x-model="find.query" placeholder="Find…"
                   @input="updateFindMatches(true)"
                   @keydown.enter.prevent="$event.shiftKey ? gotoFindMatch(-1) : gotoFindMatch(1)"
-                  @keydown="if (($event.ctrlKey || $event.metaKey) && $event.key.toLowerCase() === 'f') { $event.preventDefault(); $event.target.select(); }"
+                  @keydown="if (($event.ctrlKey || $event.metaKey) && $event.key.toLowerCase() === 'f') { $event.preventDefault(); $event.stopPropagation(); $event.target.select(); }"
                   class="w-40 rounded border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 font-sans text-xs text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500"
                   aria-label="Find in document">
                 <span class="min-w-[4rem] px-1 text-center font-sans text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400"
@@ -991,6 +991,19 @@
         },
 
         // ---- find in document (Ctrl/Cmd+F) ----
+        // Window-level, not textarea-level: the whole page is the editor, so
+        // Ctrl+F should open the in-editor find no matter what's focused —
+        // a textarea-only binding loses to the browser's page find whenever
+        // focus is on a toolbar button or nowhere at all. Native find stays
+        // available in preview-only view (no write pane to search) and while
+        // the import modal is open.
+        onGlobalKeydown(e) {
+          if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+          if (e.key.toLowerCase() !== 'f') return;
+          if (this.view === 'preview' || this.importKind !== null) return;
+          e.preventDefault();
+          this.openFind();
+        },
         openFind() {
           const ta = this.$refs.mdTextarea;
           const sel = this.input.slice(ta.selectionStart, ta.selectionEnd);
@@ -1255,7 +1268,6 @@
           // (the Mac convention, also accepted everywhere else).
           if (key === 'z' && !e.shiftKey) { e.preventDefault(); this.undo(); }
           else if (key === 'y' || (key === 'z' && e.shiftKey)) { e.preventDefault(); this.redo(); }
-          else if (key === 'f') { e.preventDefault(); this.openFind(); }
           else if (key === 'b') { e.preventDefault(); this.wrapSelection('**', '**', 'bold text'); }
           else if (key === 'i') { e.preventDefault(); this.wrapSelection('*', '*', 'italic text'); }
           else if (key === 'k') { e.preventDefault(); this.wrapSelection('[', '](https://)', 'link text'); }
