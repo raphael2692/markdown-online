@@ -88,6 +88,7 @@
 
             <div x-data="pinesSelect({
                     items: [
+                      { value: 'md', label: 'Open Markdown file…' },
                       { value: 'html', label: 'Import from HTML…' },
                       { value: 'csv', label: 'Import from CSV/JSON…' },
                     ],
@@ -126,6 +127,9 @@
                 </template>
               </ul>
             </div>
+
+            <input type="file" x-ref="mdFileInput" accept=".md,.markdown,.mdown,.mkd,.txt"
+              class="hidden" @change="onOpenMarkdownFile($event)">
 
             <button type="button" @click="clearDraft()" title="Clear the editor and delete your saved draft"
               class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800">
@@ -1141,8 +1145,13 @@
           this.run();
         },
 
-        // ---- import: HTML / CSV / JSON ----
+        // ---- import: Markdown file / HTML / CSV / JSON ----
         openImport(kind) {
+          if (kind === 'md') {
+            this.$refs.mdFileInput.value = '';
+            this.$refs.mdFileInput.click();
+            return;
+          }
           this.importKind = kind;
           if (kind === 'html') {
             this.importHtml.text = '';
@@ -1163,6 +1172,25 @@
           const text = await file.text();
           if (kind === 'html') this.importHtml.text = text;
           else this.importCsv.text = text;
+        },
+        // Unlike the HTML/CSV imports (which convert a foreign format into a
+        // snippet inserted at the cursor), a .md file is already the target
+        // format — loading it replaces the whole document, so it's opened
+        // directly from the picker rather than going through the import modal.
+        async onOpenMarkdownFile(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          if (this.input.trim() && !confirm(`Replace the current document with "${file.name}"? This will overwrite what's in the editor, including your saved draft.`)) {
+            event.target.value = '';
+            return;
+          }
+          this.input = await file.text();
+          this.restored = false;
+          this.run();
+          const ta = this.$refs.mdTextarea;
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(0, 0); this.updateHeadingLevel(); });
+          this.flash('Loaded ' + file.name);
+          event.target.value = '';
         },
         async confirmImportHtml() {
           this.importHtml.error = '';

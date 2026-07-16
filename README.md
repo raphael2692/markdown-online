@@ -15,8 +15,9 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
 - **Zoom, pan, and fit-to-view** in the rendered preview — zoom in/out or
   reset to 100%, a hand tool to drag-pan instead of scroll, and a
   zoom-to-fit button for oversized tables or diagrams.
-- **Import** from HTML, CSV, or JSON — paste or drop it in and get clean
-  Markdown out (tables, lists, and formatting preserved).
+- **Open a Markdown file** straight from your device, or **import** from
+  HTML, CSV, or JSON — paste or drop it in and get clean Markdown out
+  (tables, lists, and formatting preserved).
 - **Export** to Markdown, HTML, or PDF, or copy rich-formatted content
   straight onto your clipboard for pasting into Word or Google Docs.
 - **Math and diagrams** — inline/block KaTeX math and Mermaid diagrams,
