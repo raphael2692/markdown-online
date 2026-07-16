@@ -1,10 +1,13 @@
-<!-- docs-sync: 823cb22 -->
+<!-- docs-sync: 408ecba -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- Collapsible formatting toolbar: a "Toolbar" chevron button in the top bar hides/shows the whole formatting row, and the choice persists across visits (`408ecba`)
+- Diagram mini-map: a collapsible thumbnail strip under the editor panes with one thumbnail per Mermaid diagram and one per table for DBML schemas — click a thumbnail to jump the editor to its code block, hover for a zoomed-in popover preview (`408ecba`)
+- Status bar at the bottom of the widget (VS Code-style): cursor line/column, live word/character/estimated-token counts, and encoding, plus the existing draft save/restore status (`408ecba`)
 - Find in the editor: Ctrl/Cmd+F anywhere on the editor page (captured at window level so it wins over the browser's page find; native find remains in preview-only view and the import modal) opens a floating find bar — case-insensitive matching with an "N of M" counter, Enter/Shift+Enter cycling, Escape to close, and a highlight painted over the current match via the pane's fixed monospace metrics (no third mirrored copy of the document) (`b254105`)
 - Scroll-sync toggle in split view: a "Sync on"/"Sync off" button next to the stack-panels toggle enables/disables the proportional scroll mirroring between the write and preview panes (`b254105`)
 - LLM token estimate in the status counters, alongside words and characters, using the common ≈4-characters-per-token heuristic (`b254105`)
@@ -12,6 +15,8 @@
 - DBML fences now colorize column definitions distinctly — column name blue, type orange, keywords red — in the write pane's highlighting (`9b17c66`)
 
 ### Changed
+- Import, Copy Markdown, and Export are now one consistently-styled actions cluster on the right of the top bar (Copy Markdown loses its heavy fill — the three are equal-weight peers), and the document statistics moved out of the top bar into the new status bar (`408ecba`)
+- Editor line-number gutter is now seamless — same background as the text area with a subtle divider line instead of a tinted panel — and the monospace stack prefers locally installed developer fonts (JetBrains Mono, Fira Code, SF Mono) before the platform defaults (`408ecba`)
 - The preview's fit button is now fit-to-width: it scales the widest content to fill the pane's full width, with taller content scrolling vertically, instead of shrinking everything to be visible at once — which on a tall diagram in a wide pane left most of the pane empty (`823cb22`)
 - DBML diagram palette desaturated to a more professional look: steel-blue table headers, muted-plum enum headers, and softened primary-key/relationship-line accents, in both light and dark themes (`9b17c66`)
 

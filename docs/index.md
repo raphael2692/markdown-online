@@ -290,7 +290,16 @@ parts:
   (plain, uncolored, responsive textarea); IME composition flips
   `is-composing` (textarea text visible, backdrop dimmed); lines over
   2 000 chars skip the inline pass. The gutter got `z-10` so it still
-  paints above the now-`position:relative` textarea.
+  paints above the now-`position:relative` textarea; it's styled
+  "seamless" — the editor's own background plus a `border-r` divider, not
+  a tinted panel — but must stay *opaque*, since horizontally scrolled
+  text slides underneath it and would show through otherwise.
+- **Font stack.** `input.css` overrides Tailwind's `--font-mono` via
+  `@theme` to prefer developer faces the visitor has installed (JetBrains
+  Mono, Fira Code, SF Mono) before the platform defaults. No webfont is
+  shipped (dependency-light), the fixed `leading-6` metrics hold for any
+  monospace face, and ligatures are already disabled on the editor layers
+  so ligature fonts can't break caret alignment.
 
 - **Shared widget behavior**: the tool widget mixes in `paneResizer()`
   (defined once in `site/assets/site.js`) for the draggable horizontal
@@ -320,11 +329,16 @@ parts:
   message shown after Copy/Download actions) and `copyRichClick()` (wraps
   `window.copyRich()` for the "Copy for Word / Docs" button) — spread
   alongside `paneResizer()`:
-  `{ ...paneResizer(), ...toolActionsMixin(), /* page state */ }`. All of
-  Copy Markdown/Copy HTML/Copy for Word/Download .md/Download HTML/Print to
-  PDF live in the top toolbar too — a standalone "Copy Markdown" button
-  plus an "Export" dropdown for the rest — so they're reachable without
-  scrolling past the editor panes, however tall the panes are resized to.
+  `{ ...paneResizer(), ...toolActionsMixin(), /* page state */ }`. All
+  import/export/copy actions live in one right-side cluster of the top bar
+  — the "Import" dropdown (Open Markdown file / from HTML / from CSV/JSON),
+  a standalone "Copy Markdown" button, and the "Export" dropdown (Copy
+  HTML / Copy for Word / Download .md / Download HTML / Print to PDF) — all
+  in the same outlined button style, deliberately without a filled
+  "primary" button among them: the three are peers, and the old heavy-fill
+  Copy Markdown read as more important than Export for no reason. They're
+  reachable without scrolling past the editor panes, however tall the panes
+  are resized to; the toast confirmation renders inside the same cluster.
 - **Toolbar button grouping**: the formatting toolbar is split into three
   labeled clusters so it's clear which buttons act on the current selection
   versus which insert new content: **Format** (Bold/Italic/Strikethrough/
@@ -337,10 +351,46 @@ parts:
   the language-less sibling of the Code block dropdown: with a selection it
   wraps it in `` ``` `` fences pushed onto their own lines; with no selection it
   drops an empty fenced block and parks the cursor inside. Each button's
-  tooltip spells out which behavior it uses. The toolbar's right side also
-  carries live status counters — words, characters, and an LLM token
-  estimate (`tokenCount`, the common ≈4-characters-per-token heuristic;
-  deliberately an estimate, no tokenizer is shipped).
+  tooltip spells out which behavior it uses. The whole formatting bar is
+  collapsible: a "Toolbar" chevron button in the top bar's left cluster
+  flips a `toolbarOpen` boolean gating the bar's `x-show`, and the choice
+  persists across visits in the `markdown-editor-ui-v1` localStorage key
+  (a small JSON blob shared with the mini-map's collapsed state — separate
+  from the draft's own key so clearing one never touches the other).
+- **Status bar** (VS Code-style, bottom of the widget): a thin, low-contrast
+  row carrying draft save/restore status on the left and, on the right,
+  cursor position (`Ln n, Col n` — tracked in `updateHeadingLevel()`, which
+  already resolves the caret's line for the heading dropdown), the live
+  word/character counters, an LLM token estimate (`tokenCount`, the common
+  ≈4-characters-per-token heuristic; deliberately an estimate, no tokenizer
+  is shipped), and static `UTF-8` / `Markdown` fields. The counters used to
+  float in the middle of the top bar, splitting the action buttons — the
+  top bar is now strictly actions.
+- **Diagram mini-map**: a collapsible thumbnail strip under the panes,
+  built by `buildMinimap()` at the end of every `run()` — one thumbnail per
+  Mermaid diagram and one per *table* for DBML blocks. Clicking a thumbnail
+  jumps the editor to the corresponding fence/`Table` block
+  (`gotoMinimapItem()`, using the same fixed pane metrics as
+  `revealFindMatch()`); hovering shows a zoomed popover, fixed-positioned
+  from the thumbnail's rect so the strip's own `overflow-x` scroll
+  container can't clip it (`pointer-events: none` so it never traps the
+  hover). Mermaid thumbnails reuse the SVGs already rendered into the
+  preview, matching the k-th mermaid/dbml fence in the source to the k-th
+  rendered `.mermaid-diagram`/`.mermaid-error` element (both lists are in
+  document order); DBML tables are re-rendered individually through the
+  first-party `DbmlRenderer` — cheap, and the renderer drops refs to absent
+  tables rather than erroring, so a single-table render is always clean.
+  Table blocks are located by a regex/brace-depth scan
+  (`_dbmlTableSnippets()`), not the full parser, so tables still get
+  thumbnails when something else in the block fails to parse. The strip
+  hides entirely when the document has no diagrams; its collapsed state
+  persists via the same `markdown-editor-ui-v1` key as the toolbar. The
+  whole build is wrapped in a try/catch that empties the map on failure —
+  it's an extra, and must never break the preview. Thumbnail/popover SVGs
+  scale via `.minimap-thumb svg`/`.minimap-popover svg { width/height:
+  100% }` in `input.css`: the SVGs keep their `viewBox`, so this
+  letterboxes (`preserveAspectRatio` "meet") instead of rendering at
+  natural size.
 - **Editor keyboard handling**: `onKeydown()` on the textarea covers both
   formatting shortcuts (Ctrl/Cmd+B/I/K → `wrapSelection()`) and code editing
   basics — Tab/Shift+Tab call `indentSelection()`/`outdentSelection()`
