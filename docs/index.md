@@ -366,7 +366,8 @@ parts:
   flips a `toolbarOpen` boolean gating the bar's `x-show`, and the choice
   persists across visits in the `markdown-editor-ui-v1` localStorage key
   (a small JSON blob shared with the mini-map's collapsed state — separate
-  from the draft's own key so clearing one never touches the other).
+  from the documents' own content keys so clearing one never touches the
+  other).
 - **Status bar** (VS Code-style, bottom of the widget): a thin, low-contrast
   row carrying draft save/restore status on the left and, on the right,
   cursor position (`Ln n, Col n` — tracked in `updateHeadingLevel()`, which
@@ -376,6 +377,25 @@ parts:
   is shipped), and static `UTF-8` / `Markdown` fields. The counters used to
   float in the middle of the top bar, splitting the action buttons — the
   top bar is now strictly actions.
+- **Multiple documents**: the editor holds any number of named documents,
+  all in localStorage. The index (doc names + active id) lives under
+  `markdown-editor-docs-v1`; each document's content lives under its own
+  `markdown-editor-doc-<id>` key, so the debounced autosave
+  (`_persistActiveDoc()`, 500 ms after the last keystroke) rewrites one
+  small key, never the whole set. A switcher dropdown (first control in
+  the top bar — the document's name doubles as the editor's "title bar")
+  lists documents with per-row delete, plus "Rename current…" (inline
+  input, Enter/Escape) and "New document" actions. Switching flushes any
+  pending autosave first (`_flushSave()`), then loads the target with a
+  *fresh undo history* (`initHistory()`) — undo must never carry edits
+  across documents; deleting the active document clears the pending save
+  timer so the debounce can't resurrect the removed key, and deleting the
+  last document recreates an empty "Untitled". The legacy single-draft key
+  (`markdown-editor-draft-v1`) migrates into a named document on first
+  load and is removed. "Open Markdown file…" still replaces the *current*
+  document (confirm-gated), and renames it to the file's basename when the
+  name is still an untouched `Untitled`/`Untitled N`. The Clear button is
+  scoped to the current document.
 - **Diagram mini-map**: a collapsible thumbnail strip under the panes,
   built by `buildMinimap()` at the end of every `run()` — one thumbnail per
   Mermaid diagram and one per *table or enum* for DBML blocks. Clicking a
@@ -406,14 +426,30 @@ parts:
   formatting shortcuts (Ctrl/Cmd+B/I/K → `wrapSelection()`) and code editing
   basics — Tab/Shift+Tab call `indentSelection()`/`outdentSelection()`
   instead of moving focus out of the pane. With no selection, Tab inserts a
-  2-space indent at the cursor; with a selection, both Tab and Shift+Tab
-  operate per line across the full selected range (indenting/removing up to
-  one 2-space unit or a literal tab per line) and preserve the selection's
-  relative bounds afterward. This matters because the pane is a plain
-  `<textarea>`, which browsers otherwise treat Tab as a focus-change key —
-  without this override, indenting code fences or nested lists would be
-  impossible from the keyboard. Escape in the textarea closes the find bar
-  when it's open.
+  2-space indent at the cursor — unless the caret is on a list line, in
+  which case the whole line is indented (nesting the item); with a
+  selection, both Tab and Shift+Tab operate per line across the full
+  selected range (indenting/removing up to one 2-space unit or a literal
+  tab per line) and preserve the selection's relative bounds afterward.
+  This matters because the pane is a plain `<textarea>`, which browsers
+  otherwise treat Tab as a focus-change key — without this override,
+  indenting code fences or nested lists would be impossible from the
+  keyboard. Escape in the textarea closes the find bar when it's open.
+- **Smart list continuation** (`onEnterKey()`): plain Enter (no modifiers,
+  collapsed cursor, not mid-IME-composition) on a bullet, numbered, task
+  (`- [ ]`), or blockquote line carries the marker onto the new line —
+  numbered items get the next number and the *following* same-indent items
+  renumber themselves (`_renumberOrderedList()`, which skips
+  deeper-indented sub-items and stops at a blank line or the end of the
+  list); new task items always start unchecked. Enter on an *empty* item
+  removes the marker instead — pressing Enter twice is the way out of a
+  list. Two guards keep it honest: the caret must sit at or past the end
+  of the marker (Enter inside the marker is a plain newline), and
+  `_inFence(pos)` — a ```` ``` ````/`~~~` open/close scan of everything
+  above the line — disables continuation inside fenced code, where
+  `- item` is code, not a list. All mutations go through the same
+  `commitHistory()`-before-and-after pattern as the toolbar helpers, so
+  one Enter is one undo step.
 - **Find in document**: Ctrl/Cmd+F opens a floating find bar (absolute
   top-right inside the pane wrapper) instead of the browser's page-wide
   find, which can't see into a scrolled textarea. The shortcut is captured
@@ -437,6 +473,17 @@ parts:
   textarea) lands with the match visibly selected. Edits made while the bar
   is open refresh the count/mark only — re-anchoring the selection there
   would fight the user's caret mid-keystroke.
+  The bar's second row is **replace**: Ctrl/Cmd+H opens the bar with the
+  row expanded (a chevron toggles it manually). `replaceCurrent()` swaps
+  the current match for the replacement text as typed (matching stays
+  case-insensitive), then re-anchors from the caret with the same
+  jump-from-caret logic `openFind()` uses — which also naturally skips any
+  new occurrence the replacement itself introduced; `replaceAll()` rebuilds
+  the string from the match list in one pass and reports the count via the
+  toast. Both wrap the edit in `commitHistory()` so a replace-all is a
+  single undo step, and both defer `setSelectionRange` to `$nextTick`,
+  because `x-model`'s DOM write (which resets the caret) hasn't happened
+  yet at call time.
 - **Import mechanism**: HTML and CSV/JSON aren't separate tools anymore —
   they're "Import" actions inside the same widget. Import-from-HTML runs
   the pasted/uploaded HTML through `TurndownService` (+ `turndown-plugin-gfm`

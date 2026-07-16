@@ -1,10 +1,13 @@
-<!-- docs-sync: 895f1fe -->
+<!-- docs-sync: 4195d89 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- Smart list continuation: Enter carries bullet/numbered/task/blockquote markers onto the next line (ordered lists renumber themselves, task items start unchecked), Enter on an empty item exits the list, Tab nests the list item under the caret; disabled inside fenced code blocks (`4195d89`)
+- Find & replace: the find bar gains a collapsible replace row (Ctrl/Cmd+H opens it directly) with replace-current and replace-all — case-insensitive matching, one undo step per action (`4195d89`)
+- Multiple documents: a toolbar switcher creates, renames, switches, and deletes named documents, each autosaved to its own localStorage key; the previous single draft migrates automatically, and opening a `.md` file names an untouched "Untitled" document after it (`4195d89`)
 - GitHub star counter in the header, inside the repository link — fetched once from GitHub's public API, cached in the browser for 6 hours, hidden if the request fails; disclosed on the privacy page (`895f1fe`)
 - Collapsible formatting toolbar: a "Toolbar" chevron button in the top bar hides/shows the whole formatting row, and the choice persists across visits (`408ecba`)
 - Diagram mini-map: a collapsible thumbnail strip under the editor panes with one thumbnail per Mermaid diagram and one per table for DBML schemas — click a thumbnail to jump the editor to its code block, hover for a zoomed-in popover preview (`408ecba`)
