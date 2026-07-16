@@ -1034,11 +1034,60 @@
           this.run();
         },
         onKeydown(e) {
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            e.shiftKey ? this.outdentSelection() : this.indentSelection();
+            return;
+          }
           const mod = e.ctrlKey || e.metaKey;
           if (!mod) return;
           if (e.key === 'b') { e.preventDefault(); this.wrapSelection('**', '**', 'bold text'); }
           else if (e.key === 'i') { e.preventDefault(); this.wrapSelection('*', '*', 'italic text'); }
           else if (e.key === 'k') { e.preventDefault(); this.wrapSelection('[', '](https://)', 'link text'); }
+        },
+        indentSelection() {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const INDENT = '  ';
+          if (start === end) {
+            this.input = this.input.slice(0, start) + INDENT + this.input.slice(end);
+            const newPos = start + INDENT.length;
+            this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newPos, newPos); });
+            this.run();
+            return;
+          }
+          const lineStart = this.input.lastIndexOf('\n', start - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', end);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const lines = this.input.slice(lineStart, lineEnd).split('\n');
+          const block = lines.map((l) => INDENT + l).join('\n');
+          this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
+          const newStart = start + INDENT.length;
+          const newEnd = end + INDENT.length * lines.length;
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newStart, newEnd); });
+          this.run();
+        },
+        outdentSelection() {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const lineStart = this.input.lastIndexOf('\n', start - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', end);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const INDENT_RE = /^(?: {1,2}|\t)/;
+          let firstRemoved = 0, totalRemoved = 0;
+          const lines = this.input.slice(lineStart, lineEnd).split('\n').map((l, i) => {
+            const m = l.match(INDENT_RE);
+            const removed = m ? m[0].length : 0;
+            if (i === 0) firstRemoved = removed;
+            totalRemoved += removed;
+            return removed ? l.slice(removed) : l;
+          });
+          const block = lines.join('\n');
+          this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
+          const newStart = Math.max(lineStart, start - Math.min(firstRemoved, start - lineStart));
+          const newEnd = Math.max(newStart, end - totalRemoved);
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(newStart, newEnd); });
+          this.run();
         },
 
         insertCodeBlock(lang) {
