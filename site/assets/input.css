@@ -143,6 +143,17 @@
    regardless of zoom, making those controls a no-op for anything but tiny
    diagrams. overflow-x above is what keeps an oversized one from blowing out
    the rest of the page. */
+/* A diagram narrower than the pane centers instead of hugging the left
+   edge: after zoom-to-fit, a diagram whose aspect is taller than the
+   pane's fills the height with width left over, and symmetric margins
+   read as intentional where a one-sided gap reads as a broken fit. Once
+   the diagram is wider than the pane, auto margins collapse to zero and
+   it scrolls from x=0 exactly as before. */
+.md-preview .mermaid-diagram svg {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
 .md-preview .mermaid-error {
   margin-top: 0;
   margin-bottom: 1em;
