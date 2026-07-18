@@ -1,10 +1,11 @@
-<!-- docs-sync: 2e34957 -->
+<!-- docs-sync: cbaf556 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Changed
+- Site-wide light/dark palette replaced with named tokens matching VS Code's built-in "Light 2026"/"Dark 2026" themes exactly — page backgrounds, borders, text, links, buttons, and the preview's code/blockquote/table colors (`cbaf556`)
 - README, landing-page hero, and About page rewritten around a sharper positioning: Markdown as the glue language of AI workflows, and this site as the lightweight alternative to scattered ad-bloated converters and heavy desktop apps (`2e34957`)
 
 ### Added

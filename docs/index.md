@@ -723,6 +723,22 @@ error box) has a `dark:`/`.dark` counterpart.
 - `:root { color-scheme: light; } .dark { color-scheme: dark; }` in
   `input.css` lets native form controls (checkboxes, scrollbars) pick up the
   browser's own dark rendering too.
+- **The palette itself matches VS Code's built-in "Light 2026"/"Dark 2026"
+  themes exactly**, not an arbitrary Tailwind gray/indigo scale. Named
+  `--color-vsc-*` tokens (canvas, surface, border, fg, muted, accent,
+  accent-hover, button, button-hover, code-bg, quote-bg) are declared in the
+  `@theme` block of `site/assets/input.css`, each a light/dark hex pair
+  copied from VS Code's `2026-light.json`/`2026-dark.json` theme files
+  (`editor.background`, `textLink.foreground`, `textCodeBlock.background`,
+  etc.), and used as ordinary Tailwind utilities (`bg-vsc-canvas
+  dark:bg-vsc-canvas-dark`, `text-vsc-accent dark:text-vsc-accent-dark`, …)
+  across every page plus the hand-rolled `.md-preview` rules. Syntax
+  highlighting needed no change to match: VS Code's Dark 2026/Light 2026
+  themes inherit their `tokenColors` from `dark_modern`/`light_modern`,
+  which are byte-identical to the GitHub Dark/Light color scheme — and this
+  site already ships exactly `github-dark.min.css`/`github.min.css` for
+  highlight.js (see above), so the write pane and preview's code coloring
+  already matched before this palette work started.
 
 ## Confirmation dialogs and the shortcuts cheat sheet
 
