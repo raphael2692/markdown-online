@@ -10,6 +10,28 @@
    alignment. */
 @theme {
   --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
+  --color-vsc-canvas: #ffffff;
+  --color-vsc-canvas-dark: #121314;
+  --color-vsc-surface: #FAFAFD;
+  --color-vsc-surface-dark: #191A1B;
+  --color-vsc-border: #E4E5E6;
+  --color-vsc-border-dark: #2A2B2C;
+  --color-vsc-fg: #202020;
+  --color-vsc-fg-dark: #bfbfbf;
+  --color-vsc-muted: #606060;
+  --color-vsc-muted-dark: #8C8C8C;
+  --color-vsc-accent: #0069CC;
+  --color-vsc-accent-dark: #48A0C7;
+  --color-vsc-accent-hover: #0063C1;
+  --color-vsc-accent-hover-dark: #53A5CA;
+  --color-vsc-button: #0069CC;
+  --color-vsc-button-dark: #297AA0;
+  --color-vsc-button-hover: #0063C1;
+  --color-vsc-button-hover-dark: #2B7DA3;
+  --color-vsc-code-bg: #ECECEC;
+  --color-vsc-code-bg-dark: #242526;
+  --color-vsc-quote-bg: #EAEAEA;
+  --color-vsc-quote-bg-dark: #242526;
 }
 
 /* Lets native form controls (checkboxes, scrollbars, the file-input button)
@@ -145,12 +167,12 @@
 .md-preview code {
   font-family: ui-monospace, monospace;
   font-size: 0.9em;
-  background: #f1f1f1;
+  background: #ECECEC;
   padding: 0.1em 0.3em;
   border-radius: 0.25em;
 }
 .md-preview pre {
-  background: #f6f6f6;
+  background: #ECECEC;
   padding: 0.75em;
   border-radius: 0.375em;
   overflow-x: auto;
@@ -159,17 +181,17 @@
 .md-preview table { display: block; overflow-x: auto; border-collapse: collapse; width: max-content; max-width: 100%; }
 .md-preview th,
 .md-preview td {
-  border: 1px solid #d4d4d4;
+  border: 1px solid #E4E5E6;
   padding: 0.35em 0.6em;
   text-align: left;
 }
 .md-preview blockquote {
-  border-left: 3px solid #d4d4d4;
+  border-left: 3px solid #E4E5E6;
   margin-left: 0;
   padding-left: 1em;
-  color: #555;
+  color: #606060;
 }
-.md-preview a { color: #4f46e5; text-decoration: underline; }
+.md-preview a { color: #0069CC; text-decoration: underline; }
 .md-preview img { max-width: 100%; }
 .md-preview .mermaid-diagram {
   margin-top: 0;
@@ -199,33 +221,33 @@
   margin-bottom: 1em;
   padding: 0.75em;
   border-radius: 0.375em;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: #FDEDED;
+  color: #ad0707;
   overflow-x: auto;
 }
 .md-preview .katex-display { overflow-x: auto; overflow-y: hidden; }
 .md-preview .heading-number {
   margin-right: 0.3em;
-  color: #737373;
+  color: #606060;
   font-variant-numeric: tabular-nums;
 }
 
 /* Dark-mode overrides for the hand-rolled preview styles above — kept as
    plain `.dark` selectors (not Tailwind utilities) since these are already
    hand-rolled CSS, not classes on the markup itself. */
-.dark .md-preview code { background: #2d2d2d; }
-.dark .md-preview pre { background: #1e1e1e; }
+.dark .md-preview code { background: #242526; }
+.dark .md-preview pre { background: #242526; }
 .dark .md-preview th,
 .dark .md-preview td {
-  border-color: #404040;
+  border-color: #2A2B2C;
 }
 .dark .md-preview blockquote {
-  border-left-color: #525252;
-  color: #a3a3a3;
+  border-left-color: #2A2B2C;
+  color: #8C8C8C;
 }
-.dark .md-preview a { color: #818cf8; }
-.dark .md-preview .heading-number { color: #a3a3a3; }
+.dark .md-preview a { color: #48A0C7; }
+.dark .md-preview .heading-number { color: #8C8C8C; }
 .dark .md-preview .mermaid-error {
-  background: #450a0a;
-  color: #fca5a5;
+  background: #3A1D1D;
+  color: #f48771;
 }
