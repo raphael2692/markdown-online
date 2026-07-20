@@ -1087,30 +1087,345 @@ async function copyRich(markdown, opts) {
 }
 window.copyRich = copyRich;
 
-let htmlDocxReadyPromise = null;
+let docxReadyPromise = null;
 
-function ensureHtmlDocxLoaded() {
-  if (!htmlDocxReadyPromise) {
-    htmlDocxReadyPromise = loadScript(`${ASSETS_BASE}/assets/vendor/html-docx-0.3.1.min.js`)
-      .catch((e) => { htmlDocxReadyPromise = null; throw e; });
+function ensureDocxLoaded() {
+  if (!docxReadyPromise) {
+    docxReadyPromise = loadScript(`${ASSETS_BASE}/assets/vendor/docx-9.7.1.min.js`)
+      .catch((e) => { docxReadyPromise = null; throw e; });
   }
-  return htmlDocxReadyPromise;
+  return docxReadyPromise;
 }
-window.ensureHtmlDocxLoaded = ensureHtmlDocxLoaded;
+window.ensureDocxLoaded = ensureDocxLoaded;
 
-// "Download Word (.docx)" — unlike copyRich(), which depends on Word's own
-// HTML-paste importer choosing to honor mso-style-name hints (unreliable in
-// practice across Word versions/paste settings), this builds a real .docx
-// file: html-docx-js maps heading tags to genuine OOXML Heading paragraph
-// styles at the file-format level, so there's no importer heuristic to fail.
+// ---- "Download Word (.docx)" ----
+//
+// The previous approach (html-docx-js) embedded our HTML verbatim as a Word
+// altChunk that Word converts on open through its own HTML-import filter —
+// the same opaque, unverifiable heuristic engine copyRich()'s clipboard path
+// depends on, including its decision of when to trust mso-style-name hints
+// vs. bake in computed formatting as a direct override. Two attempts at
+// fixing "editing Normal/Heading N does nothing" through that heuristic
+// didn't hold up. This instead walks the sanitized HTML ourselves and builds
+// a genuine OOXML document with the vendored `docx` library: paragraphs
+// reference real named styles (Normal, Heading 1..6, Quote, Code Block) that
+// live in the file's own styles.xml, so there's no importer to second-guess
+// — editing a style in Word's Styles pane is guaranteed to restyle every
+// paragraph linked to it, because that link is a first-class part of the
+// file format rather than something Word has to infer from HTML on open.
+
+// Word's built-in style IDs (Normal, Heading1..6, Hyperlink) are stable,
+// locale-invariant internal identifiers — Word's UI shows a localized display
+// name (e.g. "Normale", "Titolo 1" in Italian) but resolves it back to these
+// same IDs regardless of the user's Office language.
+const DOCX_STYLES = {
+  default: {
+    document: { run: { font: 'Calibri', size: 22 }, paragraph: { spacing: { after: 160, line: 276, lineRule: 'auto' } } },
+    heading1: { run: { font: 'Calibri Light', size: 36, color: '2E74B5' }, paragraph: { spacing: { before: 240, after: 120 }, keepNext: true } },
+    heading2: { run: { font: 'Calibri Light', size: 30, color: '2E74B5' }, paragraph: { spacing: { before: 200, after: 100 }, keepNext: true } },
+    heading3: { run: { font: 'Calibri Light', size: 26, color: '1F4E79' }, paragraph: { spacing: { before: 160, after: 80 }, keepNext: true } },
+    heading4: { run: { font: 'Calibri', size: 24, bold: true, color: '1F4E79' }, paragraph: { spacing: { before: 160, after: 80 }, keepNext: true } },
+    heading5: { run: { font: 'Calibri', size: 22, bold: true, italics: true, color: '1F4E79' }, paragraph: { spacing: { before: 120, after: 60 }, keepNext: true } },
+    heading6: { run: { font: 'Calibri', size: 22, italics: true, color: '404040' }, paragraph: { spacing: { before: 120, after: 60 }, keepNext: true } },
+  },
+  paragraphStyles: [
+    {
+      id: 'Quote', name: 'Quote', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+      run: { italics: true, color: '404040' },
+      paragraph: { indent: { left: 720 }, spacing: { after: 160 }, border: { left: { style: 'single', size: 12, color: 'BFBFBF', space: 8 } } },
+    },
+    {
+      id: 'CodeBlock', name: 'Code Block', basedOn: 'Normal', next: 'CodeBlock', quickFormat: true,
+      run: { font: 'Consolas', size: 20 },
+      paragraph: { spacing: { after: 0 }, shading: { fill: 'F2F2F2' } },
+    },
+  ],
+  characterStyles: [
+    { id: 'Hyperlink', name: 'Hyperlink', basedOn: 'DefaultParagraphFont', run: { color: '0563C1', underline: { type: 'single' } } },
+  ],
+};
+
+const DOCX_HEADING_LEVELS = ['HEADING_1', 'HEADING_2', 'HEADING_3', 'HEADING_4', 'HEADING_5', 'HEADING_6'];
+const DOCX_IMAGE_MIME_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/bmp': 'bmp' };
+const DOCX_MAX_IMAGE_WIDTH = 600;
+
+function dataUriToBytes(dataUri) {
+  const m = /^data:([^;,]+)(;base64)?,(.*)$/s.exec(dataUri);
+  if (!m) return null;
+  const [, mime, isBase64, payload] = m;
+  const binary = isBase64 ? atob(payload) : decodeURIComponent(payload);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return { mime, bytes };
+}
+
+function bytesToDataUri(bytes, mime) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return `data:${mime};base64,${btoa(binary)}`;
+}
+
+function loadImageDimensions(dataUri) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => reject(new Error('image failed to decode'));
+    img.src = dataUri;
+  });
+}
+
+// Resolves an <img> element (data: URI or same-origin/remote http(s) src —
+// the latter is no different from what the live preview already does when
+// it renders the tag) to ImageRun-ready bytes + pixel dimensions, scaled down
+// to fit the page. Returns null on anything unsupported (svg, fetch failure,
+// CORS block) so the caller can fall back to a plain alt-text run instead of
+// failing the whole export.
+async function resolveDocxImage(imgEl) {
+  const src = imgEl.getAttribute('src') || '';
+  try {
+    let mime, bytes;
+    if (src.startsWith('data:')) {
+      const parsed = dataUriToBytes(src);
+      if (!parsed) return null;
+      ({ mime, bytes } = parsed);
+    } else if (/^https?:\/\//.test(src)) {
+      const resp = await fetch(src);
+      if (!resp.ok) return null;
+      mime = resp.headers.get('content-type') || '';
+      bytes = new Uint8Array(await resp.arrayBuffer());
+    } else {
+      return null;
+    }
+    const type = DOCX_IMAGE_MIME_TYPES[mime.split(';')[0].trim()];
+    if (!type) return null;
+    const attrW = parseFloat(imgEl.getAttribute('width'));
+    const attrH = parseFloat(imgEl.getAttribute('height'));
+    let { width, height } = (attrW > 0 && attrH > 0)
+      ? { width: attrW, height: attrH }
+      : await loadImageDimensions(bytesToDataUri(bytes, mime.split(';')[0].trim() || 'image/png'));
+    if (width > DOCX_MAX_IMAGE_WIDTH) {
+      height = Math.round(height * (DOCX_MAX_IMAGE_WIDTH / width));
+      width = DOCX_MAX_IMAGE_WIDTH;
+    }
+    return { type, data: bytes, transformation: { width, height } };
+  } catch (e) {
+    return null;
+  }
+}
+
+function katexTexSource(el) {
+  const annotation = el.querySelector('annotation[encoding="application/x-tex"]');
+  return annotation ? annotation.textContent : null;
+}
+
+// Recursively converts a run of inline nodes (the contents of a paragraph,
+// heading, list item, or table cell) into docx TextRun/ExternalHyperlink/
+// ImageRun children, threading bold/italics/strike/sub/superscript state
+// down through nested <strong>/<em>/<a>/... the same way a browser would.
+async function inlineNodesToRuns(nodes, fmt) {
+  const out = [];
+  for (const node of Array.from(nodes)) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent;
+      if (text) out.push(new docx.TextRun({ text, ...fmt }));
+      continue;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) continue;
+    const tag = node.tagName.toLowerCase();
+    if (tag === 'br') { out.push(new docx.TextRun({ text: '', break: 1 })); continue; }
+    if (tag === 'img') {
+      const resolved = await resolveDocxImage(node);
+      if (resolved) out.push(new docx.ImageRun(resolved));
+      else { const alt = node.getAttribute('alt'); if (alt) out.push(new docx.TextRun({ text: `[${alt}]`, italics: true, ...fmt })); }
+      continue;
+    }
+    if ((node.classList && node.classList.contains('katex')) || tag === 'math') {
+      const tex = katexTexSource(node);
+      out.push(new docx.TextRun({ text: tex || node.textContent, italics: true, ...fmt }));
+      continue;
+    }
+    if (tag === 'a') {
+      const href = node.getAttribute('href') || '';
+      const children = await inlineNodesToRuns(node.childNodes, { ...fmt, style: 'Hyperlink' });
+      out.push(new docx.ExternalHyperlink({ link: href, children }));
+      continue;
+    }
+    const nextFmt = { ...fmt };
+    if (tag === 'strong' || tag === 'b') nextFmt.bold = true;
+    else if (tag === 'em' || tag === 'i') nextFmt.italics = true;
+    else if (tag === 's' || tag === 'del') nextFmt.strike = true;
+    else if (tag === 'sup') nextFmt.superScript = true;
+    else if (tag === 'sub') nextFmt.subScript = true;
+    else if (tag === 'code') { nextFmt.font = 'Consolas'; nextFmt.shading = { fill: 'F2F2F2' }; }
+    out.push(...(await inlineNodesToRuns(node.childNodes, nextFmt)));
+  }
+  return out;
+}
+
+// The `docx` library's own built-in bullet convenience (paragraph `bullet:
+// {level}`, with no explicit numbering config) renders its level-0 glyph as
+// a literal Unicode "●" in the paragraph's regular font (Calibri) — a real,
+// full-size text character, not Word's own small dot glyph from the Symbol
+// font at reduced visual size, so it renders oversized. Defining our own
+// bullet numbering matching Word's actual built-in convention (Symbol-font
+// dot, Courier New "o", Wingdings square) avoids that.
+const DOCX_BULLET_LIST_REF = 'bullet-list';
+const DOCX_BULLET_LIST_CONFIG = {
+  reference: DOCX_BULLET_LIST_REF,
+  levels: [
+    { level: 0, format: 'bullet', text: '', alignment: 'start', style: { run: { font: 'Symbol' }, paragraph: { indent: { left: 720, hanging: 360 } } } },
+    { level: 1, format: 'bullet', text: 'o', alignment: 'start', style: { run: { font: 'Courier New' }, paragraph: { indent: { left: 1440, hanging: 360 } } } },
+    { level: 2, format: 'bullet', text: '', alignment: 'start', style: { run: { font: 'Wingdings' }, paragraph: { indent: { left: 2160, hanging: 360 } } } },
+  ],
+};
+
+// Nested lists compound onto one shared numbering reference per ordered-list
+// chain (so "1, 1.1, 1.2" renders correctly) but reset to a fresh reference
+// whenever a new top-level <ol> starts, or when a <ul> breaks the chain — a
+// deeper <ol> nested inside that <ul> starts numbering over at "1." rather
+// than inheriting the outer list's position, which matches how the source
+// markdown itself treats it as an unrelated list.
+async function listToParagraphs(listEl, depth, orderedRef, numberingConfigs) {
+  const isOrdered = listEl.tagName.toLowerCase() === 'ol';
+  if (!isOrdered && !numberingConfigs.some((c) => c.reference === DOCX_BULLET_LIST_REF)) {
+    numberingConfigs.push(DOCX_BULLET_LIST_CONFIG);
+  }
+  if (isOrdered && !orderedRef) {
+    orderedRef = `list-${numberingConfigs.length}`;
+    numberingConfigs.push({
+      reference: orderedRef,
+      levels: [
+        { level: 0, format: 'decimal', text: '%1.', alignment: 'start', style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
+        { level: 1, format: 'lowerLetter', text: '%2.', alignment: 'start', style: { paragraph: { indent: { left: 1440, hanging: 360 } } } },
+        { level: 2, format: 'lowerRoman', text: '%3.', alignment: 'start', style: { paragraph: { indent: { left: 2160, hanging: 360 } } } },
+      ],
+    });
+  } else if (!isOrdered) {
+    orderedRef = null;
+  }
+  const paragraphs = [];
+  for (const li of Array.from(listEl.children)) {
+    if (li.tagName.toLowerCase() !== 'li') continue;
+    const checkbox = li.querySelector(':scope > input[type="checkbox"]');
+    const inlineNodes = Array.from(li.childNodes).filter((n) => !(n.nodeType === Node.ELEMENT_NODE && ['UL', 'OL'].includes(n.tagName)));
+    const runs = await inlineNodesToRuns(inlineNodes, {});
+    if (checkbox) {
+      paragraphs.push(new docx.Paragraph({
+        children: [new docx.TextRun({ text: checkbox.checked ? '☑ ' : '☐ ' }), ...runs],
+        indent: { left: 360 + depth * 720 },
+      }));
+    } else if (isOrdered) {
+      paragraphs.push(new docx.Paragraph({ children: runs, numbering: { reference: orderedRef, level: Math.min(depth, 2) } }));
+    } else {
+      paragraphs.push(new docx.Paragraph({ children: runs, numbering: { reference: DOCX_BULLET_LIST_REF, level: Math.min(depth, 2) } }));
+    }
+    for (const nested of Array.from(li.children).filter((n) => ['UL', 'OL'].includes(n.tagName))) {
+      paragraphs.push(...(await listToParagraphs(nested, depth + 1, isOrdered ? orderedRef : null, numberingConfigs)));
+    }
+  }
+  return paragraphs;
+}
+
+async function tableToDocxTable(tableEl) {
+  const rows = [];
+  const headCells = Array.from(tableEl.querySelectorAll(':scope > thead > tr > th'));
+  if (headCells.length) {
+    const cells = [];
+    for (const th of headCells) {
+      cells.push(new docx.TableCell({
+        shading: { fill: 'DDEBF7' },
+        children: [new docx.Paragraph({ children: await inlineNodesToRuns(th.childNodes, { bold: true }) })],
+      }));
+    }
+    rows.push(new docx.TableRow({ children: cells, tableHeader: true }));
+  }
+  for (const tr of Array.from(tableEl.querySelectorAll(':scope > tbody > tr'))) {
+    const cells = [];
+    for (const td of Array.from(tr.querySelectorAll(':scope > td'))) {
+      cells.push(new docx.TableCell({ children: [new docx.Paragraph({ children: await inlineNodesToRuns(td.childNodes, {}) })] }));
+    }
+    rows.push(new docx.TableRow({ children: cells }));
+  }
+  return new docx.Table({
+    rows,
+    width: { size: 100, type: 'pct' },
+    borders: {
+      top: { style: 'single', size: 4, color: '999999' }, bottom: { style: 'single', size: 4, color: '999999' },
+      left: { style: 'single', size: 4, color: '999999' }, right: { style: 'single', size: 4, color: '999999' },
+      insideHorizontal: { style: 'single', size: 4, color: 'CCCCCC' }, insideVertical: { style: 'single', size: 4, color: 'CCCCCC' },
+    },
+  });
+}
+
+// Converts one top-level block element into zero or more Paragraph/Table
+// children. `styleOverride` propagates a paragraph style (e.g. 'Quote') down
+// into recursive calls for elements nested inside something like a
+// <blockquote> that isn't itself a paragraph.
+async function blockNodeToDocxChildren(node, numberingConfigs, styleOverride) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node.textContent.trim();
+    return text ? [new docx.Paragraph({ children: [new docx.TextRun({ text })], style: styleOverride })] : [];
+  }
+  if (node.nodeType !== Node.ELEMENT_NODE) return [];
+  const tag = node.tagName.toLowerCase();
+  const headingIdx = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].indexOf(tag);
+  if (headingIdx !== -1) {
+    return [new docx.Paragraph({
+      heading: docx.HeadingLevel[DOCX_HEADING_LEVELS[headingIdx]],
+      children: await inlineNodesToRuns(node.childNodes, {}),
+    })];
+  }
+  if (tag === 'p') {
+    return [new docx.Paragraph({ children: await inlineNodesToRuns(node.childNodes, {}), style: styleOverride })];
+  }
+  if (tag === 'ul' || tag === 'ol') {
+    return listToParagraphs(node, 0, null, numberingConfigs);
+  }
+  if (tag === 'blockquote') {
+    const out = [];
+    for (const child of Array.from(node.childNodes)) out.push(...(await blockNodeToDocxChildren(child, numberingConfigs, 'Quote')));
+    return out;
+  }
+  if (tag === 'pre') {
+    const code = node.querySelector('code') || node;
+    const lines = code.textContent.replace(/\n$/, '').split('\n');
+    return lines.map((line) => new docx.Paragraph({ children: [new docx.TextRun({ text: line || ' ' })], style: 'CodeBlock' }));
+  }
+  if (tag === 'table') {
+    return [await tableToDocxTable(node)];
+  }
+  if (tag === 'hr') {
+    return [new docx.Paragraph({ children: [], border: { bottom: { style: 'single', size: 6, color: '999999', space: 4 } } })];
+  }
+  if (tag === 'img') {
+    const resolved = await resolveDocxImage(node);
+    if (resolved) return [new docx.Paragraph({ children: [new docx.ImageRun(resolved)] })];
+    const alt = node.getAttribute('alt');
+    return alt ? [new docx.Paragraph({ children: [new docx.TextRun({ text: `[${alt}]`, italics: true })] })] : [];
+  }
+  // Unrecognized block (e.g. permitted raw HTML passed through sanitizeHtml)
+  // — degrade to its plain text rather than dropping or crashing.
+  const text = node.textContent.trim();
+  return text ? [new docx.Paragraph({ children: [new docx.TextRun({ text })], style: styleOverride })] : [];
+}
+
 async function downloadDocx(markdown, opts) {
-  await ensureHtmlDocxLoaded();
+  await ensureDocxLoaded();
   let html = sanitizeHtml(await convertMarkdown(markdown, opts));
   if (opts && (opts.mermaid || opts.dbml)) html = await rasterizeMermaidDiagrams(html);
-  html = neutralizeTrackedChangeTags(html);
-  html = addMsoStyleHints(html);
-  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8">${MSO_STYLE_BLOCK}</head><body>${html}</body></html>`;
-  const blob = htmlDocx.asBlob(doc);
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const numberingConfigs = [];
+  const children = [];
+  for (const node of Array.from(tpl.content.childNodes)) {
+    children.push(...(await blockNodeToDocxChildren(node, numberingConfigs)));
+  }
+  const doc = new docx.Document({
+    styles: DOCX_STYLES,
+    numbering: numberingConfigs.length ? { config: numberingConfigs } : undefined,
+    sections: [{ children: children.length ? children : [new docx.Paragraph({})] }],
+  });
+  const blob = await docx.Packer.toBlob(doc);
   downloadFile(blob, 'document.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 }
 window.downloadDocx = downloadDocx;
