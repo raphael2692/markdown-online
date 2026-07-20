@@ -1,8 +1,11 @@
-<!-- docs-sync: cbaf556 -->
+<!-- docs-sync: d55a6e6 -->
 
 # Changelog
 
 ## [Unreleased]
+
+### Fixed
+- "Copy for Word / Docs" now maps headings and blockquotes to real applied Word styles (Heading 1..6, Quote) instead of pasting them as directly-formatted bold text with no restylable style (`d55a6e6`)
 
 ### Changed
 - Site-wide light/dark palette replaced with named tokens matching VS Code's built-in "Light 2026"/"Dark 2026" themes exactly — page backgrounds, borders, text, links, buttons, and the preview's code/blockquote/table colors (`cbaf556`)

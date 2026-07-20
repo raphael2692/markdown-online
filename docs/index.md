@@ -148,6 +148,15 @@ the "Copy for Word / Docs" path (`copyRich()`), not on preview/download:
   `neutralizeTrackedChangeTags()` swaps `<del>` for `<s>` on the Word
   clipboard path only; raw/download HTML keeps `<del>`, the semantically
   correct tag that round-trips through turndown.
+- **Bare `<h1>`..`<h6>`/`<blockquote>` paste as directly-formatted text, not
+  an applied Word style** — real headings visually, but not a "Heading 1"
+  the user can restyle from Word's Styles pane. Word's importer only
+  promotes a tag to one of its built-in styles when the source HTML carries
+  an `mso-style-name` hint, the same convention Word's own HTML export uses.
+  `copyRich()` wraps the clipboard HTML in a full `<html><head><style>`
+  document (rather than the bare `<div>` used before) declaring
+  `h1{mso-style-name:"Heading 1";}` etc. (`MSO_STYLE_MAP`/`MSO_STYLE_BLOCK`)
+  so Word recognizes the mapping on paste.
 
 ## Database schema diagrams (DBML)
 
