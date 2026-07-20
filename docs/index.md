@@ -165,6 +165,21 @@ the "Copy for Word / Docs" path (`copyRich()`), not on preview/download:
   `<head><style>` sits outside the fragment as shared context rather than
   being folded into it.
 
+Even with all of the above, whether headings paste as *real applied* Word
+styles ultimately depends on that specific Word install/version/paste-option
+choosing to honor the hints — reported in practice as unreliable. "Download
+Word (.docx)" (`window.downloadDocx()`) sidesteps the whole question: it
+builds an actual `.docx` file client-side via the vendored **html-docx-js**
+(`site/assets/vendor/html-docx-0.3.1.min.js`, lazy-loaded through
+`ensureHtmlDocxLoaded()`), which maps heading tags to genuine OOXML Heading
+paragraph styles at the file-format level — there's no paste-time importer
+heuristic left to fail. It reuses the same sanitize → rasterize-mermaid/dbml
+→ neutralize-tracked-change-tags pipeline as `copyRich()` before handing the
+HTML to `htmlDocx.asBlob()`. The honest fidelity tradeoff (per the
+markdown-browser-ops skill): a JS docx writer flattens complex nesting more
+than Word's own paste engine would if it worked — "Copy for Word / Docs"
+stays worth trying first for documents that are mostly simple structure.
+
 ## Database schema diagrams (DBML)
 
 A ` ```dbml ` fence renders as a live entity-relationship diagram, the same
@@ -372,8 +387,8 @@ parts:
   import/export/copy actions live in one right-side cluster of the top bar
   — the "Import" dropdown (Open Markdown file / from HTML / from CSV/JSON),
   a standalone "Copy Markdown" button, and the "Export" dropdown (Copy
-  HTML / Copy for Word / Download .md / Download HTML / Print to PDF) — all
-  in the same outlined button style, deliberately without a filled
+  HTML / Copy for Word / Download Word (.docx) / Download .md / Download
+  HTML / Print to PDF) — all in the same outlined button style, deliberately without a filled
   "primary" button among them: the three are peers, and the old heavy-fill
   Copy Markdown read as more important than Export for no reason. They're
   reachable without scrolling past the editor panes, however tall the panes

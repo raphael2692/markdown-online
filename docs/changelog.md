@@ -1,8 +1,11 @@
-<!-- docs-sync: a5e5b42 -->
+<!-- docs-sync: 0597ce6 -->
 
 # Changelog
 
 ## [Unreleased]
+
+### Added
+- Download Word (.docx) export: builds a real .docx file client-side (vendored html-docx-js) with actual Heading/Quote paragraph styles — a reliable alternative to "Copy for Word / Docs", whose fidelity depends on Word's own paste importer honoring style hints (`0597ce6`)
 
 ### Fixed
 - "Copy for Word / Docs" now maps headings and blockquotes to real applied Word styles (Heading 1..6, Quote) instead of pasting them as directly-formatted bold text with no restylable style — the mapping is set both via a `<head><style>` block and inline per element, wrapped in explicit clipboard fragment markers, so it survives however Word's paste importer slices the fragment (`d55a6e6`, `a5e5b42`)
