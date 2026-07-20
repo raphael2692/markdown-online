@@ -1018,10 +1018,17 @@ function neutralizeTrackedChangeTags(html) {
 // way back in. Without it, <h1>..<h6> still paste as real headings, but as
 // directly-formatted big bold text rather than a Heading-N *style* the user
 // can restyle from the Styles pane — which is exactly what was reported.
+// `p` maps to Word's "Normal" for the same reason: without a style hint,
+// Word's HTML importer computes each paragraph's effective font from the
+// HTML/CSS and bakes that in as direct run formatting alongside the Normal
+// paragraph style it also assigns — so the paragraph *is* tagged Normal, but
+// changing Normal's font in the Styles pane has no visible effect, since the
+// direct formatting wins. The mso-style-name hint tells Word to apply the
+// named style as-is instead of computing and baking in a direct override.
 const MSO_STYLE_MAP = {
   h1: 'heading 1', h2: 'heading 2', h3: 'heading 3',
   h4: 'heading 4', h5: 'heading 5', h6: 'heading 6',
-  blockquote: 'quote',
+  blockquote: 'quote', p: 'Normal',
 };
 const MSO_STYLE_BLOCK = `<style>${Object.entries(MSO_STYLE_MAP)
   .map(([tag, name]) => `${tag} {mso-style-name:"${name}";}`)
@@ -1095,7 +1102,8 @@ async function downloadDocx(markdown, opts) {
   let html = sanitizeHtml(await convertMarkdown(markdown, opts));
   if (opts && (opts.mermaid || opts.dbml)) html = await rasterizeMermaidDiagrams(html);
   html = neutralizeTrackedChangeTags(html);
-  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${html}</body></html>`;
+  html = addMsoStyleHints(html);
+  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8">${MSO_STYLE_BLOCK}</head><body>${html}</body></html>`;
   const blob = htmlDocx.asBlob(doc);
   downloadFile(blob, 'document.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 }
