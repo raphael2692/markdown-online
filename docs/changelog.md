@@ -1,11 +1,12 @@
-<!-- docs-sync: d55a6e6 -->
+<!-- docs-sync: a5e5b42 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Fixed
-- "Copy for Word / Docs" now maps headings and blockquotes to real applied Word styles (Heading 1..6, Quote) instead of pasting them as directly-formatted bold text with no restylable style (`d55a6e6`)
+- "Copy for Word / Docs" now maps headings and blockquotes to real applied Word styles (Heading 1..6, Quote) instead of pasting them as directly-formatted bold text with no restylable style — the mapping is set both via a `<head><style>` block and inline per element, wrapped in explicit clipboard fragment markers, so it survives however Word's paste importer slices the fragment (`d55a6e6`, `a5e5b42`)
+- DBML diagrams are now rasterized to PNG for "Copy for Word / Docs" the same way Mermaid diagrams already were, instead of silently vanishing on paste (Word's importer drops inline `<svg>`) (`a5e5b42`)
 
 ### Changed
 - Site-wide light/dark palette replaced with named tokens matching VS Code's built-in "Light 2026"/"Dark 2026" themes exactly — page backgrounds, borders, text, links, buttons, and the preview's code/blockquote/table colors (`cbaf556`)

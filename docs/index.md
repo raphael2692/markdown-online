@@ -153,10 +153,17 @@ the "Copy for Word / Docs" path (`copyRich()`), not on preview/download:
   the user can restyle from Word's Styles pane. Word's importer only
   promotes a tag to one of its built-in styles when the source HTML carries
   an `mso-style-name` hint, the same convention Word's own HTML export uses.
-  `copyRich()` wraps the clipboard HTML in a full `<html><head><style>`
-  document (rather than the bare `<div>` used before) declaring
-  `h1{mso-style-name:"Heading 1";}` etc. (`MSO_STYLE_MAP`/`MSO_STYLE_BLOCK`)
-  so Word recognizes the mapping on paste.
+  A `<head><style>` block declaring `h1{mso-style-name:"heading 1";}` etc.
+  (`MSO_STYLE_MAP`/`MSO_STYLE_BLOCK`) alone wasn't reliable — Chrome's
+  Clipboard API doesn't guarantee Word's HTML filter resolves cascaded
+  `<head>` rules against a pasted fragment the way it does for an opened
+  `.htm` file — so `addMsoStyleHints()` also sets the same hint as an
+  *inline* `style` attribute directly on each heading/blockquote element,
+  which survives regardless of how the fragment gets sliced. The actual
+  content is wrapped in explicit `<!--StartFragment-->`/`<!--EndFragment-->`
+  comments, matching the CF_HTML container Word's own copy produces, so the
+  `<head><style>` sits outside the fragment as shared context rather than
+  being folded into it.
 
 ## Database schema diagrams (DBML)
 
