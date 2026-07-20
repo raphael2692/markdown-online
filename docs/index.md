@@ -168,33 +168,60 @@ the "Copy for Word / Docs" path (`copyRich()`), not on preview/download:
 Even with all of the above, whether headings paste as *real applied* Word
 styles ultimately depends on that specific Word install/version/paste-option
 choosing to honor the hints — reported in practice as unreliable. "Download
-Word (.docx)" (`window.downloadDocx()`) sidesteps the whole question: it
-builds an actual `.docx` file client-side via the vendored **html-docx-js**
-(`site/assets/vendor/html-docx-0.3.1.min.js`, lazy-loaded through
-`ensureHtmlDocxLoaded()`). It doesn't generate OOXML paragraph XML itself —
-inspecting the bundle turns up no `pStyle`/`rPr` string at all — it packages
-the given HTML as an `altChunk` inside the `.docx` zip and lets *Word itself*
-convert it on open, the same HTML-import engine used for opening a `.htm`
-file (as opposed to the flakier clipboard-paste path `copyRich()` goes
-through). That importer does recognize semantic `<h1>`..`<h6>` and promotes
-them to real Heading-N styles on its own, without needing an
-`mso-style-name` hint. It reuses the same sanitize → rasterize-mermaid/dbml →
-neutralize-tracked-change-tags pipeline as `copyRich()` before handing the
-HTML to `htmlDocx.asBlob()`. The honest fidelity tradeoff (per the
-markdown-browser-ops skill): a JS docx writer flattens complex nesting more
-than Word's own paste engine would if it worked — "Copy for Word / Docs"
-stays worth trying first for documents that are mostly simple structure.
+Word (.docx)" (`window.downloadDocx()`) sidesteps the whole question by not
+routing through Word's HTML importer at all.
 
-Plain `<p>` paragraphs are a different story from headings: without a style
-hint, Word's HTML-import engine (the same one behind both `.docx` `altChunk`
-open and clipboard paste) computes each paragraph's effective font from the
-HTML/CSS and bakes it in as *direct* run formatting alongside the "Normal"
-paragraph style it also assigns. The paragraph is tagged Normal, but editing
-Normal's font in Word's Styles pane has no visible effect, because the
-direct formatting wins. `MSO_STYLE_MAP` includes `p: 'Normal'` for exactly
-this reason — the hint tells Word to apply the named style as-is rather than
-computing and baking in an override — and `downloadDocx()` runs the same
-`addMsoStyleHints()` + `MSO_STYLE_BLOCK` pass `copyRich()` already had.
+An earlier version built the `.docx` via the vendored **html-docx-js**,
+packaging our HTML as a Word `altChunk` that Word converts on open through
+the same opaque HTML-import heuristics `copyRich()`'s clipboard path
+depends on — including its unreliable call on whether to honor
+`mso-style-name` hints vs. bake in computed direct formatting. Two attempts
+at fixing "editing Normal/Heading N does nothing" through that importer
+didn't hold up, so it was replaced outright: `downloadDocx()` now walks the
+sanitized HTML itself (a DOM walker, not a string transform) and builds a
+genuine OOXML `docx.Document` via the vendored **docx.js**
+(`site/assets/vendor/docx-9.7.1.min.js`, lazy-loaded through
+`ensureDocxLoaded()`) — headings, paragraphs, bold/italic/strike/sub/
+superscript, links, ordered/unordered/nested/task lists, blockquotes, code
+blocks, tables, horizontal rules, and images (including rasterized Mermaid/
+DBML diagrams, reusing `copyRich()`'s rasterization) all become real
+paragraphs/runs that reference named styles (`Normal`, `Heading 1`..`6`,
+`Quote`, `Code Block`) declared once in `DOCX_STYLES` and written into the
+file's own `styles.xml`. There's no importer left to second-guess: editing
+a style in Word's Styles pane is guaranteed to restyle every paragraph
+linked to it, because that link — `pStyle`/`rPr` referencing a style ID —
+is a first-class part of the OOXML format rather than something Word has to
+infer from HTML on open. Word's built-in style IDs (`Normal`, `Heading1`..
+`6`) are stable, locale-invariant identifiers; Word's UI shows a localized
+display name (e.g. "Normale", "Titolo 1" in Italian) but resolves it back to
+the same IDs regardless of the user's Office language. Tables get Word's
+actual built-in "Table Grid" style (`tableToDocxTable()`) instead of a
+hardcoded shading color, since this docx version has no table-style API —
+that way a table inherits whatever style the document/user picks in Word's
+Table Design gallery rather than a fixed color baked in at export time.
+Bullet lists get their own numbering definition (Symbol-font dot, Courier
+New "o", Wingdings square per level, `DOCX_BULLET_LIST_CONFIG`) instead of
+the docx library's default level-0 glyph, which renders as a literal
+full-size Unicode "●" in the body font.
+
+The honest fidelity tradeoff (per the markdown-browser-ops skill) still
+applies in the other direction: a from-scratch DOM→OOXML walker flattens
+some complex nesting that Word's own paste engine would preserve if it
+worked reliably — "Copy for Word / Docs" stays worth trying first for
+documents that are mostly simple structure, with "Download Word (.docx)" as
+the reliable fallback whenever a pasted style needs to actually be editable
+afterward.
+
+Plain `<p>` paragraphs were a different story from headings under the old
+html-docx-js/altChunk approach: without a style hint, Word's HTML-import
+engine computed each paragraph's effective font from the HTML/CSS and baked
+it in as *direct* run formatting alongside the "Normal" paragraph style it
+also assigned — so the paragraph was tagged Normal, but editing Normal's
+font in Word's Styles pane had no visible effect, because the direct
+formatting won. That whole class of bug no longer exists for downloaded
+files: `downloadDocx()`'s paragraphs carry no direct font formatting at
+all, only a `style: 'Normal'` reference, so there's nothing left to
+override it.
 
 ## Database schema diagrams (DBML)
 
@@ -487,11 +514,19 @@ parts:
   mistaken for a heading. Each entry is indented by level (14px per level
   past H1) and clicking it jumps the editor to that line
   (`gotoOutlineItem()`, the same fixed pane metrics as `gotoMinimapItem()`
-  and `revealFindMatch()`). The strip hides entirely when the document has
-  no headings; its collapsed state (`outlineOpen`) persists via the same
+  and `revealFindMatch()`). It hides entirely when the document has no
+  headings; its open/closed state (`outlineOpen`) persists via the same
   `markdown-editor-ui-v1` key as the toolbar and mini-map. Wrapped in the
   same try/catch-and-clear pattern as `buildMinimap()` — the outline is an
   extra and must never break the preview.
+
+  It renders as a resizable left sidebar (`.outline-pane`, `--outline-width`
+  CSS var, `startOutlineDrag()`), sitting beside the write pane and stacking
+  above it on narrow layouts (the same `flex-col` → `md:flex-row` breakpoint
+  as the write/preview row) — toggled from the toolbar's "Outline" button or
+  Ctrl/Cmd+Shift+O. It lives in its own flex row outside the write/preview
+  pane's `x-ref="paneRow"`, specifically so the "Stack panels" toggle (which
+  forces *that* row to a column) never stacks the outline underneath it too.
 - **Diagram mini-map**: a collapsible thumbnail strip under the panes,
   built by `buildMinimap()` at the end of every `run()` — one thumbnail per
   Mermaid diagram and one per *table or enum* for DBML blocks. Clicking a

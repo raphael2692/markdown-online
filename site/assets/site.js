@@ -1326,6 +1326,14 @@ async function listToParagraphs(listEl, depth, orderedRef, numberingConfigs) {
   return paragraphs;
 }
 
+// This docx version has no table-style/conditional-formatting API (no
+// tableStyles or per-row-band config, unlike the paragraph/character style
+// system used everywhere else in this file), so a header row can't be tied
+// to a real, themeable named style the way Normal/Heading N are. The next
+// best thing: apply Word's actual built-in "Table Grid" style (a genuine,
+// locale-invariant, user-editable style that shows up in Word's Table
+// Design gallery) instead of a hardcoded fill color, so the table inherits
+// whatever style the document/user picks rather than a fixed blue we chose.
 async function tableToDocxTable(tableEl) {
   const rows = [];
   const headCells = Array.from(tableEl.querySelectorAll(':scope > thead > tr > th'));
@@ -1333,7 +1341,6 @@ async function tableToDocxTable(tableEl) {
     const cells = [];
     for (const th of headCells) {
       cells.push(new docx.TableCell({
-        shading: { fill: 'DDEBF7' },
         children: [new docx.Paragraph({ children: await inlineNodesToRuns(th.childNodes, { bold: true }) })],
       }));
     }
@@ -1346,15 +1353,7 @@ async function tableToDocxTable(tableEl) {
     }
     rows.push(new docx.TableRow({ children: cells }));
   }
-  return new docx.Table({
-    rows,
-    width: { size: 100, type: 'pct' },
-    borders: {
-      top: { style: 'single', size: 4, color: '999999' }, bottom: { style: 'single', size: 4, color: '999999' },
-      left: { style: 'single', size: 4, color: '999999' }, right: { style: 'single', size: 4, color: '999999' },
-      insideHorizontal: { style: 'single', size: 4, color: 'CCCCCC' }, insideVertical: { style: 'single', size: 4, color: 'CCCCCC' },
-    },
-  });
+  return new docx.Table({ rows, style: 'TableGrid', width: { size: 100, type: 'pct' } });
 }
 
 // Converts one top-level block element into zero or more Paragraph/Table

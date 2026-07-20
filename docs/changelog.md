@@ -1,4 +1,4 @@
-<!-- docs-sync: eedc16b -->
+<!-- docs-sync: 72bf51b -->
 
 # Changelog
 
@@ -6,13 +6,17 @@
 
 ### Added
 - Download Word (.docx) export: builds a real .docx file client-side (vendored html-docx-js) with actual Heading/Quote paragraph styles — a reliable alternative to "Copy for Word / Docs", whose fidelity depends on Word's own paste importer honoring style hints (`0597ce6`)
+- Document outline now sits beside the write pane as a resizable left sidebar (toggled via the toolbar or Ctrl/Cmd+Shift+O) instead of below the write/preview row, and its width is drag-resizable like the other panes; scoped to its own flex row so the "Stack panels" toggle only stacks write/preview, not the outline (`7edbc7c`)
 
 ### Fixed
 - Plain paragraphs in both "Copy for Word / Docs" and "Download Word (.docx)" now respond to editing Word's "Normal" style — they were tagged Normal but also carried baked-in direct formatting that silently overrode it (`eedc16b`)
 - "Copy for Word / Docs" now maps headings and blockquotes to real applied Word styles (Heading 1..6, Quote) instead of pasting them as directly-formatted bold text with no restylable style — the mapping is set both via a `<head><style>` block and inline per element, wrapped in explicit clipboard fragment markers, so it survives however Word's paste importer slices the fragment (`d55a6e6`, `a5e5b42`)
 - DBML diagrams are now rasterized to PNG for "Copy for Word / Docs" the same way Mermaid diagrams already were, instead of silently vanishing on paste (Word's importer drops inline `<svg>`) (`a5e5b42`)
+- Copy for Word / Docs no longer bakes computed direct formatting onto plain paragraphs on top of the "Normal" style hint — a regression that made editing Normal in Word's Styles pane silently do nothing again after the original fix (`cf4ee9c`)
 
 ### Changed
+- Download Word (.docx) is rebuilt on a real OOXML document (vendored `docx.js`, replacing html-docx-js): a DOM walker converts sanitized markdown HTML directly into paragraphs/runs/tables referencing named styles (Normal, Heading 1–6, Quote, Code Block) declared in the file's own styles.xml, instead of embedding HTML as a Word `altChunk` for Word to reinterpret on open — editing a style in Word's Styles pane now reliably restyles every paragraph linked to it (`4a69dd3`)
+- "Copy for Word / Docs" and "Download Word (.docx)" toolbar labels and tooltips rewritten to state upfront which is the quick clipboard paste and which produces a real, independently-editable .docx file (`e241603`)
 - Site-wide light/dark palette replaced with named tokens matching VS Code's built-in "Light 2026"/"Dark 2026" themes exactly — page backgrounds, borders, text, links, buttons, and the preview's code/blockquote/table colors (`cbaf556`)
 - README, landing-page hero, and About page rewritten around a sharper positioning: Markdown as the glue language of AI workflows, and this site as the lightweight alternative to scattered ad-bloated converters and heavy desktop apps (`2e34957`)
 
