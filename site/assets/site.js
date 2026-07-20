@@ -1074,6 +1074,33 @@ async function copyRich(markdown, opts) {
 }
 window.copyRich = copyRich;
 
+let htmlDocxReadyPromise = null;
+
+function ensureHtmlDocxLoaded() {
+  if (!htmlDocxReadyPromise) {
+    htmlDocxReadyPromise = loadScript(`${ASSETS_BASE}/assets/vendor/html-docx-0.3.1.min.js`)
+      .catch((e) => { htmlDocxReadyPromise = null; throw e; });
+  }
+  return htmlDocxReadyPromise;
+}
+window.ensureHtmlDocxLoaded = ensureHtmlDocxLoaded;
+
+// "Download Word (.docx)" — unlike copyRich(), which depends on Word's own
+// HTML-paste importer choosing to honor mso-style-name hints (unreliable in
+// practice across Word versions/paste settings), this builds a real .docx
+// file: html-docx-js maps heading tags to genuine OOXML Heading paragraph
+// styles at the file-format level, so there's no importer heuristic to fail.
+async function downloadDocx(markdown, opts) {
+  await ensureHtmlDocxLoaded();
+  let html = sanitizeHtml(await convertMarkdown(markdown, opts));
+  if (opts && (opts.mermaid || opts.dbml)) html = await rasterizeMermaidDiagrams(html);
+  html = neutralizeTrackedChangeTags(html);
+  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${html}</body></html>`;
+  const blob = htmlDocx.asBlob(doc);
+  downloadFile(blob, 'document.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+}
+window.downloadDocx = downloadDocx;
+
 // Keeps already-loaded generated content in step with the header's dark-mode
 // toggle (theme.js dispatches this on document). Re-rendering the mermaid
 // diagrams themselves (not just re-theming mermaid's config) is left to the

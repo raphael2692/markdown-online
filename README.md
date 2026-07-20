@@ -44,8 +44,10 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
 - **Open a Markdown file** straight from your device, or **import** from
   HTML, CSV, or JSON — paste or drop it in and get clean Markdown out
   (tables, lists, and formatting preserved).
-- **Export** to Markdown, HTML, or PDF, or copy rich-formatted content
-  straight onto your clipboard for pasting into Word or Google Docs.
+- **Export** to Markdown, HTML, PDF, or a real Word **.docx** file — with
+  actual Heading/Quote paragraph styles, not just bold text — or copy
+  rich-formatted content straight onto your clipboard for pasting into Word
+  or Google Docs.
 - **Math and diagrams** — inline/block KaTeX math and Mermaid diagrams,
   auto-detected as you type.
 - **Database schema diagrams** — write real DBML in a fenced code block and

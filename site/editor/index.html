@@ -230,6 +230,7 @@
                     items: [
                       { value: 'copy-html', label: 'Copy HTML' },
                       { value: 'copy-rich', label: 'Copy for Word / Docs' },
+                      { value: 'download-docx', label: 'Download Word (.docx)' },
                       { value: 'download-md', label: 'Download .md' },
                       { value: 'download-html', label: 'Download HTML' },
                       { value: 'print-pdf', label: 'Print / Save as PDF' },
@@ -2179,6 +2180,7 @@
           ({
             'copy-html': () => this.copyHtml(),
             'copy-rich': () => this.copyRichClick(),
+            'download-docx': () => this.downloadDocx(),
             'download-md': () => this.downloadMd(),
             'download-html': () => this.downloadHtml(),
             'print-pdf': () => this.printPdf(),
@@ -2227,6 +2229,15 @@
             this.flash('Opening print dialog…');
           } catch (e) {
             this.error = e.message || 'Could not prepare the PDF — try again.';
+          }
+        },
+        async downloadDocx() {
+          this.error = '';
+          try {
+            await window.downloadDocx(this.input, this.opts);
+            this.flash('Downloaded');
+          } catch (e) {
+            this.error = e.message || 'Could not build the .docx file — try again.';
           }
         },
 
