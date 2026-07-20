@@ -1011,12 +1011,30 @@ function neutralizeTrackedChangeTags(html) {
   return html.replace(/<del(\s[^>]*)?>/gi, '<s$1>').replace(/<\/del>/gi, '</s>');
 }
 
+// Word's HTML clipboard importer only promotes a pasted block to one of its
+// built-in paragraph styles (Heading 1, Quote, ...) when the source HTML
+// carries an mso-style-name hint for that tag — this is the same convention
+// Word's own "Save as Web Page" export uses, so Word recognizes it on the
+// way back in. Without it, <h1>..<h6> still paste as real headings, but as
+// directly-formatted big bold text rather than a Heading-N *style* the user
+// can restyle from the Styles pane — which is exactly what was reported.
+const MSO_STYLE_MAP = {
+  h1: 'heading 1', h2: 'heading 2', h3: 'heading 3',
+  h4: 'heading 4', h5: 'heading 5', h6: 'heading 6',
+  blockquote: 'quote',
+};
+const MSO_STYLE_BLOCK = `<style>${Object.entries(MSO_STYLE_MAP)
+  .map(([tag, name]) => `${tag} {mso-style-name:"${name}";}`)
+  .join('')}</style>`;
+
 async function copyRich(markdown, opts) {
   try {
     let html = sanitizeHtml(await convertMarkdown(markdown, opts));
     if (opts && opts.mermaid) html = await rasterizeMermaidDiagrams(html);
     html = neutralizeTrackedChangeTags(html);
-    const wrapped = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt">${html}</div>`;
+    const wrapped = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">`
+      + `<head><meta charset="utf-8">${MSO_STYLE_BLOCK}</head>`
+      + `<body><div style="font-family:Calibri,Arial,sans-serif;font-size:11pt">${html}</div></body></html>`;
     await navigator.clipboard.write([new ClipboardItem({
       'text/html': new Blob([wrapped], { type: 'text/html' }),
       'text/plain': new Blob([markdown], { type: 'text/plain' }),
