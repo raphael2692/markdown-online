@@ -1,4 +1,4 @@
-<!-- docs-sync: 0597ce6 -->
+<!-- docs-sync: eedc16b -->
 
 # Changelog
 
@@ -8,6 +8,7 @@
 - Download Word (.docx) export: builds a real .docx file client-side (vendored html-docx-js) with actual Heading/Quote paragraph styles — a reliable alternative to "Copy for Word / Docs", whose fidelity depends on Word's own paste importer honoring style hints (`0597ce6`)
 
 ### Fixed
+- Plain paragraphs in both "Copy for Word / Docs" and "Download Word (.docx)" now respond to editing Word's "Normal" style — they were tagged Normal but also carried baked-in direct formatting that silently overrode it (`eedc16b`)
 - "Copy for Word / Docs" now maps headings and blockquotes to real applied Word styles (Heading 1..6, Quote) instead of pasting them as directly-formatted bold text with no restylable style — the mapping is set both via a `<head><style>` block and inline per element, wrapped in explicit clipboard fragment markers, so it survives however Word's paste importer slices the fragment (`d55a6e6`, `a5e5b42`)
 - DBML diagrams are now rasterized to PNG for "Copy for Word / Docs" the same way Mermaid diagrams already were, instead of silently vanishing on paste (Word's importer drops inline `<svg>`) (`a5e5b42`)
 

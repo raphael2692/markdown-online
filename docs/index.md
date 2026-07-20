@@ -171,14 +171,30 @@ choosing to honor the hints — reported in practice as unreliable. "Download
 Word (.docx)" (`window.downloadDocx()`) sidesteps the whole question: it
 builds an actual `.docx` file client-side via the vendored **html-docx-js**
 (`site/assets/vendor/html-docx-0.3.1.min.js`, lazy-loaded through
-`ensureHtmlDocxLoaded()`), which maps heading tags to genuine OOXML Heading
-paragraph styles at the file-format level — there's no paste-time importer
-heuristic left to fail. It reuses the same sanitize → rasterize-mermaid/dbml
-→ neutralize-tracked-change-tags pipeline as `copyRich()` before handing the
+`ensureHtmlDocxLoaded()`). It doesn't generate OOXML paragraph XML itself —
+inspecting the bundle turns up no `pStyle`/`rPr` string at all — it packages
+the given HTML as an `altChunk` inside the `.docx` zip and lets *Word itself*
+convert it on open, the same HTML-import engine used for opening a `.htm`
+file (as opposed to the flakier clipboard-paste path `copyRich()` goes
+through). That importer does recognize semantic `<h1>`..`<h6>` and promotes
+them to real Heading-N styles on its own, without needing an
+`mso-style-name` hint. It reuses the same sanitize → rasterize-mermaid/dbml →
+neutralize-tracked-change-tags pipeline as `copyRich()` before handing the
 HTML to `htmlDocx.asBlob()`. The honest fidelity tradeoff (per the
 markdown-browser-ops skill): a JS docx writer flattens complex nesting more
 than Word's own paste engine would if it worked — "Copy for Word / Docs"
 stays worth trying first for documents that are mostly simple structure.
+
+Plain `<p>` paragraphs are a different story from headings: without a style
+hint, Word's HTML-import engine (the same one behind both `.docx` `altChunk`
+open and clipboard paste) computes each paragraph's effective font from the
+HTML/CSS and bakes it in as *direct* run formatting alongside the "Normal"
+paragraph style it also assigns. The paragraph is tagged Normal, but editing
+Normal's font in Word's Styles pane has no visible effect, because the
+direct formatting wins. `MSO_STYLE_MAP` includes `p: 'Normal'` for exactly
+this reason — the hint tells Word to apply the named style as-is rather than
+computing and baking in an override — and `downloadDocx()` runs the same
+`addMsoStyleHints()` + `MSO_STYLE_BLOCK` pass `copyRich()` already had.
 
 ## Database schema diagrams (DBML)
 
