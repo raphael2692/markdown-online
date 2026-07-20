@@ -159,6 +159,14 @@
               Toolbar
             </button>
 
+            <button type="button" x-show="view !== 'preview' && outline.length" x-cloak @click="outlineOpen = !outlineOpen"
+              :aria-expanded="outlineOpen"
+              class="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+              :title="(outlineOpen ? 'Hide the document outline' : 'Show the document outline') + ' (Ctrl/Cmd+Shift+O)'">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M3 6h.01" /><path d="M3 12h.01" /><path d="M3 18h.01" /><path d="M8 6h13" /><path d="M8 12h13" /><path d="M8 18h13" /></svg>
+              Outline
+            </button>
+
             <button type="button" @click="shortcutsOpen = true" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"
               class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="M6 8h.001" /><path d="M10 8h.001" /><path d="M14 8h.001" /><path d="M18 8h.001" /><path d="M8 12h.001" /><path d="M12 12h.001" /><path d="M16 12h.001" /><path d="M7 16h10" /></svg>
@@ -229,8 +237,8 @@
             <div x-data="pinesSelect({
                     items: [
                       { value: 'copy-html', label: 'Copy HTML' },
-                      { value: 'copy-rich', label: 'Copy for Word / Docs' },
-                      { value: 'download-docx', label: 'Download Word (.docx)' },
+                      { value: 'copy-rich', label: 'Copy for Word / Docs (quick paste)', title: 'Puts formatted content on the clipboard for pasting. Styling depends on Word/Docs’ own paste import — headings and lists usually look right, but editing a style like Normal afterward may not reliably restyle the pasted text.' },
+                      { value: 'download-docx', label: 'Download Word (.docx) — real styles', title: 'Builds an actual .docx file with true Word styles (Normal, Heading 1–6, Quote, Code Block). Editing a style in Word’s Styles pane reliably restyles every paragraph using it — the more reliable option for documents you’ll keep editing in Word.' },
                       { value: 'download-md', label: 'Download .md' },
                       { value: 'download-html', label: 'Download HTML' },
                       { value: 'print-pdf', label: 'Print / Save as PDF' },
@@ -260,7 +268,7 @@
                   <li :data-idx="idx" role="presentation">
                     <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500" x-text="item.header"></div>
                     <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
-                      role="option" :aria-selected="selectedItem === item"
+                      role="option" :aria-selected="selectedItem === item" :title="item.title"
                       :class="{ 'bg-neutral-100 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
                       class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
                       <span x-text="item.label"></span>
@@ -483,6 +491,29 @@
         <div x-ref="paneRow" :style="`--split: ${split}%; --pane-height: ${paneHeight}px`"
           class="flex flex-col md:flex-row"
           :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
+          <!-- Document outline: one entry per ATX heading, indented by
+               level. Click jumps the editor to that heading's line. Sits
+               to the left of the write pane (stacks above it on narrow
+               layouts, following paneRow's own flex-col -> md:flex-row
+               breakpoint); toggled from the "Outline" toolbar button or
+               Ctrl/Cmd+Shift+O. -->
+          <div x-show="outlineOpen && outline.length && view !== 'preview'" x-cloak
+            class="w-full shrink-0 border-b border-neutral-200 dark:border-neutral-800 p-3 md:w-48 md:border-b-0 md:border-r">
+            <div class="pane-height flex flex-col overflow-hidden rounded-md border border-neutral-300 dark:border-neutral-700">
+              <div class="shrink-0 border-b border-neutral-100 dark:border-neutral-800 px-2 py-1.5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400"
+                x-text="`Outline (${outline.length})`"></div>
+              <div class="flex-1 overflow-y-auto px-1 py-1">
+                <template x-for="(item, idx) in outline" :key="idx">
+                  <button type="button" @click="gotoOutlineItem(item)"
+                    :title="`Jump to “${item.text}”`"
+                    :style="`padding-left:${8 + (item.level - 1) * 14}px`"
+                    class="block w-full truncate rounded px-2 py-0.5 text-left text-[11px] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500"
+                    x-text="item.text"></button>
+                </template>
+              </div>
+            </div>
+          </div>
+
           <div x-show="view !== 'preview'" class="min-w-0 border-b border-neutral-200 dark:border-neutral-800 p-3 md:border-b-0 md:border-r"
             :class="{'split-pane-left': view === 'split', 'md:w-full': view !== 'split', 'has-find': find.open}">
             <label for="tw-in" class="sr-only">Markdown input</label>
@@ -611,29 +642,6 @@
           @mousedown="startVDrag($event)" @touchstart="startVDrag($event)"
           title="Drag to resize height">
           <div class="h-px w-8 bg-neutral-400 dark:bg-neutral-600"></div>
-        </div>
-
-        <!-- Document outline: one entry per ATX heading, indented by level.
-             Click jumps the editor to that heading's line. -->
-        <div x-show="outline.length" x-cloak>
-          <div class="flex items-center px-2 py-1">
-            <button type="button" @click="outlineOpen = !outlineOpen" :aria-expanded="outlineOpen"
-              class="flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[11px] text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"
-              :title="outlineOpen ? 'Collapse the document outline' : 'Expand the document outline'">
-              <svg x-show="outlineOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3 w-3" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-              <svg x-show="!outlineOpen" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3 w-3" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-              <span x-text="`Outline (${outline.length})`"></span>
-            </button>
-          </div>
-          <div x-show="outlineOpen" class="max-h-32 overflow-y-auto border-b border-neutral-100 dark:border-neutral-800 px-1 pb-2">
-            <template x-for="(item, idx) in outline" :key="idx">
-              <button type="button" @click="gotoOutlineItem(item)"
-                :title="`Jump to “${item.text}”`"
-                :style="`padding-left:${8 + (item.level - 1) * 14}px`"
-                class="block w-full truncate rounded px-2 py-0.5 text-left text-[11px] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500"
-                x-text="item.text"></button>
-            </template>
-          </div>
         </div>
 
         <!-- Diagram mini-map: one thumbnail per diagram in the document
@@ -1173,6 +1181,7 @@
             { label: 'Link', combo: 'Ctrl/Cmd+K' },
             { label: 'Find', combo: 'Ctrl/Cmd+F' },
             { label: 'Find & replace', combo: 'Ctrl/Cmd+H' },
+            { label: 'Toggle document outline', combo: 'Ctrl/Cmd+Shift+O' },
             { label: 'Undo', combo: 'Ctrl/Cmd+Z' },
             { label: 'Redo', combo: 'Ctrl+Y / Ctrl/Cmd+Shift+Z' },
             { label: 'Indent / un-indent list item', combo: 'Tab / Shift+Tab' },
@@ -1424,6 +1433,12 @@
               e.preventDefault();
               this.shortcutsOpen = true;
             }
+            return;
+          }
+          if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'o') {
+            if (!this.outline.length) return;
+            e.preventDefault();
+            this.outlineOpen = !this.outlineOpen;
             return;
           }
           if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
