@@ -1066,9 +1066,15 @@ async function copyRich(markdown, opts) {
     // Word's own copy places around the selection, marking exactly what
     // gets pasted while leaving the <head><style> above as shared context
     // rather than folding it into the fragment itself.
+    // No inline font-family/font-size on this wrapper: Word's importer
+    // bakes any *inherited* CSS onto each descendant paragraph's runs as
+    // direct character formatting, which wins over the Normal/Heading-N
+    // style even though the paragraph is correctly tagged via
+    // addMsoStyleHints() above — silently defeating the whole point of the
+    // style hints. Leave font entirely to the named Word styles.
     const wrapped = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">`
       + `<head><meta charset="utf-8">${MSO_STYLE_BLOCK}</head>`
-      + `<body><!--StartFragment--><div style="font-family:Calibri,Arial,sans-serif;font-size:11pt">${html}</div><!--EndFragment--></body></html>`;
+      + `<body><!--StartFragment-->${html}<!--EndFragment--></body></html>`;
     await navigator.clipboard.write([new ClipboardItem({
       'text/html': new Blob([wrapped], { type: 'text/html' }),
       'text/plain': new Blob([markdown], { type: 'text/plain' }),
