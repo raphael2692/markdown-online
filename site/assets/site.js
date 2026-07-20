@@ -1027,14 +1027,41 @@ const MSO_STYLE_BLOCK = `<style>${Object.entries(MSO_STYLE_MAP)
   .map(([tag, name]) => `${tag} {mso-style-name:"${name}";}`)
   .join('')}</style>`;
 
+// Belt-and-suspenders for the <style> block above: Chrome's Clipboard API
+// doesn't guarantee Word's HTML filter resolves cascaded <head><style> rules
+// against a pasted fragment the way it does for a double-clicked .htm file,
+// but an inline mso-style-name on the element itself survives regardless of
+// how the fragment gets sliced — Word's own "Save as Web Page" export sets
+// it both ways for the same reason. Done via <template> + DOM rather than
+// regex so it can't mismatch marked's own attribute formatting (id=, etc).
+function addMsoStyleHints(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  for (const [tag, name] of Object.entries(MSO_STYLE_MAP)) {
+    tpl.content.querySelectorAll(tag).forEach((el) => {
+      const existing = el.getAttribute('style');
+      el.setAttribute('style', `${existing ? existing + ';' : ''}mso-style-name:"${name}"`);
+    });
+  }
+  return tpl.innerHTML;
+}
+
 async function copyRich(markdown, opts) {
   try {
     let html = sanitizeHtml(await convertMarkdown(markdown, opts));
-    if (opts && opts.mermaid) html = await rasterizeMermaidDiagrams(html);
+    // DBML diagrams render into the same .mermaid-diagram/<svg> wrapper as
+    // Mermaid (see renderDbmlDiagrams), so they need the same rasterization
+    // before Word's clipboard-HTML importer silently drops the raw <svg>.
+    if (opts && (opts.mermaid || opts.dbml)) html = await rasterizeMermaidDiagrams(html);
     html = neutralizeTrackedChangeTags(html);
+    html = addMsoStyleHints(html);
+    // <!--StartFragment-->/<!--EndFragment--> match the CF_HTML container
+    // Word's own copy places around the selection, marking exactly what
+    // gets pasted while leaving the <head><style> above as shared context
+    // rather than folding it into the fragment itself.
     const wrapped = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">`
       + `<head><meta charset="utf-8">${MSO_STYLE_BLOCK}</head>`
-      + `<body><div style="font-family:Calibri,Arial,sans-serif;font-size:11pt">${html}</div></body></html>`;
+      + `<body><!--StartFragment--><div style="font-family:Calibri,Arial,sans-serif;font-size:11pt">${html}</div><!--EndFragment--></body></html>`;
     await navigator.clipboard.write([new ClipboardItem({
       'text/html': new Blob([wrapped], { type: 'text/html' }),
       'text/plain': new Blob([markdown], { type: 'text/plain' }),
