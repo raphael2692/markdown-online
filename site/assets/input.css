@@ -54,6 +54,12 @@
   .split-pane-left.has-find {
     min-width: min(28rem, 100%);
   }
+  /* Draggable width for the outline sidebar — stacks full-width above the
+     write pane below md, so the variable only applies once it sits beside
+     it as a fixed-width column. */
+  .outline-pane {
+    flex: 0 0 var(--outline-width, 12rem);
+  }
 }
 
 /* User toggle to stack the right pane below the left one instead of side

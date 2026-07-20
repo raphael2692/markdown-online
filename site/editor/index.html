@@ -488,17 +488,21 @@
           <button type="button" @click="insertMath()" title="Insert math (KaTeX) — inserts a math block at the cursor" aria-label="Insert math" class="flex items-center gap-1.5 rounded border border-neutral-300 dark:border-neutral-700 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M18 7V5a1 1 0 0 0-1-1H6.5a.5.5 0 0 0-.4.8l4.5 6a2 2 0 0 1 0 2.4l-4.5 6a.5.5 0 0 0 .4.8H17a1 1 0 0 0 1-1v-2" /></svg> Math</button>
         </div>
 
-        <div x-ref="paneRow" :style="`--split: ${split}%; --pane-height: ${paneHeight}px`"
+        <div :style="`--split: ${split}%; --pane-height: ${paneHeight}px; --outline-width: ${outlineWidth}px`"
           class="flex flex-col md:flex-row"
-          :class="{'select-none': dragging || draggingV, 'is-stacked': stacked}">
+          :class="{'select-none': dragging || draggingV || draggingOutline}">
           <!-- Document outline: one entry per ATX heading, indented by
                level. Click jumps the editor to that heading's line. Sits
                to the left of the write pane (stacks above it on narrow
-               layouts, following paneRow's own flex-col -> md:flex-row
+               layouts, following this row's own flex-col -> md:flex-row
                breakpoint); toggled from the "Outline" toolbar button or
-               Ctrl/Cmd+Shift+O. -->
+               Ctrl/Cmd+Shift+O. Width is only draggable at md+ — see
+               .outline-pane in input.css and startOutlineDrag(). Lives
+               outside the write/preview x-ref="paneRow" below so the
+               "Stack panels" toggle (which forces THAT row to a column)
+               never stacks the outline underneath it too. -->
           <div x-show="outlineOpen && outline.length && view !== 'preview'" x-cloak
-            class="w-full shrink-0 border-b border-neutral-200 dark:border-neutral-800 p-3 md:w-48 md:border-b-0 md:border-r">
+            class="outline-pane min-w-0 shrink-0 border-b border-neutral-200 dark:border-neutral-800 p-3 md:border-b-0 md:border-r">
             <div class="pane-height flex flex-col overflow-hidden rounded-md border border-neutral-300 dark:border-neutral-700">
               <div class="shrink-0 border-b border-neutral-100 dark:border-neutral-800 px-2 py-1.5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400"
                 x-text="`Outline (${outline.length})`"></div>
@@ -514,6 +518,15 @@
             </div>
           </div>
 
+          <div x-show="outlineOpen && outline.length && view !== 'preview'" x-cloak
+            class="hidden shrink-0 cursor-col-resize touch-none items-stretch justify-center border-x border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 md:flex md:w-2"
+            :class="draggingOutline && 'bg-neutral-300 dark:bg-neutral-600'"
+            @mousedown="startOutlineDrag($event)" @touchstart="startOutlineDrag($event)"
+            title="Drag to resize the outline panel">
+            <div class="my-auto h-8 w-px bg-neutral-400 dark:bg-neutral-600"></div>
+          </div>
+
+          <div x-ref="paneRow" class="flex min-w-0 flex-1 flex-col md:flex-row" :class="{'is-stacked': stacked}">
           <div x-show="view !== 'preview'" class="min-w-0 border-b border-neutral-200 dark:border-neutral-800 p-3 md:border-b-0 md:border-r"
             :class="{'split-pane-left': view === 'split', 'md:w-full': view !== 'split', 'has-find': find.open}">
             <label for="tw-in" class="sr-only">Markdown input</label>
@@ -634,6 +647,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" /><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" /><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" /><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></svg>
               </button>
             </div>
+          </div>
           </div>
         </div>
 
@@ -1153,7 +1167,7 @@
         toolbarOpen: true,
         shortcutsOpen: false,
         minimap: [], minimapOpen: true, minimapPopover: null,
-        outline: [], outlineOpen: true,
+        outline: [], outlineOpen: true, outlineWidth: 192, draggingOutline: false,
         previewZoom: 100, panMode: false, panDragging: false,
         zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX,
         opts: {
@@ -1819,6 +1833,34 @@
             ta.scrollTop = Math.max(0, 8 + item.line * 24 - 24);
             this.updateHeadingLevel();
           });
+        },
+        // Same drag-to-track idiom as startDrag/startVDrag in paneResizer
+        // (site.js), just sized in px against --outline-width instead of a
+        // percentage split — the outline sidebar has a fixed-ish width
+        // rather than sharing space 50/50 with a sibling pane.
+        startOutlineDrag(e) {
+          e.preventDefault();
+          this.draggingOutline = true;
+          const startX = e.touches ? e.touches[0].clientX : e.clientX;
+          const startWidth = this.outlineWidth;
+          const minWidth = 120, maxWidth = 400;
+
+          const onMove = (ev) => {
+            const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+            this.outlineWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + (clientX - startX)));
+          };
+          const onUp = () => {
+            this.draggingOutline = false;
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onUp);
+          };
+
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+          document.addEventListener('touchmove', onMove, { passive: false });
+          document.addEventListener('touchend', onUp);
         },
         showMinimapPopover(item, ev) {
           const r = ev.currentTarget.getBoundingClientRect();
