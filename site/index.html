@@ -69,7 +69,7 @@
       {
         "@type": "Question",
         "name": "Can I export what I write as Word, PDF, or HTML?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Use \"Copy for Word / Docs\" to paste formatted content straight into a document, \"Copy HTML\" or \"Download HTML\" for the underlying markup, or \"Print / Save as PDF\" to generate a PDF through your browser's print dialog." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Use \"Copy for Word / Docs\" for a quick formatted paste, \"Download Word (.docx)\" for a real .docx file with true, editable Word styles, \"Copy HTML\" or \"Download HTML\" for the underlying markup, or \"Print / Save as PDF\" to generate a PDF through your browser's print dialog." }
       },
       {
         "@type": "Question",
@@ -126,7 +126,7 @@
         <li><a class="text-vsc-accent dark:text-vsc-accent-dark hover:underline" href="/editor/">Open the editor</a> and start typing in the Write pane, or open the <strong>Import</strong> menu to convert existing HTML or CSV/JSON into Markdown and drop it in at your cursor.</li>
         <li>Use the toolbar, or shortcuts like Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, and Ctrl/Cmd+K for a link, to insert formatting without memorizing syntax.</li>
         <li>Switch between <strong>Write</strong>, <strong>Split</strong>, and <strong>Preview</strong> with the toggle above the toolbar, depending on whether you want full width for typing or for reviewing the rendered result.</li>
-        <li>When you're done, copy the Markdown or HTML, copy a rich version for Word or Google Docs, download a <code>.md</code> or <code>.html</code> file, or print straight to PDF.</li>
+        <li>When you're done, copy the Markdown or HTML, copy a rich version for Word or Google Docs (or download a real <code>.docx</code> file with true Word styles), download a <code>.md</code> or <code>.html</code> file, or print straight to PDF.</li>
       </ol>
     </section>
 
@@ -215,14 +215,21 @@
     <section class="mt-10 space-y-3">
       <h2 class="text-xl font-semibold">Exporting: Word, HTML, and PDF</h2>
       <p>
-        Six buttons cover every hand-off. <strong>Copy Markdown</strong> and
+        Seven buttons cover every hand-off. <strong>Copy Markdown</strong> and
         <strong>Download .md</strong> give you the raw source. <strong>Copy
         HTML</strong> and <strong>Download HTML</strong> give you the
-        converted markup as a plain fragment. <strong>Copy for Word / Docs</strong> copies a
-        rich, formatted version that pastes correctly into Word or Google
-        Docs, including tables, images, and rasterized Mermaid diagrams. And
-        <strong>Print / Save as PDF</strong> opens your browser's print dialog
-        with print-appropriate styling already applied. All six read from the
+        converted markup as a plain fragment. <strong>Copy for Word /
+        Docs</strong> puts a quick, formatted paste on your clipboard for
+        Word or Google Docs — styling depends on the app's own paste import,
+        so editing a style like Normal afterward may not restyle everything
+        that came from it. <strong>Download Word (.docx)</strong> instead
+        builds a real .docx file with true Word styles (Normal, Heading
+        1–6, Quote, Code Block), so editing a style in Word's Styles pane
+        reliably restyles every paragraph that uses it — the more reliable
+        option for a document you'll keep editing in Word. Both carry over
+        tables, images, and rasterized Mermaid diagrams. And <strong>Print
+        / Save as PDF</strong> opens your browser's print dialog with
+        print-appropriate styling already applied. All seven read from the
         same draft, so whichever you reach for is always in sync with what's
         on screen.
       </p>
@@ -288,7 +295,7 @@
         </div>
         <div>
           <h3 class="font-medium">Can I export what I write as Word, PDF, or HTML?</h3>
-          <p class="text-vsc-muted dark:text-vsc-muted-dark">Yes. Use "Copy for Word / Docs" to paste formatted content straight into a document, "Copy HTML" or "Download HTML" for the underlying markup, or "Print / Save as PDF" to generate a PDF through your browser's print dialog.</p>
+          <p class="text-vsc-muted dark:text-vsc-muted-dark">Yes. Use "Copy for Word / Docs" for a quick formatted paste, "Download Word (.docx)" for a real .docx file with true, editable Word styles, "Copy HTML" or "Download HTML" for the underlying markup, or "Print / Save as PDF" to generate a PDF through your browser's print dialog.</p>
         </div>
         <div>
           <h3 class="font-medium">Can I write math equations or diagrams?</h3>

@@ -35,6 +35,9 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
 - **Smart lists** — pressing Enter continues bullet, numbered, task-list,
   and blockquote lines (numbered items renumber themselves); Enter on an
   empty item ends the list, and Tab/Shift+Tab nest or un-nest an item.
+- **Document outline** — a resizable left sidebar listing every heading in
+  the document; click an entry to jump the editor there. Toggle it from the
+  toolbar or Ctrl/Cmd+Shift+O.
 - **Multiple documents** — create, rename, switch between, and delete named
   documents from the toolbar; each autosaves to your browser's local
   storage, so nothing ever leaves your machine.
@@ -44,10 +47,11 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
 - **Open a Markdown file** straight from your device, or **import** from
   HTML, CSV, or JSON — paste or drop it in and get clean Markdown out
   (tables, lists, and formatting preserved).
-- **Export** to Markdown, HTML, PDF, or a real Word **.docx** file — with
-  actual Heading/Quote paragraph styles, not just bold text — or copy
-  rich-formatted content straight onto your clipboard for pasting into Word
-  or Google Docs.
+- **Export** to Markdown, HTML, or PDF, plus two Word paths: **Download
+  Word (.docx)** builds a real OOXML file with true, editable Word styles
+  (Normal, Heading 1–6, Quote, Code Block) — restyle one in Word's Styles
+  pane and every paragraph using it updates — or **Copy for Word / Docs**
+  puts a quick formatted paste on your clipboard for Word or Google Docs.
 - **Math and diagrams** — inline/block KaTeX math and Mermaid diagrams,
   auto-detected as you type.
 - **Database schema diagrams** — write real DBML in a fenced code block and
