@@ -371,8 +371,8 @@
             </ul>
           </div>
 
-          <button type="button" @click="shiftHeadings(-1)" title="Shift heading back (Alt+Shift+Left) — # bbb becomes bbb, ## bbb becomes # bbb" aria-label="Shift heading back" class="rounded border border-neutral-300 dark:border-neutral-700 p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M21 5H11" /><path d="M21 12H11" /><path d="M21 19H11" /><path d="m7 8-4 4 4 4" /></svg></button>
-          <button type="button" @click="shiftHeadings(1)" title="Shift heading forward (Alt+Shift+Right) — # aaa becomes ## aaa" aria-label="Shift heading forward" class="rounded border border-neutral-300 dark:border-neutral-700 p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M21 5H11" /><path d="M21 12H11" /><path d="M21 19H11" /><path d="m3 8 4 4-4 4" /></svg></button>
+          <button type="button" @click="shiftHeadings(-1)" title="Shift heading back (Alt+Shift+Left) — # bbb becomes bbb, ## bbb becomes # bbb. Applies to the selection, or the whole document if nothing is selected." aria-label="Shift heading back" class="rounded border border-neutral-300 dark:border-neutral-700 p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M21 5H11" /><path d="M21 12H11" /><path d="M21 19H11" /><path d="m7 8-4 4 4 4" /></svg></button>
+          <button type="button" @click="shiftHeadings(1)" title="Shift heading forward (Alt+Shift+Right) — # aaa becomes ## aaa. Applies to the selection, or the whole document if nothing is selected." aria-label="Shift heading forward" class="rounded border border-neutral-300 dark:border-neutral-700 p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M21 5H11" /><path d="M21 12H11" /><path d="M21 19H11" /><path d="m3 8 4 4-4 4" /></svg></button>
           <span class="mx-1 h-5 w-px bg-neutral-200 dark:bg-neutral-700" aria-hidden="true"></span>
 
           <button type="button" @click="opts.numberHeadings = !opts.numberHeadings; run()"
@@ -2208,37 +2208,93 @@
           });
           this.run();
         },
-        // Shifts every heading line touched by the selection (or the caret's
-        // own line, when nothing is selected) by `delta` levels — the ATX
-        // marker's `#` count, not indentation. Shifting a level-1 heading
-        // back drops the marker entirely (plain paragraph text), matching
-        // how "one below H1" reads in a document; shifting past H6 forward
+        // Lines that must never be read as ATX headings even though they may
+        // start with `#`: YAML front matter (only when it opens line 1) and
+        // fenced code/diagram blocks (``` or ~~~, mermaid/dbml/etc. included
+        // since those are fences too). Returns a Set of line indexes to skip.
+        protectedHeadingLines(lines) {
+          const skip = new Set();
+          let i = 0;
+          if (lines[0] === '---') {
+            skip.add(0);
+            for (i = 1; i < lines.length; i++) {
+              skip.add(i);
+              if (lines[i] === '---' || lines[i] === '...') { i++; break; }
+            }
+          }
+          let fenceChar = null, fenceLen = 0;
+          for (; i < lines.length; i++) {
+            const line = lines[i];
+            const fenceMatch = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+            if (fenceChar) {
+              skip.add(i);
+              if (fenceMatch && fenceMatch[1][0] === fenceChar && fenceMatch[1].length >= fenceLen) fenceChar = null;
+              continue;
+            }
+            if (fenceMatch) {
+              skip.add(i);
+              fenceChar = fenceMatch[1][0];
+              fenceLen = fenceMatch[1].length;
+            }
+          }
+          return skip;
+        },
+        // Shifts every heading line touched by the selection by `delta`
+        // levels — the ATX marker's `#` count, not indentation. With no
+        // selection (a bare caret), the whole document is in scope, since
+        // "shift this document's headings" is the common no-selection intent
+        // and the caret-only-line behavior surprised people. Either way,
+        // lines inside front matter or fenced code/diagram blocks are never
+        // touched, so a `#` comment in a code sample or a YAML key can't be
+        // mistaken for a heading. Shifting a level-1 heading back drops the
+        // marker entirely (plain paragraph text); shifting past H6 forward
         // is a no-op for that line rather than clamping, so a mixed
-        // selection doesn't lose relative levels. Non-heading lines in the
-        // selection are left untouched.
+        // selection doesn't lose relative levels.
         shiftHeadings(delta) {
           const ta = this.$refs.mdTextarea;
           const start = ta.selectionStart, end = ta.selectionEnd;
-          const lineStart = this.input.lastIndexOf('\n', start - 1) + 1;
-          let lineEnd = this.input.indexOf('\n', end);
+          const hasSelection = start !== end;
+          const lineStart = hasSelection ? this.input.lastIndexOf('\n', start - 1) + 1 : 0;
+          let lineEnd = hasSelection ? this.input.indexOf('\n', end) : this.input.length;
           if (lineEnd === -1) lineEnd = this.input.length;
-          const lines = this.input.slice(lineStart, lineEnd).split('\n');
-          let changed = false;
-          const newLines = lines.map((line) => {
-            const m = /^(#{1,6})(\s+)(.*)$/.exec(line);
-            if (!m) return line;
-            const level = m[1].length + delta;
-            if (level > 6) return line;
-            changed = true;
-            return level <= 0 ? m[3] : '#'.repeat(level) + m[2] + m[3];
+
+          const lines = this.input.split('\n');
+          const protectedLines = this.protectedHeadingLines(lines);
+          let oldOffset = 0, newOffset = 0, changed = false;
+          let newLineStart = 0, newLineEnd = 0, newCaretStart = null, newCaretEnd = null;
+          const newLines = lines.map((line, i) => {
+            const oldStart = oldOffset, oldEnd = oldStart + line.length;
+            oldOffset = oldEnd + 1;
+
+            let newLine = line;
+            if (oldStart >= lineStart && oldStart < lineEnd && !protectedLines.has(i)) {
+              const m = /^(#{1,6})(\s+)(.*)$/.exec(line);
+              if (m) {
+                const level = m[1].length + delta;
+                if (level <= 6) {
+                  changed = true;
+                  newLine = level <= 0 ? m[3] : '#'.repeat(level) + m[2] + m[3];
+                }
+              }
+            }
+
+            const newStart = newOffset;
+            newOffset = newStart + newLine.length + 1;
+            if (oldStart === lineStart) newLineStart = newStart;
+            if (oldEnd === lineEnd) newLineEnd = newStart + newLine.length;
+            if (start >= oldStart && start <= oldEnd) newCaretStart = newStart + Math.min(start - oldStart, newLine.length);
+            if (end >= oldStart && end <= oldEnd) newCaretEnd = newStart + Math.min(end - oldStart, newLine.length);
+            return newLine;
           });
           if (!changed) return;
-          const block = newLines.join('\n');
+          if (lineEnd === this.input.length) newLineEnd = newOffset - 1;
+
           this.commitHistory();
-          this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
-          const newEnd = lineStart + block.length;
-          this.commitHistory(lineStart, newEnd);
-          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(lineStart, newEnd); this.updateHeadingLevel(); });
+          this.input = newLines.join('\n');
+          const selStart = hasSelection ? newLineStart : (newCaretStart ?? 0);
+          const selEnd = hasSelection ? newLineEnd : (newCaretEnd ?? selStart);
+          this.commitHistory(selStart, selEnd);
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(selStart, selEnd); this.updateHeadingLevel(); });
           this.run();
         },
         updateHeadingLevel() {
