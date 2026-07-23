@@ -474,7 +474,9 @@ parts:
   Inline code/Link — `wrapSelection()`, wraps the selection or inserts a
   placeholder if nothing's selected), **Insert** (Bullet/Numbered/Task
   list/Quote — `prefixLines()`/`insertNumberedList()`, applied per selected
-  line; Table/Image/Horizontal rule — inserted at the cursor), and **Embed**
+  line; Table/Image/Horizontal rule/Front matter — inserted at the cursor,
+  except Front matter which always prepends since front matter must open
+  line 1), and **Embed**
   (a plain code-fence button plus Code block/Diagram/Math dropdowns — also
   inserted at the cursor). The plain-fence button (`insertCodeFence()`) is
   the language-less sibling of the Code block dropdown: with a selection it
@@ -491,8 +493,16 @@ parts:
   back into the Markdown source) and per-level independent, so a stray
   `####` with no parent `###` still gets a sane, if flat, number instead of
   throwing. It flows through every output channel that shares the
-  pipeline — preview, copy-rich, download, print — identically. The
-  paragraph-style picker itself previews each heading level at something
+  pipeline — preview, copy-rich, download, print — identically.
+- **Insert front matter button**: `insertFrontMatter()` prepends a
+  `---\ntitle: \nsubtitle: \n---` block (same shape `parseFrontMatter()` in
+  `site.js` reads) ahead of the document and parks the caret on the title
+  value. `hasFrontMatter()` runs the identical `^---…---` regex used by
+  `parseFrontMatter()`, and the button disables itself once that matches —
+  a document can only have one front matter block, and it must open line 1,
+  so the button doesn't offer an action that would just get ignored or
+  produce a second bogus `---` block mid-document.
+- The paragraph-style picker itself previews each heading level at something
   close to its actual rendered size/weight (a `cls` field per option),
   Word-style-gallery fashion, rather than a flat list of same-sized labels.
   Two more buttons next to that picker, `shiftHeadings(-1)`/`shiftHeadings(1)`,
