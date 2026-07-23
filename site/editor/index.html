@@ -108,6 +108,12 @@
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
                   New document
                 </button>
+                <div class="my-1 border-t border-neutral-200 dark:border-neutral-800" role="separator"></div>
+                <button type="button" @click="clearAllDocs()" role="menuitem"
+                  class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-1.5 rounded px-2 py-1.5 text-left text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                  Clear all documents…
+                </button>
               </div>
             </div>
 
@@ -1599,7 +1605,10 @@
           this.restored = false;
           this.initHistory();
           this._saveDocsIndex();
-          this.run();
+          // $nextTick: mirrors init()'s own guard — a doc switch can land in
+          // the same tick as an Alpine DOM patch (e.g. the docs list
+          // shrinking), and run() writes into a ref that must be settled first.
+          this.$nextTick(() => this.run());
           this.$nextTick(() => {
             const ta = this.$refs.mdTextarea;
             ta.focus();
@@ -1629,6 +1638,7 @@
           if (!doc) return;
           const ok = await this.confirmDialog(`Delete "${doc.name}"? Its content is removed from this browser and can't be recovered.`, { title: 'Delete document', confirmLabel: 'Delete' });
           if (!ok) return;
+          this.docsOpen = false;
           // A pending autosave for the deleted doc must not resurrect its key.
           if (id === this.docsActive) clearTimeout(this._saveTimer);
           localStorage.removeItem(DOC_PREFIX + id);
@@ -1643,6 +1653,20 @@
           } else {
             this._saveDocsIndex();
           }
+        },
+        async clearAllDocs() {
+          const ok = await this.confirmDialog(
+            `Delete all ${this.docs.length} document${this.docs.length === 1 ? '' : 's'}? This clears everything stored in this browser and can't be recovered.`,
+            { title: 'Clear all documents', confirmLabel: 'Delete all' }
+          );
+          if (!ok) return;
+          this.docsOpen = false;
+          clearTimeout(this._saveTimer);
+          for (const d of this.docs) localStorage.removeItem(DOC_PREFIX + d.id);
+          const nid = this._newDocId();
+          this.docs = [{ id: nid, name: 'Untitled' }];
+          localStorage.setItem(DOC_PREFIX + nid, '');
+          this._activateDoc(nid);
         },
         startRename() {
           this.docRenaming = true;
@@ -1672,6 +1696,7 @@
             const html = await convertMarkdown(this.input, this.opts);
             if (myGen !== this._renderGen) return; // a newer run() already superseded this one
             this.fragment = html;
+            if (!this.$refs.previewInner) return;
             this.$refs.previewInner.innerHTML = sanitizeHtml(this.fragment);
             this.buildMinimap();
             this.buildOutline();
