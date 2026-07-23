@@ -1,11 +1,11 @@
-<!-- docs-sync: 1a3cd9b -->
+<!-- docs-sync: ab80122 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
-- Heading level shift: bump every heading in the current selection (or just the caret's line) up or down a level from the toolbar or Alt+Shift+Right/Alt+Shift+Left — shifting a level-1 heading back drops it to plain text; shifting past H6 forward is a no-op so a mixed-level selection keeps its relative levels (`1a3cd9b`)
+- Heading level shift: bump every heading in the current selection — or, with no selection, every heading in the whole document — up or down a level from the toolbar or Alt+Shift+Right/Alt+Shift+Left — shifting a level-1 heading back drops it to plain text; shifting past H6 forward is a no-op so a mixed-level selection keeps its relative levels; lines inside front matter or fenced code/diagram blocks are always skipped, so a `#` code comment or YAML key is never mistaken for a heading (`1a3cd9b`, `ab80122`)
 - Markdown front matter: a `---title: ...\nsubtitle: ...---` block at the top of the document renders as a title header ahead of the body in every preview (kept out of the outline and the section-numbering toggle, since it isn't a heading) and, in Download Word (.docx), maps onto Word's own built-in Title/Subtitle paragraph styles instead of a generic heading/paragraph (`1a3cd9b`)
 - Command palette (Ctrl/Cmd+Shift+P, or the toolbar's "Commands" button): fuzzy-search every view toggle, formatting action, document action, and import/export command in one searchable list, so none of it requires hunting through the toolbar (`e14eae2`)
 - "Copy as escaped string" export option: copies the document as a minimally-escaped JSON string literal, for pasting as a value inside a system prompt, config file, or API payload (`e14eae2`)

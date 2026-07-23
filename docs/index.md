@@ -497,16 +497,22 @@ parts:
   Word-style-gallery fashion, rather than a flat list of same-sized labels.
   Two more buttons next to that picker, `shiftHeadings(-1)`/`shiftHeadings(1)`,
   bump the ATX marker's `#` count on every heading line touched by the
-  current selection (or just the caret's own line) up or down a level in
-  one action — non-heading lines in the selection pass through untouched, a
-  level-1 heading shifted back drops its marker entirely (plain paragraph
-  text, since there's no level 0), and shifting past H6 forward is a per-line
-  no-op rather than a clamp, so a mixed-level selection never loses its
-  relative levels. Bound to Alt+Shift+Right/Alt+Shift+Left — Word's own
-  promote/demote-heading shortcut, chosen over a `Ctrl/Cmd+[`/`Ctrl/Cmd+]`
-  combo because bracket keys sit at different physical positions (or behind
-  Shift entirely) across keyboard layouts, while Alt+Shift+Arrow is
-  layout-independent.
+  current selection — or, with no selection, every heading line in the whole
+  document — up or down a level in one action. Non-heading lines pass through
+  untouched, a level-1 heading shifted back drops its marker entirely (plain
+  paragraph text, since there's no level 0), and shifting past H6 forward is
+  a per-line no-op rather than a clamp, so a mixed-level selection never
+  loses its relative levels. `protectedHeadingLines()` walks the document
+  once to mark line indexes inside YAML front matter (only when it opens
+  line 1) and fenced code/diagram blocks (` ``` `/`~~~`, tracking the
+  opening fence's char and length so a shorter same-char fence inside a
+  block, e.g. in a Markdown code sample, doesn't prematurely close it) —
+  those lines are skipped even if they start with `#`, so a Python comment
+  or a YAML key is never read as a heading. Bound to
+  Alt+Shift+Right/Alt+Shift+Left — Word's own promote/demote-heading
+  shortcut, chosen over a `Ctrl/Cmd+[`/`Ctrl/Cmd+]` combo because bracket
+  keys sit at different physical positions (or behind Shift entirely) across
+  keyboard layouts, while Alt+Shift+Arrow is layout-independent.
   Pasting a URL over a selected range (`onPaste()`) wraps the selection as
   that URL's link label (`[selection](url)`) instead of overwriting it —
   gated on there being a non-empty selection and the clipboard payload
