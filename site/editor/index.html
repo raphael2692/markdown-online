@@ -173,6 +173,12 @@
               Shortcuts
             </button>
 
+            <button type="button" @click="openPalette()" title="Command palette (Ctrl/Cmd+Shift+P)" aria-label="Command palette"
+              class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" /></svg>
+              <span class="hidden sm:inline">Commands</span>
+            </button>
+
             <input type="file" x-ref="mdFileInput" accept=".md,.markdown,.mdown,.mkd,.txt"
               class="hidden" @change="onOpenMarkdownFile($event)">
 
@@ -236,6 +242,7 @@
                     items: [
                       { value: 'copy-html', label: 'Copy HTML' },
                       { value: 'copy-rich', label: 'Copy for Word / Docs (quick paste)', title: 'Puts formatted content on the clipboard for pasting. Styling depends on Word/Docs’ own paste import — headings and lists usually look right, but editing a style like Normal afterward may not reliably restyle the pasted text.' },
+                      { value: 'copy-escaped', label: 'Copy as escaped string', title: 'Copies the document as a JSON string literal — quotes, backslashes, and newlines escaped, nothing else — ready to paste as a value inside a system prompt, config file, or API payload.' },
                       { value: 'download-docx', label: 'Download Word (.docx) — real styles', title: 'Builds an actual .docx file with true Word styles (Normal, Heading 1–6, Quote, Code Block). Editing a style in Word’s Styles pane reliably restyles every paragraph using it — the more reliable option for documents you’ll keep editing in Word.' },
                       { value: 'download-md', label: 'Download .md' },
                       { value: 'download-html', label: 'Download HTML' },
@@ -1041,6 +1048,54 @@
         </div>
       </template>
 
+      <!-- Command palette: fuzzy-search over every view toggle, formatting
+           action, document, and export/copy command, so the keyboard never
+           has to leave the editor for the toolbar. -->
+      <template x-teleport="body">
+        <div x-show="palette.open" x-cloak
+          class="fixed inset-0 z-[99] flex items-start justify-center p-4 pt-[12vh]"
+          @keydown.escape.window="closePalette()">
+          <div x-show="palette.open"
+            x-transition:enter="ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-black/40" @click="closePalette()"></div>
+
+          <div x-show="palette.open"
+            x-trap.inert.noscroll="palette.open"
+            x-transition:enter="ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            x-transition:leave="ease-in duration-100" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+            class="relative flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl">
+
+            <div class="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 px-3">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden="true"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg>
+              <input type="text" x-ref="paletteInput" x-model="palette.query" @input="palette.index = 0"
+                @keydown.down.prevent="paletteMove(1)" @keydown.up.prevent="paletteMove(-1)"
+                @keydown.enter.prevent="paletteRunActive()"
+                placeholder="Type a command…" autocomplete="off" spellcheck="false"
+                class="min-h-[44px] w-full border-0 bg-transparent px-1 py-2.5 text-sm text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0">
+            </div>
+
+            <ul x-ref="paletteList" class="flex-1 overflow-y-auto p-1.5" role="listbox">
+              <template x-for="(cmd, idx) in paletteResults" :key="cmd.label">
+                <li role="option" :aria-selected="idx === palette.index" @mousemove="palette.index = idx" @click="runCommand(cmd)"
+                  :class="idx === palette.index ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100' : 'text-neutral-700 dark:text-neutral-300'"
+                  class="flex cursor-default items-center justify-between gap-4 rounded-md px-3 py-2 text-sm">
+                  <span x-text="cmd.label"></span>
+                  <span class="shrink-0 text-[11px] uppercase tracking-wide text-neutral-400 dark:text-neutral-500" x-text="cmd.hint"></span>
+                </li>
+              </template>
+              <li x-show="!paletteResults.length" class="px-3 py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">No matching commands</li>
+            </ul>
+
+            <div class="flex items-center justify-end gap-3 border-t border-neutral-200 dark:border-neutral-800 px-3 py-1.5 text-[11px] text-neutral-400 dark:text-neutral-500">
+              <span>↑↓ navigate</span>
+              <span>↵ run</span>
+              <span>esc close</span>
+            </div>
+          </div>
+        </div>
+      </template>
+
       <template x-teleport="body">
         <div x-show="confirmState.open" x-cloak
           class="fixed inset-0 z-[99] flex items-center justify-center p-4"
@@ -1242,6 +1297,7 @@
         docs: [], docsActive: null, docsOpen: false,
         docRenaming: false, docRenameValue: '',
         confirmState: { open: false, title: '', message: '', confirmLabel: 'Confirm', danger: true, resolve: null },
+        palette: { open: false, query: '', index: 0 },
         importKind: null,
         importHtml: { text: '', bulletListMarker: '-', codeBlockStyle: 'fenced', headingStyle: 'atx', error: '' },
         importCsv: { text: '', mode: 'csv', align: 'left', header: true, error: '' },
@@ -1261,12 +1317,114 @@
             { label: 'Find', combo: 'Ctrl/Cmd+F' },
             { label: 'Find & replace', combo: 'Ctrl/Cmd+H' },
             { label: 'Toggle document outline', combo: 'Ctrl/Cmd+Shift+O' },
+            { label: 'Command palette', combo: 'Ctrl/Cmd+Shift+P' },
             { label: 'Undo', combo: 'Ctrl/Cmd+Z' },
             { label: 'Redo', combo: 'Ctrl+Y / Ctrl/Cmd+Shift+Z' },
             { label: 'Indent / un-indent list item', combo: 'Tab / Shift+Tab' },
             { label: 'Continue list, exit on empty item', combo: 'Enter' },
             { label: 'This cheat sheet', combo: '?' },
           ];
+        },
+
+        // ---- command palette: every action worth naming, in one fuzzy-
+        // searchable list. Built fresh each open so document-switch entries
+        // stay in sync with the current docs array.
+        get paletteCommands() {
+          const cmds = [
+            { label: 'New document', hint: 'Documents', run: () => this.newDoc() },
+            { label: 'Rename current document', hint: 'Documents', run: () => { this.docsOpen = true; this.startRename(); } },
+            { label: 'Delete current document', hint: 'Documents', run: () => this.deleteDoc(this.docsActive) },
+            { label: 'Write view', hint: 'View', run: () => { this.view = 'write'; } },
+            { label: 'Split view', hint: 'View', run: () => { this.view = 'split'; } },
+            { label: 'Preview view', hint: 'View', run: () => { this.view = 'preview'; } },
+            { label: 'Toggle synced scrolling', hint: 'View', run: () => { this.syncScroll = !this.syncScroll; } },
+            { label: 'Toggle stacked panels', hint: 'View', run: () => { this.stacked = !this.stacked; } },
+            { label: 'Toggle formatting toolbar', hint: 'View', run: () => { this.toolbarOpen = !this.toolbarOpen; } },
+            { label: 'Toggle document outline', hint: 'View', run: () => { this.outlineOpen = !this.outlineOpen; } },
+            { label: 'Bold', hint: 'Format', run: () => this.wrapSelection('**', '**', 'bold text') },
+            { label: 'Italic', hint: 'Format', run: () => this.wrapSelection('*', '*', 'italic text') },
+            { label: 'Strikethrough', hint: 'Format', run: () => this.wrapSelection('~~', '~~', 'strikethrough text') },
+            { label: 'Inline code', hint: 'Format', run: () => this.wrapSelection('`', '`', 'code') },
+            { label: 'Link', hint: 'Format', run: () => this.wrapSelection('[', '](https://)', 'link text') },
+            { label: 'Image', hint: 'Format', run: () => this.wrapSelection('![', '](https://)', 'alt text') },
+            { label: 'Heading 1', hint: 'Format', run: () => this.setHeading(1) },
+            { label: 'Heading 2', hint: 'Format', run: () => this.setHeading(2) },
+            { label: 'Heading 3', hint: 'Format', run: () => this.setHeading(3) },
+            { label: 'Bulleted list', hint: 'Format', run: () => this.prefixLines('- ') },
+            { label: 'Numbered list', hint: 'Format', run: () => this.insertNumberedList() },
+            { label: 'Task list', hint: 'Format', run: () => this.prefixLines('- [ ] ') },
+            { label: 'Blockquote', hint: 'Format', run: () => this.prefixLines('> ') },
+            { label: 'Find', hint: 'Edit', run: () => this.openFind() },
+            { label: 'Find & replace', hint: 'Edit', run: () => { this.find.replaceOpen = true; this.openFind(); } },
+            { label: 'Undo', hint: 'Edit', run: () => this.undo() },
+            { label: 'Redo', hint: 'Edit', run: () => this.redo() },
+            { label: 'Clear document', hint: 'Edit', run: () => this.clearDraft() },
+            { label: 'Open Markdown file…', hint: 'Import', run: () => this.openImport('md') },
+            { label: 'Import from HTML…', hint: 'Import', run: () => this.openImport('html') },
+            { label: 'Import from CSV/JSON…', hint: 'Import', run: () => this.openImport('csv') },
+            { label: 'Copy Markdown', hint: 'Export', run: () => this.copyMarkdown() },
+            { label: 'Copy HTML', hint: 'Export', run: () => this.copyHtml() },
+            { label: 'Copy for Word / Docs', hint: 'Export', run: () => this.copyRichClick() },
+            { label: 'Copy as escaped string', hint: 'Export', run: () => this.copyEscaped() },
+            { label: 'Download Markdown', hint: 'Export', run: () => this.downloadMd() },
+            { label: 'Download HTML', hint: 'Export', run: () => this.downloadHtml() },
+            { label: 'Download Word (.docx)', hint: 'Export', run: () => this.downloadDocx() },
+            { label: 'Print / Save as PDF', hint: 'Export', run: () => this.printPdf() },
+            { label: 'Keyboard shortcuts', hint: 'Help', run: () => { this.shortcutsOpen = true; } },
+          ];
+          for (const d of this.docs) {
+            if (d.id === this.docsActive) continue;
+            cmds.push({ label: `Switch to "${d.name}"`, hint: 'Documents', run: () => this.switchDoc(d.id) });
+          }
+          return cmds;
+        },
+        // Subsequence fuzzy match: every query char must appear in order in
+        // the haystack; consecutive/prefix hits score higher so "cpy md"
+        // ranks "Copy Markdown" above a looser match. -Infinity = no match.
+        _fuzzyScore(haystack, query) {
+          const text = haystack.toLowerCase();
+          let ti = 0, score = 0, streak = 0;
+          for (const ch of query.toLowerCase()) {
+            const found = text.indexOf(ch, ti);
+            if (found === -1) return -Infinity;
+            score += found === ti ? 3 + streak : 1;
+            streak = found === ti ? streak + 1 : 0;
+            ti = found + 1;
+          }
+          return score;
+        },
+        get paletteResults() {
+          const cmds = this.paletteCommands;
+          const q = this.palette.query.trim();
+          if (!q) return cmds;
+          return cmds
+            .map((cmd) => ({ cmd, score: this._fuzzyScore(cmd.label + ' ' + cmd.hint, q) }))
+            .filter((r) => r.score > -Infinity)
+            .sort((a, b) => b.score - a.score)
+            .map((r) => r.cmd);
+        },
+        openPalette() {
+          this.palette.query = '';
+          this.palette.index = 0;
+          this.palette.open = true;
+          this.$nextTick(() => this.$refs.paletteInput?.focus());
+        },
+        closePalette() {
+          this.palette.open = false;
+        },
+        paletteMove(delta) {
+          const n = this.paletteResults.length;
+          if (!n) return;
+          this.palette.index = (this.palette.index + delta + n) % n;
+          this.$nextTick(() => this.$refs.paletteList?.children[this.palette.index]?.scrollIntoView({ block: 'nearest' }));
+        },
+        paletteRunActive() {
+          const cmd = this.paletteResults[this.palette.index];
+          if (cmd) this.runCommand(cmd);
+        },
+        runCommand(cmd) {
+          this.closePalette();
+          this.$nextTick(() => cmd.run());
         },
 
         // Promise-based replacement for window.confirm(), styled to match the
@@ -1519,6 +1677,13 @@
             if (!this.outline.length) return;
             e.preventDefault();
             this.outlineOpen = !this.outlineOpen;
+            return;
+          }
+          // Ctrl/Cmd+K is already the "insert link" shortcut, so the palette
+          // takes the VSCode/Sublime convention (+Shift+P) instead.
+          if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {
+            e.preventDefault();
+            this.palette.open ? this.closePalette() : this.openPalette();
             return;
           }
           if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
@@ -2299,10 +2464,19 @@
           await navigator.clipboard.writeText(this.input);
           this.flash('Copied');
         },
+        // JSON.stringify is the escape: it's already the shortest valid
+        // encoding (only ", \, and control chars are escaped — no needless
+        // \/ or \uXXXX for ordinary text), so there's nothing to "optimize"
+        // on top of it without breaking validity.
+        async copyEscaped() {
+          await navigator.clipboard.writeText(JSON.stringify(this.input));
+          this.flash('Copied as escaped string');
+        },
         exportAction(kind) {
           ({
             'copy-html': () => this.copyHtml(),
             'copy-rich': () => this.copyRichClick(),
+            'copy-escaped': () => this.copyEscaped(),
             'download-docx': () => this.downloadDocx(),
             'download-md': () => this.downloadMd(),
             'download-html': () => this.downloadHtml(),

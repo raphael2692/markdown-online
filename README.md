@@ -23,6 +23,9 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   LLM token counts. Press `?` any time for a keyboard-shortcuts cheat sheet
   (Ctrl/Cmd+S is caught too, with a reassuring "already saved locally" toast
   instead of the browser's save dialog).
+- **Command palette** (Ctrl/Cmd+Shift+P, or the toolbar's Commands button) —
+  fuzzy-search every view toggle, formatting action, document, and
+  import/export command without leaving the keyboard.
 - **Paste a URL over selected text** and it wraps the selection as a link
   (`[selection](url)`) instead of overwriting it.
 - **Numbered sections** — a toolbar toggle next to the paragraph-style
@@ -52,6 +55,9 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   (Normal, Heading 1–6, Quote, Code Block) — restyle one in Word's Styles
   pane and every paragraph using it updates — or **Copy for Word / Docs**
   puts a quick formatted paste on your clipboard for Word or Google Docs.
+  **Copy as escaped string** puts the document on your clipboard as a
+  JSON string literal (minimally escaped) — ready to paste as a value
+  inside a system prompt, config file, or API payload.
 - **Share via link** — pack the current document into a URL you can send
   anyone; opening it loads the document straight into their editor. The
   document lives entirely in the link itself (compressed into the URL's
