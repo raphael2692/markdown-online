@@ -430,8 +430,9 @@ parts:
   import/export/copy actions live in one right-side cluster of the top bar
   — the "Import" dropdown (Open Markdown file / from HTML / from CSV/JSON),
   a standalone "Copy Markdown" button, and the "Export" dropdown (Copy
-  HTML / Copy for Word / Download Word (.docx) / Download .md / Download
-  HTML / Print to PDF) — all in the same outlined button style, deliberately without a filled
+  HTML / Copy for Word / Copy as escaped string / Download Word (.docx) /
+  Download .md / Download HTML / Print to PDF) — all in the same outlined
+  button style, deliberately without a filled
   "primary" button among them: the three are peers, and the old heavy-fill
   Copy Markdown read as more important than Export for no reason. They're
   reachable without scrolling past the editor panes, however tall the panes
@@ -621,6 +622,34 @@ parts:
   sets `min-width: min(28rem, 100%)` (bound to `find.open` alongside the
   existing pane classes) so `min-width` — which beats `flex-basis` in flex
   sizing — enforces the floor on every layout pass with no JS measurement.
+- **Command palette**: Ctrl/Cmd+Shift+P (`onGlobalKeydown()`, same
+  window-level binding pattern as find/replace/outline) or the toolbar's
+  "Commands" button opens a fuzzy-search palette (`palette.open`/`.query`/
+  `.index` state, teleported to `body` like the confirm and shortcuts
+  modals). `+Shift+P` rather than the more common bare `+K` because
+  Ctrl/Cmd+K is already "insert link" (`wrapSelection()`) in this editor.
+  `paletteCommands` (a getter, rebuilt on every open so it always reflects
+  the current `docs` array) lists every view toggle, formatting action,
+  document action, import/export action, and a "Switch to …" entry per
+  other open document — around 40 entries. `paletteResults` filters that
+  list through `_fuzzyScore()`, a small subsequence matcher (every
+  character of the query must appear in order in the command's label +
+  category; consecutive/prefix hits score higher, so `"cpy md"` ranks
+  "Copy Markdown" above a looser match) — no fuzzy-search library, just
+  ~15 lines, consistent with the project's dependency-light stance.
+  Arrow keys move `palette.index`, Enter runs the active command via
+  `runCommand()` (closes the palette, then invokes `cmd.run()` on
+  `$nextTick` so focus-dependent actions like `wrapSelection()` still see
+  the textarea's selection), Escape or a backdrop click closes it without
+  running anything.
+- **Copy as escaped string** (`copyEscaped()`, in the Export dropdown):
+  copies the document as a JSON string literal via `JSON.stringify()` —
+  chosen specifically because it's already the *shortest* valid encoding
+  (only `"`, `\`, and control characters are escaped; no gratuitous `\/`
+  or `\uXXXX` for ordinary text), so there was nothing to hand-optimize on
+  top of the native implementation without risking an invalid string.
+  Meant for pasting a document as a value inside a system prompt, JSON
+  config, or API payload.
 - **Import mechanism**: HTML and CSV/JSON aren't separate tools anymore —
   they're "Import" actions inside the same widget. Import-from-HTML runs
   the pasted/uploaded HTML through `TurndownService` (+ `turndown-plugin-gfm`
