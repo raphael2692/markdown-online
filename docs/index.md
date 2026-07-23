@@ -102,6 +102,23 @@ even if the triggering syntax is later deleted.
   replaces each with sanitized SVG (or an inline error box on failure, so one
   bad diagram never breaks the rest of the document).
 
+- **Front matter** — `parseFrontMatter()` strips an optional leading
+  `---\n...\n---` block (Jekyll/Hugo delimiters) before the rest of the
+  document reaches `marked.parse()`, so it never renders as a stray `<hr>`
+  followed by two mangled paragraphs. It is deliberately *not* a real YAML
+  parser: only flat `key: value` scalars are read (surrounding quotes
+  stripped); a nested map or list value just comes through as its raw
+  string. Only two keys currently do anything — `title`/`subtitle` — and
+  `convertMarkdown()` prepends them as `<h1 class="fm-title">`/`<p
+  class="fm-subtitle">` (each run through `marked.parseInline()` so inline
+  formatting still works) ahead of the parsed body, styled in `input.css`.
+  These elements are deliberately outside the `h1`..`h6` hierarchy for every
+  other purpose: `buildOutline()` and `numberHeadings()` both key off literal
+  heading tags/lines, so the front-matter title never appears in the outline
+  sidebar and is never touched by the section-numbering toggle. See the Word
+  export section below for how `title`/`subtitle` map onto real Word
+  paragraph styles rather than a generic heading/paragraph.
+
 Both apply consistently everywhere `convertMarkdown()` is used: live
 preview, copy / download / print-to-PDF. A `sanitizeHtml()` helper wraps
 `DOMPurify.sanitize()` with `USE_PROFILES: {html, mathMl, svg}` so KaTeX's
@@ -186,8 +203,8 @@ superscript, links, ordered/unordered/nested/task lists, blockquotes, code
 blocks, tables, horizontal rules, and images (including rasterized Mermaid/
 DBML diagrams, reusing `copyRich()`'s rasterization) all become real
 paragraphs/runs that reference named styles (`Normal`, `Heading 1`..`6`,
-`Quote`, `Code Block`) declared once in `DOCX_STYLES` and written into the
-file's own `styles.xml`. There's no importer left to second-guess: editing
+`Quote`, `Code Block`, `Title`, `Subtitle`) declared once in `DOCX_STYLES`
+and written into the file's own `styles.xml`. There's no importer left to second-guess: editing
 a style in Word's Styles pane is guaranteed to restyle every paragraph
 linked to it, because that link — `pStyle`/`rPr` referencing a style ID —
 is a first-class part of the OOXML format rather than something Word has to
@@ -203,6 +220,20 @@ Bullet lists get their own numbering definition (Symbol-font dot, Courier
 New "o", Wingdings square per level, `DOCX_BULLET_LIST_CONFIG`) instead of
 the docx library's default level-0 glyph, which renders as a literal
 full-size Unicode "●" in the body font.
+
+Front matter's `title`/`subtitle` (see the Markdown-extensions section
+above) get their own special case in `blockNodeToDocxChildren()`: the
+`<h1 class="fm-title">`/`<p class="fm-subtitle">` elements `convertMarkdown()`
+produces are checked *before* the generic heading/paragraph handling, and
+map onto `docx.HeadingLevel.TITLE` and a custom `style: 'Subtitle'`
+paragraph style respectively — Word's own real built-in Title/Subtitle
+style IDs — instead of falling through to an ordinary `Heading 1`/`Normal`
+paragraph. This is what lets a document have both a front-matter title and
+its own first `#` section heading without the two competing for the same
+Word style; the `Subtitle` style is defined in `DOCX_STYLES.paragraphStyles`
+the same way `Quote`/`Code Block` are (`Title` is built in to `docx.js`'s
+`HeadingLevel` enum, so it needed no separate style definition beyond the
+`default.title` run/paragraph override).
 
 The honest fidelity tradeoff (per the markdown-browser-ops skill) still
 applies in the other direction: a from-scratch DOM→OOXML walker flattens
@@ -464,6 +495,18 @@ parts:
   paragraph-style picker itself previews each heading level at something
   close to its actual rendered size/weight (a `cls` field per option),
   Word-style-gallery fashion, rather than a flat list of same-sized labels.
+  Two more buttons next to that picker, `shiftHeadings(-1)`/`shiftHeadings(1)`,
+  bump the ATX marker's `#` count on every heading line touched by the
+  current selection (or just the caret's own line) up or down a level in
+  one action — non-heading lines in the selection pass through untouched, a
+  level-1 heading shifted back drops its marker entirely (plain paragraph
+  text, since there's no level 0), and shifting past H6 forward is a per-line
+  no-op rather than a clamp, so a mixed-level selection never loses its
+  relative levels. Bound to Alt+Shift+Right/Alt+Shift+Left — Word's own
+  promote/demote-heading shortcut, chosen over a `Ctrl/Cmd+[`/`Ctrl/Cmd+]`
+  combo because bracket keys sit at different physical positions (or behind
+  Shift entirely) across keyboard layouts, while Alt+Shift+Arrow is
+  layout-independent.
   Pasting a URL over a selected range (`onPaste()`) wraps the selection as
   that URL's link label (`[selection](url)`) instead of overwriting it —
   gated on there being a non-empty selection and the clipboard payload

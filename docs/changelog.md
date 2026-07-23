@@ -1,10 +1,12 @@
-<!-- docs-sync: e14eae2 -->
+<!-- docs-sync: 1a3cd9b -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- Heading level shift: bump every heading in the current selection (or just the caret's line) up or down a level from the toolbar or Alt+Shift+Right/Alt+Shift+Left — shifting a level-1 heading back drops it to plain text; shifting past H6 forward is a no-op so a mixed-level selection keeps its relative levels (`1a3cd9b`)
+- Markdown front matter: a `---title: ...\nsubtitle: ...---` block at the top of the document renders as a title header ahead of the body in every preview (kept out of the outline and the section-numbering toggle, since it isn't a heading) and, in Download Word (.docx), maps onto Word's own built-in Title/Subtitle paragraph styles instead of a generic heading/paragraph (`1a3cd9b`)
 - Command palette (Ctrl/Cmd+Shift+P, or the toolbar's "Commands" button): fuzzy-search every view toggle, formatting action, document action, and import/export command in one searchable list, so none of it requires hunting through the toolbar (`e14eae2`)
 - "Copy as escaped string" export option: copies the document as a minimally-escaped JSON string literal, for pasting as a value inside a system prompt, config file, or API payload (`e14eae2`)
 - Share via link: packs the current document into the page's own URL fragment (LZString-compressed, URL-safe) so opening the link loads it straight into the editor — nothing uploaded or stored, since fragments never reach a server; warns before copying an unusually long link, since chat apps/social media (not the browser) are the real ceiling on link length. An optional "Shorten link" action hands that URL to da.gd (chosen over is.gd for its far higher ~65k-character limit) to get a short link back — the one explicit, opt-in exception to "nothing you type ever leaves your browser," gated behind its own confirmation and a proactive length check (`0c848a6`)
