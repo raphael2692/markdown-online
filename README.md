@@ -42,6 +42,8 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   (Jekyll/Hugo style); its `title`/`subtitle` keys render as a title block
   above the document in every preview and, in the Word export, become
   Word's real built-in Title/Subtitle styles rather than plain paragraphs.
+  A toolbar button inserts a starter block and disables itself once one is
+  already present.
 - **Smart lists** — pressing Enter continues bullet, numbered, task-list,
   and blockquote lines (numbered items renumber themselves); Enter on an
   empty item ends the list, and Tab/Shift+Tab nest or un-nest an item.
