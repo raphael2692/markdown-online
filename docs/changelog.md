@@ -1,4 +1,4 @@
-<!-- docs-sync: ab80122 -->
+<!-- docs-sync: 6ece1de -->
 
 # Changelog
 
@@ -12,6 +12,9 @@
 - Share via link: packs the current document into the page's own URL fragment (LZString-compressed, URL-safe) so opening the link loads it straight into the editor — nothing uploaded or stored, since fragments never reach a server; warns before copying an unusually long link, since chat apps/social media (not the browser) are the real ceiling on link length. An optional "Shorten link" action hands that URL to da.gd (chosen over is.gd for its far higher ~65k-character limit) to get a short link back — the one explicit, opt-in exception to "nothing you type ever leaves your browser," gated behind its own confirmation and a proactive length check (`0c848a6`)
 - Download Word (.docx) export: builds a real .docx file client-side (vendored html-docx-js) with actual Heading/Quote paragraph styles — a reliable alternative to "Copy for Word / Docs", whose fidelity depends on Word's own paste importer honoring style hints (`0597ce6`)
 - Document outline now sits beside the write pane as a resizable left sidebar (toggled via the toolbar or Ctrl/Cmd+Shift+O) instead of below the write/preview row, and its width is drag-resizable like the other panes; scoped to its own flex row so the "Stack panels" toggle only stacks write/preview, not the outline (`7edbc7c`)
+
+### Fixed
+- Number sections toggle appeared broken on the sample document: moving the title into front matter left the sample's body sections at a bare `#`, which `numberHeadings()` always treats as the untouchable document-title level, so none of them ever got numbered. Sample doc's sections are now `##`/`###`/`####` (Highlights, Open questions, Launch checklist > Blockers > Owner, Status by team) so the toggle numbers them again (`6ece1de`)
 
 ### Fixed
 - Plain paragraphs in both "Copy for Word / Docs" and "Download Word (.docx)" now respond to editing Word's "Normal" style — they were tagged Normal but also carried baked-in direct formatting that silently overrode it (`eedc16b`)
