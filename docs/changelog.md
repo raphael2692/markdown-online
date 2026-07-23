@@ -1,4 +1,4 @@
-<!-- docs-sync: 863df64 -->
+<!-- docs-sync: f37174d -->
 
 # Changelog
 
@@ -16,6 +16,7 @@
 
 ### Fixed
 - Number sections toggle appeared broken on the sample document: moving the title into front matter left the sample's body sections at a bare `#`, which `numberHeadings()` always treats as the untouchable document-title level, so none of them ever got numbered. Sample doc's sections are now `##`/`###`/`####` (Highlights, Open questions, Launch checklist > Blockers > Owner, Status by team) so the toggle numbers them again (`6ece1de`)
+- Shift-forward on a heading line stripped to plain text by shift-back was a no-op (it only matched lines already starting with `#`), so once a heading lost its last `#` the only way back was undo. Shift-forward now promotes a plain paragraph to an h1, scoped to the caret's own line (or the selection) rather than the whole document, so it can't blanket-promote every paragraph in the file when nothing is selected (`f37174d`)
 
 ### Fixed
 - Plain paragraphs in both "Copy for Word / Docs" and "Download Word (.docx)" now respond to editing Word's "Normal" style — they were tagged Normal but also carried baked-in direct formatting that silently overrode it (`eedc16b`)

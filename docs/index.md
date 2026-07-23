@@ -509,10 +509,17 @@ parts:
   bump the ATX marker's `#` count on every heading line touched by the
   current selection — or, with no selection, every heading line in the whole
   document — up or down a level in one action. Non-heading lines pass through
-  untouched, a level-1 heading shifted back drops its marker entirely (plain
-  paragraph text, since there's no level 0), and shifting past H6 forward is
-  a per-line no-op rather than a clamp, so a mixed-level selection never
-  loses its relative levels. `protectedHeadingLines()` walks the document
+  untouched on shift-back, a level-1 heading shifted back drops its marker
+  entirely (plain paragraph text, since there's no level 0), and shifting
+  past H6 forward is a per-line no-op rather than a clamp, so a mixed-level
+  selection never loses its relative levels. Shift-forward is the one
+  asymmetric case: on a line with no `#` marker, it promotes that line to
+  an h1 instead of no-op'ing, so a heading stripped to plain text by
+  shift-back can be promoted straight back rather than requiring undo. That
+  promotion is scoped to the caret's own line (or the selected lines) even
+  when nothing is selected — it never falls back to whole-document scope
+  the way the heading-bump case does, since applying it document-wide would
+  turn every paragraph in the file into an h1. `protectedHeadingLines()` walks the document
   once to mark line indexes inside YAML front matter (only when it opens
   line 1) and fenced code/diagram blocks (` ``` `/`~~~`, tracking the
   opening fence's char and length so a shorter same-char fence inside a
