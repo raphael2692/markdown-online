@@ -1,10 +1,11 @@
-<!-- docs-sync: 72bf51b -->
+<!-- docs-sync: 0c848a6 -->
 
 # Changelog
 
 ## [Unreleased]
 
 ### Added
+- Share via link: packs the current document into the page's own URL fragment (LZString-compressed, URL-safe) so opening the link loads it straight into the editor — nothing uploaded or stored, since fragments never reach a server; warns before copying an unusually long link, since chat apps/social media (not the browser) are the real ceiling on link length. An optional "Shorten link" action hands that URL to da.gd (chosen over is.gd for its far higher ~65k-character limit) to get a short link back — the one explicit, opt-in exception to "nothing you type ever leaves your browser," gated behind its own confirmation and a proactive length check (`0c848a6`)
 - Download Word (.docx) export: builds a real .docx file client-side (vendored html-docx-js) with actual Heading/Quote paragraph styles — a reliable alternative to "Copy for Word / Docs", whose fidelity depends on Word's own paste importer honoring style hints (`0597ce6`)
 - Document outline now sits beside the write pane as a resizable left sidebar (toggled via the toolbar or Ctrl/Cmd+Shift+O) instead of below the write/preview row, and its width is drag-resizable like the other panes; scoped to its own flex row so the "Stack panels" toggle only stacks write/preview, not the outline (`7edbc7c`)
 
@@ -13,6 +14,8 @@
 - "Copy for Word / Docs" now maps headings and blockquotes to real applied Word styles (Heading 1..6, Quote) instead of pasting them as directly-formatted bold text with no restylable style — the mapping is set both via a `<head><style>` block and inline per element, wrapped in explicit clipboard fragment markers, so it survives however Word's paste importer slices the fragment (`d55a6e6`, `a5e5b42`)
 - DBML diagrams are now rasterized to PNG for "Copy for Word / Docs" the same way Mermaid diagrams already were, instead of silently vanishing on paste (Word's importer drops inline `<svg>`) (`a5e5b42`)
 - Copy for Word / Docs no longer bakes computed direct formatting onto plain paragraphs on top of the "Normal" style hint — a regression that made editing Normal in Word's Styles pane silently do nothing again after the original fix (`cf4ee9c`)
+- Download Word (.docx) table headers now use Word's real built-in "Table Grid" style instead of a hardcoded fill color and borders, so the table inherits whatever style the document/user picks in Word's Table Design gallery rather than a fixed look this tool chose (`f7074b7`)
+- Error feedback (PDF export, .docx export, and the new share/shorten actions) now actually appears on screen — `this.error` had no UI element bound to it anywhere, so a failure silently did nothing visible; it now renders as a dismissible floating notification (`0c848a6`)
 
 ### Changed
 - Download Word (.docx) is rebuilt on a real OOXML document (vendored `docx.js`, replacing html-docx-js): a DOM walker converts sanitized markdown HTML directly into paragraphs/runs/tables referencing named styles (Normal, Heading 1–6, Quote, Code Block) declared in the file's own styles.xml, instead of embedding HTML as a Word `altChunk` for Word to reinterpret on open — editing a style in Word's Styles pane now reliably restyles every paragraph linked to it (`4a69dd3`)

@@ -48,8 +48,8 @@ natively — this wiki is for engineering depth, not visitor-facing content.
   most visitors never trigger it),
   `site/assets/vendor/` (pinned Alpine.js, marked, DOMPurify, KaTeX, Mermaid,
   highlight.js — light **and** dark stylesheets — turndown,
-  turndown-plugin-gfm, PapaParse — vendored locally, no CDN hotlinking in
-  production).
+  turndown-plugin-gfm, PapaParse, lz-string — vendored locally, no CDN
+  hotlinking in production).
 - **Icons**: Lucide, inlined as static `<svg>` markup (not the JS runtime),
   so icons stay themeable via `currentColor`/Tailwind classes and keep
   working with JavaScript disabled. Reference/source copies of each icon
@@ -663,6 +663,79 @@ parts:
   or root repo replaces this setup, set `BASE_PATH = ""` and `ASSETS_BASE`
   resolves to `""` automatically.
 
+## Share via link
+
+A "Share" toolbar dropdown (next to Export) packs the whole document into
+the page's own URL, so opening that link loads the document straight into
+the editor — no server, no stored copy, nothing uploaded.
+
+- **How it's encoded**: `_buildShareUrl()` lazy-loads vendored
+  `lz-string-1.5.0.min.js` (`site/assets/vendor/`, `ensureLzStringLoaded()`
+  in `site/assets/site.js`) and calls
+  `LZString.compressToEncodedURIComponent(this.input)`, which produces a
+  URL-safe string directly (no separate `encodeURIComponent` pass needed).
+  The result is appended as `#doc=<packed>` — a URL **fragment**, not a
+  query string, so it's never sent to any server (browsers strip the
+  fragment before issuing the HTTP request). This is what keeps "Copy share
+  link" compliant with "nothing you type ever leaves your browser" even
+  though the whole document now lives inside a link.
+- **Copy share link** (`copyShareLink()`) builds that URL and copies it.
+  Past `SHARE_LEN_WARN` (8,000 encoded characters) it first shows a
+  non-destructive `confirmDialog` (`danger: false`) warning that the link
+  may get truncated if pasted into chat apps/social media, since those
+  platforms — not the browser — are the real ceiling on link length here
+  (a fragment loads fine in-browser at far larger sizes). The success toast
+  includes a truncated preview of the copied link (`flash('Share link
+  copied: ' + preview, 4000)`) rather than a bare "Copied", so there's
+  visible proof a real URL landed on the clipboard, not just a generic
+  confirmation — `flash()` (`site/assets/site.js`) now takes an optional
+  duration (default still 2000ms) since a link preview needs longer than a
+  one-word toast to actually read; the shared toast `<span>` also gained
+  `max-w-sm truncate` so a long preview can't break the toolbar row's
+  layout.
+- **Shorten link (via da.gd)** (`shortenShareLink()`) is the one deliberate
+  exception to "nothing leaves your browser": it hands the full share URL to
+  `da.gd/shorten` (confirmed CORS-enabled, `Access-Control-Allow-Origin: *`,
+  no API key needed) to get back a short link. Response handling is
+  plain-text + HTTP status (`res.ok` / body text), not JSON like is.gd's
+  `format=json` API. Gated behind its own `confirmDialog` that states
+  plainly what's about to happen and that nothing else in the app behaves
+  this way. The success toast shows the actual short URL returned
+  (`flash('Short link copied: ' + text, 4000)`), not just a bare
+  confirmation, since unlike the plain share link it's genuinely short
+  enough to display in full.
+    - **Why da.gd over is.gd**: same operator family, but a far higher
+      practical length ceiling. Tested directly: da.gd shortens URLs up to
+      ~65,000 characters fine, then fails (500 from da.gd's own app, not a
+      transport-layer rejection) somewhere around 65k-68k, vs. is.gd's own
+      ~5,000-character limit. POST (body instead of query string) was tried
+      too, on the theory that it might sidestep a URL-length ceiling — it
+      didn't: the same ~65k-68k wall shows up regardless, confirming it's
+      da.gd's own backend limit (likely a DB column size), not a
+      GET-request-size artifact — so there's no easy way to push past it
+      with this service. TinyURL was also considered and rejected outright:
+      no `Access-Control-Allow-Origin` header at all, so it can't be called
+      from browser JS regardless of length.
+    - Above `DA_GD_MAX_URL` (50,000 characters, comfortable margin under the
+      observed ~65k-68k wall) the code refuses locally with a clear message
+      rather than firing the request — past that size the request risks
+      getting cut off by an edge/proxy before the app even sees it, which
+      otherwise surfaces as a bare `fetch` network failure with no useful
+      error text (confirmed while testing against is.gd's much lower
+      ceiling: a large document produced exactly this — a
+      `net::ERR_FAILED`/CORS-looking browser error with no body — hence the
+      proactive length check instead of relying on the service's own error
+      response).
+- **Opening a share link** (`_loadSharedFromHash()`, called once from
+  `init()`) parses `#doc=...`, immediately strips it via
+  `history.replaceState` (so reloading the tab doesn't re-import it), then
+  decompresses and loads the content into a **new** document named "Shared
+  document" (deduped like every other new-doc name) rather than overwriting
+  whatever was already open — loading a shared link is additive, never
+  destructive.
+- Both actions live under a `pinesSelect` dropdown (`shareAction(kind)`
+  dispatch), structurally identical to the existing Export dropdown.
+
 ## Preview zoom, pan, and fit-to-view
 
 The rendered preview (`x-ref="preview"`) is a fixed-size, both-axes
@@ -824,6 +897,33 @@ error box) has a `dark:`/`.dark` counterpart.
 
 ## Confirmation dialogs and the shortcuts cheat sheet
 
+- **The `toast`/`error` notification** is a `<template x-teleport="body">`
+  block near the end of the page, `fixed inset-x-0 top-4` (top-center,
+  overlaying the page), not a span sitting inline in the toolbar's own
+  `flex flex-wrap` row. It started as an inline toolbar span, but any
+  message wider than a short word (like a copied share link, or an error)
+  visibly reflowed and pushed the surrounding toolbar buttons around —
+  teleporting it out of that flex flow to a floating overlay fixes that
+  regardless of message length. It's a single shared mechanism used by
+  every `flash()` call site across the whole editor (Copied, Downloaded,
+  "already saved locally", share-link confirmations, etc.) and by every
+  `this.error =` call site — since there's only one `toast`/`error` pair of
+  fields on the `toolWidget()` component, moving their one display location
+  automatically normalized all of them at once; there was no second,
+  parallel notification implementation elsewhere to reconcile. (The import
+  modal's `importHtml.error`/`importCsv.error` messages are a different,
+  correctly-scoped category — inline field-level validation inside a
+  self-contained modal dialog, not a page-level transient notification —
+  and don't share this component's reflow problem, so they were
+  intentionally left as-is.) `error` is also what actually renders
+  `this.error` at all — until it was added, `run()`, `printPdf()`,
+  `downloadDocx()`, and the share-link functions were all setting
+  `this.error` with nothing anywhere bound to display it, so a failure was
+  completely silent (found while testing the share-link feature: a failed
+  is.gd request set `this.error` correctly but nothing appeared on screen).
+  Unlike `toast` it doesn't auto-clear on a timer — errors can be longer
+  than a 2-second toast affords to read — and instead has its own dismiss
+  (×) button that clears `this.error`.
 - **No `window.confirm()`/`alert()` anywhere in the editor.** Destructive
   actions — delete a document, clear the current draft, replace a document
   via "Open Markdown file" over unsaved content — go through
