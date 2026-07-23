@@ -112,7 +112,7 @@ window.paneResizer = paneResizer;
 // page's own `toast`, `input`, `opts` state.
 function toolActionsMixin() {
   return {
-    flash(msg) { this.toast = msg; setTimeout(() => this.toast = '', 2000); },
+    flash(msg, ms = 2000) { this.toast = msg; clearTimeout(this._toastTimer); this._toastTimer = setTimeout(() => this.toast = '', ms); },
 
     async copyRichClick() {
       const ok = await window.copyRich(this.input, this.opts);
@@ -718,6 +718,20 @@ function ensurePapaParseLoaded() {
   return papaReadyPromise;
 }
 window.ensurePapaParseLoaded = ensurePapaParseLoaded;
+
+// LZString.compressToEncodedURIComponent produces a URL-safe alphabet
+// (no escaping needed) — used to pack a whole document into a share link's
+// hash fragment, which browsers never send to any server.
+let lzStringReadyPromise = null;
+
+function ensureLzStringLoaded() {
+  if (!lzStringReadyPromise) {
+    lzStringReadyPromise = loadScript(`${ASSETS_BASE}/assets/vendor/lz-string-1.5.0.min.js`)
+      .catch((e) => { lzStringReadyPromise = null; throw e; });
+  }
+  return lzStringReadyPromise;
+}
+window.ensureLzStringLoaded = ensureLzStringLoaded;
 
 // turndown-plugin-gfm only touches TurndownService at call time
 // (turndownPluginGfm.gfm(td)), not at parse time, so load order between the

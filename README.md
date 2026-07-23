@@ -52,6 +52,12 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   (Normal, Heading 1–6, Quote, Code Block) — restyle one in Word's Styles
   pane and every paragraph using it updates — or **Copy for Word / Docs**
   puts a quick formatted paste on your clipboard for Word or Google Docs.
+- **Share via link** — pack the current document into a URL you can send
+  anyone; opening it loads the document straight into their editor. The
+  document lives entirely in the link itself (compressed into the URL's
+  fragment), so nothing is uploaded or stored — an optional "Shorten link"
+  action can additionally hand that URL to da.gd for a short link, the one
+  explicit, opt-in exception to "nothing leaves your browser."
 - **Math and diagrams** — inline/block KaTeX math and Mermaid diagrams,
   auto-detected as you type.
 - **Database schema diagrams** — write real DBML in a fenced code block and
@@ -66,7 +72,8 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   code in ~35 languages, including first-party Mermaid and DBML grammars).
 
 Every conversion runs on vetted, open-source JavaScript libraries loaded
-from this site — nothing is sent anywhere.
+from this site — nothing is sent anywhere, except the one action that says
+so up front (shortening a share link via da.gd).
 
 ## Why this exists
 

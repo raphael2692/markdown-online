@@ -184,8 +184,6 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-1.5">
-            <span x-show="toast" x-transition.opacity x-cloak class="mr-1 text-xs text-green-700 dark:text-green-400" x-text="toast"></span>
-
             <div x-data="pinesSelect({
                     items: [
                       { value: 'md', label: 'Open Markdown file…' },
@@ -256,6 +254,46 @@
                 :aria-expanded="open" aria-haspopup="listbox" aria-label="Export"
                 class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></svg>
+                <span x-text="displayLabel"></span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              <ul x-show="open" x-cloak x-ref="pinesSelectList" @click.away="close()"
+                x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'"
+                class="absolute right-0 z-20 max-h-60 w-max min-w-full overflow-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-1 text-xs shadow-lg focus:outline-none"
+                role="listbox">
+                <template x-for="(item, idx) in items" :key="idx">
+                  <li :data-idx="idx" role="presentation">
+                    <div x-show="item.header" class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500" x-text="item.header"></div>
+                    <div x-show="!item.header" @click="choose(item)" @mousemove="!item.disabled && (activeIndex = idx)"
+                      role="option" :aria-selected="selectedItem === item" :title="item.title"
+                      :class="{ 'bg-neutral-100 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100': activeIndex === idx, 'opacity-50 pointer-events-none': item.disabled }"
+                      class="flex cursor-default items-center justify-between gap-6 px-3 py-1.5">
+                      <span x-text="item.label"></span>
+                    </div>
+                  </li>
+                </template>
+              </ul>
+            </div>
+
+            <div x-data="pinesSelect({
+                    items: [
+                      { value: 'copy-link', label: 'Copy share link' },
+                      { value: 'shorten-link', label: 'Shorten link (via da.gd)', title: 'Sends this document’s content to da.gd, a third-party link shortener, so it can hand back a short URL. Nothing is sent until you pick this — the plain “Copy share link” option above never leaves your browser.' },
+                    ],
+                    value: () => null,
+                    onSelect: (v) => shareAction(v),
+                    placeholder: 'Share',
+                  })"
+                 @keydown.escape.stop="close()"
+                 @keydown.down.prevent="open ? moveActive(1) : openMenu()"
+                 @keydown.up.prevent="open ? moveActive(-1) : openMenu()"
+                 @keydown.enter.prevent="open ? chooseActive() : openMenu()"
+                 class="relative inline-block" title="Share this document via a link">
+              <button type="button" x-ref="pinesSelectButton" @click="toggle()"
+                :aria-expanded="open" aria-haspopup="listbox" aria-label="Share"
+                class="flex min-h-[30px] items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" x2="15.42" y1="13.51" y2="17.49" /><line x1="15.41" x2="8.59" y1="6.51" y2="10.49" /></svg>
                 <span x-text="displayLabel"></span>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3.5 w-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
               </button>
@@ -1036,6 +1074,25 @@
           </div>
         </div>
       </template>
+
+      <template x-teleport="body">
+        <div class="pointer-events-none fixed inset-x-0 top-4 z-[99] flex flex-col items-center gap-2 px-4">
+          <div x-show="toast" x-cloak
+            x-transition:enter="ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+            class="pointer-events-auto max-w-sm truncate rounded-md border border-green-200 dark:border-green-900 bg-white dark:bg-neutral-900 px-3 py-2 text-xs text-green-700 dark:text-green-400 shadow-lg"
+            x-text="toast"></div>
+          <div x-show="error" x-cloak
+            x-transition:enter="ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+            class="pointer-events-auto flex max-w-sm items-start gap-2 rounded-md border border-red-200 dark:border-red-900 bg-white dark:bg-neutral-900 px-3 py-2 text-xs text-red-600 dark:text-red-400 shadow-lg">
+            <span x-text="error"></span>
+            <button type="button" @click="error = ''" aria-label="Dismiss error" class="shrink-0 rounded p-0.5 hover:bg-red-100 dark:hover:bg-red-950">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-3 w-3" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+            </button>
+          </div>
+        </div>
+      </template>
     </section>
 
   </main>
@@ -1105,6 +1162,14 @@
     const DOCS_KEY = 'markdown-editor-docs-v1';
     const DOC_PREFIX = 'markdown-editor-doc-';
     const UI_KEY = 'markdown-editor-ui-v1';
+    // Above this encoded length, a share link risks truncation when pasted
+    // into chat apps / social media, even though the browser itself would
+    // load it fine — see copyShareLink().
+    const SHARE_LEN_WARN = 8000;
+    // da.gd's practical ceiling for the URL it's asked to shorten, with
+    // margin below the ~60-100k range where its Cloudflare edge starts
+    // returning 414s. See shortenShareLink().
+    const DA_GD_MAX_URL = 50000;
     const ZOOM_MIN = 25, ZOOM_MAX = 400, ZOOM_STEP = 10;
 
     // Initial write/preview pane height, sized so the page (header, toolbar,
@@ -1226,6 +1291,7 @@
         init() {
           this._loadDocs();
           this.initHistory();
+          this._loadSharedFromHash();
           try {
             const ui = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
             if (ui.toolbarOpen === false) this.toolbarOpen = false;
@@ -2242,6 +2308,96 @@
             'download-html': () => this.downloadHtml(),
             'print-pdf': () => this.printPdf(),
           })[kind]?.();
+        },
+
+        // ---- share via link: the whole document travels inside the URL's
+        // hash fragment, which browsers never include in the HTTP request —
+        // so the plain "Copy share link" path never sends content anywhere.
+        // "Shorten link" is the one explicit, opt-in exception: it hands that
+        // same URL to da.gd so it can hand back a short one.
+        shareAction(kind) {
+          ({
+            'copy-link': () => this.copyShareLink(),
+            'shorten-link': () => this.shortenShareLink(),
+          })[kind]?.();
+        },
+        async _buildShareUrl() {
+          await window.ensureLzStringLoaded();
+          const packed = LZString.compressToEncodedURIComponent(this.input);
+          return location.origin + location.pathname + '#doc=' + packed;
+        },
+        async copyShareLink() {
+          this.error = '';
+          try {
+            const url = await this._buildShareUrl();
+            if (url.length > SHARE_LEN_WARN) {
+              const ok = await this.confirmDialog(
+                `This document is long, so the link comes out to about ${url.length.toLocaleString()} characters. It’ll open fine in a browser, but may get cut off if pasted into chat apps or social media — “Shorten link” or sharing the file itself are more reliable for a document this size.`,
+                { title: 'Long share link', confirmLabel: 'Copy anyway', danger: false }
+              );
+              if (!ok) return;
+            }
+            await navigator.clipboard.writeText(url);
+            // The full link is too long to show in the toast verbatim, but a
+            // truncated preview is enough to confirm at a glance that a real
+            // URL (not an error, not an empty string) landed on the clipboard.
+            const preview = url.length > 60 ? url.slice(0, 60) + '…' : url;
+            this.flash('Share link copied: ' + preview, 4000);
+          } catch (e) {
+            this.error = 'Could not build the share link — try again.';
+          }
+        },
+        async shortenShareLink() {
+          this.error = '';
+          try {
+            const longUrl = await this._buildShareUrl();
+            // da.gd's own app-level validation aside, extremely long input
+            // URLs get cut off by an edge/proxy before its app even sees
+            // them, surfacing as a bare network failure rather than a clean
+            // error — checked upfront so the failure mode is an honest
+            // message instead of a doomed request.
+            if (longUrl.length > DA_GD_MAX_URL) {
+              this.error = `This document is too large to shorten (the link is about ${longUrl.length.toLocaleString()} characters; da.gd tops out around ${DA_GD_MAX_URL.toLocaleString()}). Try "Copy share link" instead, or share the file itself.`;
+              return;
+            }
+            const ok = await this.confirmDialog(
+              'This sends the document’s content to da.gd, a third-party link shortener, so it can hand back a short URL. It happens only for this one action — nothing else in this app sends your document anywhere.',
+              { title: 'Shorten via da.gd', confirmLabel: 'Shorten & send', danger: false }
+            );
+            if (!ok) return;
+            const res = await fetch('https://da.gd/shorten?url=' + encodeURIComponent(longUrl));
+            const text = (await res.text()).trim();
+            if (res.ok) {
+              await navigator.clipboard.writeText(text);
+              this.flash('Short link copied: ' + text, 4000);
+            } else {
+              this.error = text || 'da.gd could not shorten this link — the document may be too large. Try "Copy share link" instead.';
+            }
+          } catch (e) {
+            this.error = 'Could not reach da.gd — check your connection and try again.';
+          }
+        },
+        // Called once from init(). A #doc=... fragment (from a share link)
+        // is loaded into a brand-new document, never overwriting whatever
+        // was already open, then stripped from the URL so a later reload of
+        // this same tab doesn't re-import it.
+        _loadSharedFromHash() {
+          const m = /(?:^|[#&])doc=([^&]+)/.exec(location.hash);
+          if (!m) return;
+          history.replaceState(null, '', location.pathname + location.search);
+          window.ensureLzStringLoaded().then(() => {
+            let text = null;
+            try { text = LZString.decompressFromEncodedURIComponent(m[1]); } catch (e) { /* fall through to error below */ }
+            if (!text) { this.error = 'This share link looks corrupted — could not load the document.'; return; }
+            const id = this._newDocId();
+            const names = new Set(this.docs.map((d) => d.name));
+            let name = 'Shared document', n = 2;
+            while (names.has(name)) name = `Shared document ${n++}`;
+            this.docs.push({ id, name });
+            localStorage.setItem(DOC_PREFIX + id, text);
+            this._activateDoc(id);
+            this.flash('Loaded shared document');
+          }).catch(() => { this.error = 'Could not load the shared document — check your connection and try again.'; });
         },
         downloadMd() {
           window.downloadFile(this.input, 'document.md', 'text/markdown;charset=utf-8');
