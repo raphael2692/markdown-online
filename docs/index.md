@@ -562,12 +562,19 @@ parts:
   small key, never the whole set. A switcher dropdown (first control in
   the top bar — the document's name doubles as the editor's "title bar")
   lists documents with per-row delete, plus "Rename current…" (inline
-  input, Enter/Escape) and "New document" actions. Switching flushes any
-  pending autosave first (`_flushSave()`), then loads the target with a
-  *fresh undo history* (`initHistory()`) — undo must never carry edits
-  across documents; deleting the active document clears the pending save
-  timer so the debounce can't resurrect the removed key, and deleting the
-  last document recreates an empty "Untitled". The legacy single-draft key
+  input, Enter/Escape), "New document", and "Clear all documents…" actions.
+  Switching flushes any pending autosave first (`_flushSave()`), then loads
+  the target with a *fresh undo history* (`initHistory()`) — undo must
+  never carry edits across documents; deleting the active document clears
+  the pending save timer so the debounce can't resurrect the removed key,
+  and deleting the last document recreates an empty "Untitled". Activating
+  a document (switch/new/delete) defers its render a tick (`$nextTick`)
+  before calling `run()`, the same guard the initial page load uses,
+  since the document-list DOM patch and the render can otherwise race and
+  try to write into a not-yet-settled preview ref. "Clear all documents…"
+  is the same confirm-gated reset as deleting the last document, but for
+  every document at once — wipes every `markdown-editor-doc-<id>` key and
+  starts over with one empty "Untitled". The legacy single-draft key
   (`markdown-editor-draft-v1`) migrates into a named document on first
   load and is removed. "Open Markdown file…" still replaces the *current*
   document (confirm-gated), and renames it to the file's basename when the

@@ -1,10 +1,15 @@
-<!-- docs-sync: f37174d -->
+<!-- docs-sync: 2ad3e39 -->
 
 # Changelog
 
 ## [Unreleased]
 
+### Fixed
+- Deleting (or switching to, or creating) a document could throw "Cannot set properties of undefined (setting 'innerHTML')" if the preview render landed before Alpine settled the document-list DOM patch; the document switch now waits a tick before rendering, matching the guard already used on initial page load (`2ad3e39`)
+- Deleting a document no longer leaves the Documents dropdown open afterward (`2ad3e39`)
+
 ### Added
+- "Clear all documents" action in the Documents dropdown, wiping every document stored in this browser and starting over with one fresh Untitled document (`2ad3e39`)
 - Insert front matter toolbar button: prepends a starter `title`/`subtitle` block at the top of the document and parks the cursor on the title value; disables itself once front matter is already present, since a document can only have one and it must open line 1 (`863df64`)
 - Heading level shift: bump every heading in the current selection — or, with no selection, every heading in the whole document — up or down a level from the toolbar or Alt+Shift+Right/Alt+Shift+Left — shifting a level-1 heading back drops it to plain text; shifting past H6 forward is a no-op so a mixed-level selection keeps its relative levels; lines inside front matter or fenced code/diagram blocks are always skipped, so a `#` code comment or YAML key is never mistaken for a heading (`1a3cd9b`, `ab80122`)
 - Markdown front matter: a `---title: ...\nsubtitle: ...---` block at the top of the document renders as a title header ahead of the body in every preview (kept out of the outline and the section-numbering toggle, since it isn't a heading) and, in Download Word (.docx), maps onto Word's own built-in Title/Subtitle paragraph styles instead of a generic heading/paragraph (`1a3cd9b`)
