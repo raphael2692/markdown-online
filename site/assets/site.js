@@ -537,13 +537,45 @@ function numberHeadings(html) {
   return tpl.innerHTML;
 }
 
+// Front matter: an optional `---\n...\n---` metadata block (Jekyll/Hugo
+// convention) at the very top of the document. Not a real YAML parser —
+// only flat `key: value` scalars, quotes stripped — which is all `title`/
+// `subtitle` (the only keys anything here acts on) ever need; a nested
+// map or list value just comes through as its raw string rather than
+// failing the whole parse. Every render path (preview, copy, download,
+// docx) must strip this block before handing the rest to marked, or it
+// renders as a stray `<hr>` followed by two mangled paragraphs.
+function parseFrontMatter(markdown) {
+  const m = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(markdown);
+  if (!m) return { meta: {}, body: markdown };
+  const meta = {};
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
+    if (!kv) continue;
+    let value = kv[2].trim();
+    if ((value.length >= 2) && ((value[0] === '"' && value[value.length - 1] === '"') || (value[0] === "'" && value[value.length - 1] === "'"))) {
+      value = value.slice(1, -1);
+    }
+    meta[kv[1]] = value;
+  }
+  return { meta, body: markdown.slice(m[0].length) };
+}
+window.parseFrontMatter = parseFrontMatter;
+
 // Single shared conversion pipeline used by every tool widget and by
 // copyRich(), so the markdown -> HTML rules stay identical everywhere
 // instead of being reimplemented at each call site.
 async function convertMarkdown(input, opts) {
   opts = opts || {};
   mathEnabled = !!opts.math;
-  let html = marked.parse(input, { gfm: true, breaks: !!opts.gfmBreaks });
+  const { meta, body } = parseFrontMatter(input);
+  let html = marked.parse(body, { gfm: true, breaks: !!opts.gfmBreaks });
+  if (meta.title || meta.subtitle) {
+    let header = '';
+    if (meta.title) header += `<h1 class="fm-title">${marked.parseInline(meta.title)}</h1>`;
+    if (meta.subtitle) header += `<p class="fm-subtitle">${marked.parseInline(meta.subtitle)}</p>`;
+    html = header + html;
+  }
   if (opts.smartypants) html = smartyPants(html);
   if (opts.mermaid) html = await renderMermaidDiagrams(html);
   if (opts.dbml) html = await renderDbmlDiagrams(html);
@@ -1141,6 +1173,7 @@ const DOCX_STYLES = {
     heading4: { run: { font: 'Calibri', size: 24, bold: true, color: '1F4E79' }, paragraph: { spacing: { before: 160, after: 80 }, keepNext: true } },
     heading5: { run: { font: 'Calibri', size: 22, bold: true, italics: true, color: '1F4E79' }, paragraph: { spacing: { before: 120, after: 60 }, keepNext: true } },
     heading6: { run: { font: 'Calibri', size: 22, italics: true, color: '404040' }, paragraph: { spacing: { before: 120, after: 60 }, keepNext: true } },
+    title: { run: { font: 'Calibri Light', size: 56, color: '2E74B5' }, paragraph: { spacing: { after: 60 }, keepNext: true } },
   },
   paragraphStyles: [
     {
@@ -1152,6 +1185,16 @@ const DOCX_STYLES = {
       id: 'CodeBlock', name: 'Code Block', basedOn: 'Normal', next: 'CodeBlock', quickFormat: true,
       run: { font: 'Consolas', size: 20 },
       paragraph: { spacing: { after: 0 }, shading: { fill: 'F2F2F2' } },
+    },
+    // Word's own built-in "Subtitle" style ID — defining it here (same as
+    // Quote/CodeBlock above) rather than leaving it to Word to infer from
+    // an undeclared reference means it shows up correctly named in the
+    // Styles pane and is guaranteed to exist, matching every other style
+    // in this file.
+    {
+      id: 'Subtitle', name: 'Subtitle', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+      run: { font: 'Calibri Light', size: 28, color: '5A5A5A' },
+      paragraph: { spacing: { after: 240 }, keepNext: true },
     },
   ],
   characterStyles: [
@@ -1381,6 +1424,16 @@ async function blockNodeToDocxChildren(node, numberingConfigs, styleOverride) {
   }
   if (node.nodeType !== Node.ELEMENT_NODE) return [];
   const tag = node.tagName.toLowerCase();
+  // Front matter's title/subtitle (see parseFrontMatter() / convertMarkdown()
+  // in this file) get Word's real built-in Title/Subtitle styles instead of
+  // being treated as an ordinary h1/p — a document title isn't a section
+  // heading, and only this marked class distinguishes it from one.
+  if (tag === 'h1' && node.classList.contains('fm-title')) {
+    return [new docx.Paragraph({ heading: docx.HeadingLevel.TITLE, children: await inlineNodesToRuns(node.childNodes, {}) })];
+  }
+  if (tag === 'p' && node.classList.contains('fm-subtitle')) {
+    return [new docx.Paragraph({ style: 'Subtitle', children: await inlineNodesToRuns(node.childNodes, {}) })];
+  }
   const headingIdx = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].indexOf(tag);
   if (headingIdx !== -1) {
     return [new docx.Paragraph({

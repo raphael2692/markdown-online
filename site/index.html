@@ -90,6 +90,11 @@
         "@type": "Question",
         "name": "What keyboard shortcuts are supported?",
         "acceptedAnswer": { "@type": "Answer", "text": "Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, and Ctrl/Cmd+K for a link, alongside toolbar buttons for headings, lists, quotes, tables, and code." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I set a document title and subtitle?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes, with a --- front matter block at the top of the document: title: ... and subtitle: ... between the two --- lines. Both render as a title header in the preview and, in Download Word (.docx), map onto Word's own built-in Title and Subtitle styles instead of a plain paragraph." }
       }
     ]
   }
@@ -143,7 +148,10 @@
         who doesn't want to remember that a link is <code>[text](url)</code> or
         that a quote needs a <code>&gt;</code> at the start of the line —
         select some text, click a button, and the syntax is inserted around it
-        (or a sensible placeholder, if nothing is selected). The preview is
+        (or a sensible placeholder, if nothing is selected). Select one or more
+        heading lines and the toolbar's heading-shift buttons (or
+        Alt+Shift+Right / Alt+Shift+Left) bump every heading's level up or
+        down together, instead of retyping <code>#</code>s by hand. The preview is
         always sanitized with
         <a class="text-vsc-accent dark:text-vsc-accent-dark hover:underline" href="https://github.com/cure53/DOMPurify">DOMPurify</a>
         before it touches the page, so pasted content with a stray
@@ -165,6 +173,21 @@
         quotes become curly quotes, <code>--</code>/<code>---</code> become
         en/em dashes) and single line breaks rendering as <code>&lt;br&gt;</code>
         are both applied automatically — no toggles to switch on first.
+      </p>
+    </section>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="text-xl font-semibold">Document title and subtitle via front matter</h2>
+      <p>
+        Start a document with a <code>---</code> front matter block —
+        <code>title: ...</code> and <code>subtitle: ...</code> between the two
+        lines, Jekyll/Hugo-style — and the editor renders a title header above
+        the body in every preview. It's kept out of the document outline and
+        the section-numbering toggle entirely, since it isn't a heading, and
+        in <strong>Download Word (.docx)</strong> it maps onto Word's own
+        built-in <strong>Title</strong> and <strong>Subtitle</strong> styles
+        instead of an ordinary paragraph — distinct from whatever the body's
+        first <code>#</code> heading becomes.
       </p>
     </section>
 
@@ -223,11 +246,14 @@
         Word or Google Docs — styling depends on the app's own paste import,
         so editing a style like Normal afterward may not restyle everything
         that came from it. <strong>Download Word (.docx)</strong> instead
-        builds a real .docx file with true Word styles (Normal, Heading
-        1–6, Quote, Code Block), so editing a style in Word's Styles pane
-        reliably restyles every paragraph that uses it — the more reliable
-        option for a document you'll keep editing in Word. Both carry over
-        tables, images, and rasterized Mermaid diagrams. And <strong>Print
+        builds a real .docx file with true Word styles (Title, Subtitle,
+        Normal, Heading 1–6, Quote, Code Block), so editing a style in
+        Word's Styles pane reliably restyles every paragraph that uses it —
+        the more reliable option for a document you'll keep editing in
+        Word. A <code>---</code> front matter block's <code>title</code>
+        and <code>subtitle</code> map onto those first two styles instead
+        of an ordinary paragraph. Both carry over tables, images, and
+        rasterized Mermaid diagrams. And <strong>Print
         / Save as PDF</strong> opens your browser's print dialog with
         print-appropriate styling already applied. All seven read from the
         same draft, so whichever you reach for is always in sync with what's
@@ -312,6 +338,10 @@
         <div>
           <h3 class="font-medium">What keyboard shortcuts are supported?</h3>
           <p class="text-vsc-muted dark:text-vsc-muted-dark">Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, and Ctrl/Cmd+K for a link, alongside toolbar buttons for headings, lists, quotes, tables, and code.</p>
+        </div>
+        <div>
+          <h3 class="font-medium">Can I set a document title and subtitle?</h3>
+          <p class="text-vsc-muted dark:text-vsc-muted-dark">Yes, with a <code>---</code> front matter block at the top of the document: <code>title: ...</code> and <code>subtitle: ...</code> between the two <code>---</code> lines. Both render as a title header in the preview and, in Download Word (.docx), map onto Word's own built-in Title and Subtitle styles instead of a plain paragraph.</p>
         </div>
       </div>
     </section>

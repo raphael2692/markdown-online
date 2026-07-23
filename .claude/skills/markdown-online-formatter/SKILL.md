@@ -8,13 +8,14 @@ description: >-
   editor at /editor/. Applies to a full document, a short snippet, or seed
   content — trigger proactively even if the user doesn't name the tool or
   this skill explicitly; any time the deliverable is Markdown for this
-  editor, these rules apply by default. Covers: never hand-numbering
-  headings (numbering is a preview toggle), heading hierarchy for the
-  outline/minimap, soft line breaks becoming visible line breaks, which
-  fenced-code languages auto-trigger rich rendering (mermaid, dbml, math),
-  smartypants auto-typography, and GFM support (tables, task lists,
-  strikethrough — no footnotes). Treat as globally active for this project:
-  consult by default, not just on request.
+  editor, these rules apply by default. Covers: front matter for
+  title/subtitle (not a heading, not the old HTML-comment trick), never
+  hand-numbering headings (numbering is a preview toggle), heading
+  hierarchy for the outline/minimap, soft line breaks becoming visible
+  line breaks, which fenced-code languages auto-trigger rich rendering
+  (mermaid, dbml, math), smartypants auto-typography, and GFM support
+  (tables, task lists, strikethrough — no footnotes). Treat as globally
+  active for this project: consult by default, not just on request.
 ---
  
 # Writing Markdown for Markdown Online
@@ -49,31 +50,50 @@ written into the Markdown source, ever.
   manual numbers can only make that worse.
 - This applies to heading text specifically — ordinary numbered lists
   (`1. First step`) are unaffected and fine to use.
-## Document title: an HTML comment, not a heading
+## Document title & subtitle: front matter, not a heading
  
-Keep the document's name out of the heading hierarchy entirely — put it in an
-HTML comment at the very top instead: `<!-- Title: My Document Name -->`.
-Comments are stripped by the sanitizer and never rendered, so this is
-metadata only — visible in the source, not in the preview or the exported
-output.
+Give the document a name via a front matter block at the very top of the
+file, Jekyll/Hugo-style:
  
-- Visible content starts at `#` for the first real section heading — the
-  title comment already covers the "document name" role, so the first
-  section owns heading level 1. Don't leave a gap by starting at `##`.
+```
+---
+title: My Document Name
+subtitle: Optional one-line subtitle
+---
+```
+ 
+- This is the site's own lightweight front matter support, not real YAML —
+  only flat `key: value` scalars are parsed (quotes around a value are
+  stripped). Don't nest maps or lists inside the block; they won't parse
+  the way you'd expect.
+- `title`/`subtitle` render as a styled header ahead of the body in every
+  preview, but they are **not** part of the `#`…`######` heading hierarchy —
+  the outline/minimap never lists them and the numbering toggle never
+  touches them.
+- In the Word export (Download .docx / Copy for Word) they become Word's
+  real built-in **Title**/**Subtitle** paragraph styles — distinct from
+  whatever the body's first `#` heading maps to (**Heading 1**), so a
+  document can have both without them competing for the same Word style.
+- Superseded convention: don't reach for the old `<!-- Title: ... -->` HTML
+  comment trick for new content — front matter is the supported way to name
+  a document now. (It still works exactly as before on existing content:
+  sanitized away, no title role — just don't add new instances of it.)
+- Visible content still starts at `#` for the first real section heading —
+  front matter's `title` already covers the "document name" role, so the
+  first section owns heading level 1. Don't leave a gap by starting at `##`.
 - The editor's own document name (the tab/sidebar title in the app) is a
-  separate thing from anything in the Markdown body — don't try to encode it
-  as a heading either.
-- Trade-off to flag if it matters for a given export: because the top-level
-  visible heading is `#`, Word export (Download .docx / Copy for Word) maps
-  it onto Word's built-in **Title**/**Heading 1** style. Most documents want
-  this (it gives Word a real top-level heading instead of an empty gap); if
-  a specific document needs to avoid that clash, demote its top section to
-  `##` for that export only — it's not the project default.
+  separate thing from front matter `title` — don't conflate them.
 ## Heading hierarchy
  
 - Visible headings start at `#`; go `##`, `###`, `####`, … in strict nesting
   order from there (don't skip levels just for visual size). The outline
   panel and minimap key off this hierarchy.
+- Fixing a level after the fact (promoting/demoting a section you already
+  wrote) is a live-editor action, not something to redo by hand-editing
+  every `#` in the block: select the lines and use the toolbar's heading-
+  shift buttons or Alt+Shift+Right/Alt+Shift+Left. Worth knowing about when
+  advising a user who's restructuring a document in the editor, even though
+  it doesn't change how you should author new Markdown.
 - The numbering toggle (next section) numbers `##` and deeper, not `#` — a
   behavior of the tool itself, not something this skill controls. Practical
   effect: top-level `#` sections stay unnumbered even with the toggle on;
@@ -144,7 +164,7 @@ request, not something to smuggle in via HTML.
  
 ## Quick self-check before handing content over
  
-1. Title is an `<!-- Title: ... -->` comment, never a heading; visible
+1. Title/subtitle live in a `---` front matter block, never a heading; visible
    headings start at `#`. No ordinals typed into any heading text.
 2. Each paragraph is a single unbroken line in the source; blank lines
    separate paragraphs.

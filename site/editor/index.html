@@ -371,6 +371,10 @@
             </ul>
           </div>
 
+          <button type="button" @click="shiftHeadings(-1)" title="Shift heading back (Alt+Shift+Left) — # bbb becomes bbb, ## bbb becomes # bbb" aria-label="Shift heading back" class="rounded border border-neutral-300 dark:border-neutral-700 p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M21 5H11" /><path d="M21 12H11" /><path d="M21 19H11" /><path d="m7 8-4 4 4 4" /></svg></button>
+          <button type="button" @click="shiftHeadings(1)" title="Shift heading forward (Alt+Shift+Right) — # aaa becomes ## aaa" aria-label="Shift heading forward" class="rounded border border-neutral-300 dark:border-neutral-700 p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M21 5H11" /><path d="M21 12H11" /><path d="M21 19H11" /><path d="m3 8 4 4-4 4" /></svg></button>
+          <span class="mx-1 h-5 w-px bg-neutral-200 dark:bg-neutral-700" aria-hidden="true"></span>
+
           <button type="button" @click="opts.numberHeadings = !opts.numberHeadings; run()"
             :aria-pressed="opts.numberHeadings"
             :class="opts.numberHeadings
@@ -1155,15 +1159,26 @@
   <!--#include partials/footer.html-->
 
   <script>
+    // Prefill: demonstrates every conversion/render feature on load (the
+    // widget-pattern convention — see markdown-browser-ops skill) rather
+    // than just being a plausible-looking document. Covers, in order: front
+    // matter (title/subtitle), inline formatting + autolink, nested/ordered/
+    // task lists, three-deep heading nesting (for the outline/paragraph-
+    // style picker), a table, blockquote, smartypants (curly quotes/en
+    // dash), a fenced code block, inline+block KaTeX math, a Mermaid
+    // diagram, and a DBML schema diagram.
     const SAMPLE_MD = [
-      '# Draft: Weekly Update',
+      '---',
+      'title: Weekly Update',
+      "subtitle: Draft ahead of Friday's review",
+      '---',
       '',
-      "A quick note before Friday's review — **please skim before the call**, or at",
-      "least the *highlights*. ~~Ignore last week's version~~ this one replaces it.",
-      "Inline code like `npm run build` and bare links like https://example.com both",
-      'autolink. See the [Q3 roadmap](https://example.com/roadmap) for details.',
+      "**Please skim before the call**, or at least the *highlights*.",
+      "~~Ignore last week's version~~ this one replaces it. Inline code like",
+      '`npm run build` and bare links like https://example.com both autolink.',
+      'See the [Q3 roadmap](https://example.com/roadmap) for details.',
       '',
-      '## Highlights',
+      '# Highlights',
       '',
       '- Shipped the *new* onboarding flow',
       '  - Includes a redesigned welcome screen',
@@ -1171,20 +1186,28 @@
       '- Fixed the checkout bug reported last week',
       '- Started scoping the Q3 roadmap',
       '',
-      '## Open questions',
+      '# Open questions',
       '',
       '1. Do we need sign-off from legal before launch?',
       '2. Who owns the migration doc?',
       '3. Can support handle the ticket volume?',
       '',
-      '## Launch checklist',
+      '# Launch checklist',
       '',
       '- [x] Draft written',
       '- [x] Reviewed by design',
       '- [ ] Sign-off from legal',
       '- [ ] Scheduled release notes',
       '',
-      '## Status by team',
+      '## Blockers',
+      '',
+      '- [ ] Waiting on legal\'s redline of the ToS update',
+      '',
+      '### Owner',
+      '',
+      "Legal -- Priya is the point of contact if this slips past Thursday.",
+      '',
+      '# Status by team',
       '',
       '| Team       | Status      | Owner |',
       '| ---------- | ----------- | ----- |',
@@ -1209,6 +1232,18 @@
       '  A[Draft] --> B{Legal sign-off?}',
       '  B -->|Yes| C[Publish]',
       '  B -->|No| D[Revise]',
+      '```',
+      '',
+      '```dbml',
+      'Table users {',
+      '  id int [pk, increment]',
+      '  email varchar [unique, not null]',
+      '}',
+      '',
+      'Table posts {',
+      '  id int [pk, increment]',
+      '  user_id int [not null, ref: > users.id]',
+      '}',
       '```',
       '',
     ].join('\n');
@@ -1314,6 +1349,8 @@
             { label: 'Bold', combo: 'Ctrl/Cmd+B' },
             { label: 'Italic', combo: 'Ctrl/Cmd+I' },
             { label: 'Link', combo: 'Ctrl/Cmd+K' },
+            { label: 'Shift heading back', combo: 'Alt+Shift+Left' },
+            { label: 'Shift heading forward', combo: 'Alt+Shift+Right' },
             { label: 'Find', combo: 'Ctrl/Cmd+F' },
             { label: 'Find & replace', combo: 'Ctrl/Cmd+H' },
             { label: 'Toggle document outline', combo: 'Ctrl/Cmd+Shift+O' },
@@ -1350,6 +1387,8 @@
             { label: 'Heading 1', hint: 'Format', run: () => this.setHeading(1) },
             { label: 'Heading 2', hint: 'Format', run: () => this.setHeading(2) },
             { label: 'Heading 3', hint: 'Format', run: () => this.setHeading(3) },
+            { label: 'Shift heading back', hint: 'Format', run: () => this.shiftHeadings(-1) },
+            { label: 'Shift heading forward', hint: 'Format', run: () => this.shiftHeadings(1) },
             { label: 'Bulleted list', hint: 'Format', run: () => this.prefixLines('- ') },
             { label: 'Numbered list', hint: 'Format', run: () => this.insertNumberedList() },
             { label: 'Task list', hint: 'Format', run: () => this.prefixLines('- [ ] ') },
@@ -2169,6 +2208,39 @@
           });
           this.run();
         },
+        // Shifts every heading line touched by the selection (or the caret's
+        // own line, when nothing is selected) by `delta` levels — the ATX
+        // marker's `#` count, not indentation. Shifting a level-1 heading
+        // back drops the marker entirely (plain paragraph text), matching
+        // how "one below H1" reads in a document; shifting past H6 forward
+        // is a no-op for that line rather than clamping, so a mixed
+        // selection doesn't lose relative levels. Non-heading lines in the
+        // selection are left untouched.
+        shiftHeadings(delta) {
+          const ta = this.$refs.mdTextarea;
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const lineStart = this.input.lastIndexOf('\n', start - 1) + 1;
+          let lineEnd = this.input.indexOf('\n', end);
+          if (lineEnd === -1) lineEnd = this.input.length;
+          const lines = this.input.slice(lineStart, lineEnd).split('\n');
+          let changed = false;
+          const newLines = lines.map((line) => {
+            const m = /^(#{1,6})(\s+)(.*)$/.exec(line);
+            if (!m) return line;
+            const level = m[1].length + delta;
+            if (level > 6) return line;
+            changed = true;
+            return level <= 0 ? m[3] : '#'.repeat(level) + m[2] + m[3];
+          });
+          if (!changed) return;
+          const block = newLines.join('\n');
+          this.commitHistory();
+          this.input = this.input.slice(0, lineStart) + block + this.input.slice(lineEnd);
+          const newEnd = lineStart + block.length;
+          this.commitHistory(lineStart, newEnd);
+          this.$nextTick(() => { ta.focus(); ta.setSelectionRange(lineStart, newEnd); this.updateHeadingLevel(); });
+          this.run();
+        },
         updateHeadingLevel() {
           const ta = this.$refs.mdTextarea;
           const pos = ta.selectionStart;
@@ -2225,6 +2297,17 @@
           if (e.key === 'Tab') {
             e.preventDefault();
             e.shiftKey ? this.outdentSelection() : this.indentSelection();
+            return;
+          }
+          // Alt+Shift+Left/Right: Word's own promote/demote-heading shortcut
+          // — chosen over a Ctrl/Cmd+[ / Ctrl/Cmd+] combo because bracket
+          // keys sit at different physical positions (and behind Shift
+          // entirely on some layouts) across keyboard layouts, while
+          // Alt+Shift+Arrow is layout-independent and already familiar to
+          // anyone coming from Word's own outline promote/demote.
+          if (e.altKey && e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+            e.preventDefault();
+            this.shiftHeadings(e.key === 'ArrowRight' ? 1 : -1);
             return;
           }
           const mod = e.ctrlKey || e.metaKey;

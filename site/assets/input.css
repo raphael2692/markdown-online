@@ -199,6 +199,12 @@
 }
 .md-preview a { color: #0069CC; text-decoration: underline; }
 .md-preview img { max-width: 100%; }
+/* Front matter title/subtitle: the `---` block's `title`/`subtitle` keys,
+   rendered as a header ahead of the document body (see parseFrontMatter()
+   in site.js). Kept visually distinct from an ordinary # h1 — no border
+   rule under it, since a document already has a real h1 further down. */
+.md-preview .fm-title { font-size: 1.9em; font-weight: 700; line-height: 1.2; margin: 0 0 0.15em; }
+.md-preview .fm-subtitle { font-size: 1.15em; font-weight: 400; color: #606060; margin: 0 0 1em; }
 .md-preview .mermaid-diagram {
   margin-top: 0;
   margin-bottom: 1em;
@@ -252,6 +258,7 @@
   color: #8C8C8C;
 }
 .dark .md-preview a { color: #48A0C7; }
+.dark .md-preview .fm-subtitle { color: #8C8C8C; }
 .dark .md-preview .heading-number { color: #8C8C8C; }
 .dark .md-preview .mermaid-error {
   background: #3A1D1D;

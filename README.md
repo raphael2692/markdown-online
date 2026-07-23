@@ -35,6 +35,13 @@ One tool, everything you need for Markdown — the editor lives at `/editor/`:
   written into the Markdown source. The paragraph-style picker itself
   previews each heading level at its actual size and weight, like Word's
   style gallery.
+- **Shift heading level** — bump the heading(s) touched by your selection
+  up or down a level from the toolbar or Alt+Shift+Right/Alt+Shift+Left
+  (shifting a top-level `#` back drops it to plain text).
+- **Front matter** — a `---` metadata block at the top of the document
+  (Jekyll/Hugo style); its `title`/`subtitle` keys render as a title block
+  above the document in every preview and, in the Word export, become
+  Word's real built-in Title/Subtitle styles rather than plain paragraphs.
 - **Smart lists** — pressing Enter continues bullet, numbered, task-list,
   and blockquote lines (numbered items renumber themselves); Enter on an
   empty item ends the list, and Tab/Shift+Tab nest or un-nest an item.
