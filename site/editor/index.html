@@ -372,7 +372,7 @@
           </div>
 
           <button type="button" @click="shiftHeadings(-1)" title="Shift heading back (Alt+Shift+Left) — # bbb becomes bbb, ## bbb becomes # bbb. Applies to the selection, or the whole document if nothing is selected." aria-label="Shift heading back" class="rounded border border-neutral-300 dark:border-neutral-700 p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M21 5H11" /><path d="M21 12H11" /><path d="M21 19H11" /><path d="m7 8-4 4 4 4" /></svg></button>
-          <button type="button" @click="shiftHeadings(1)" title="Shift heading forward (Alt+Shift+Right) — # aaa becomes ## aaa. Applies to the selection, or the whole document if nothing is selected." aria-label="Shift heading forward" class="rounded border border-neutral-300 dark:border-neutral-700 p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M21 5H11" /><path d="M21 12H11" /><path d="M21 19H11" /><path d="m3 8 4 4-4 4" /></svg></button>
+          <button type="button" @click="shiftHeadings(1)" title="Shift heading forward (Alt+Shift+Right) — # aaa becomes ## aaa. Applies to the selection, or the whole document if nothing is selected. On a plain paragraph, promotes just that line (or the selected lines) to an h1." aria-label="Shift heading forward" class="rounded border border-neutral-300 dark:border-neutral-700 p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4" aria-hidden="true"><path d="M21 5H11" /><path d="M21 12H11" /><path d="M21 19H11" /><path d="m3 8 4 4-4 4" /></svg></button>
           <span class="mx-1 h-5 w-px bg-neutral-200 dark:bg-neutral-700" aria-hidden="true"></span>
 
           <button type="button" @click="opts.numberHeadings = !opts.numberHeadings; run()"
@@ -2258,6 +2258,12 @@
           const lineStart = hasSelection ? this.input.lastIndexOf('\n', start - 1) + 1 : 0;
           let lineEnd = hasSelection ? this.input.indexOf('\n', end) : this.input.length;
           if (lineEnd === -1) lineEnd = this.input.length;
+          // Paragraph promotion only ever targets the caret's own line (or the
+          // selected lines) — never the whole-document fallback above, which
+          // would turn every paragraph in the file into an h1.
+          const caretLineStart = this.input.lastIndexOf('\n', start - 1) + 1;
+          let caretLineEnd = this.input.indexOf('\n', end);
+          if (caretLineEnd === -1) caretLineEnd = this.input.length;
 
           const lines = this.input.split('\n');
           const protectedLines = this.protectedHeadingLines(lines);
@@ -2276,6 +2282,12 @@
                   changed = true;
                   newLine = level <= 0 ? m[3] : '#'.repeat(level) + m[2] + m[3];
                 }
+              } else if (delta > 0 && line.trim() !== '' && oldStart >= caretLineStart && oldStart < caretLineEnd) {
+                // Promote a plain paragraph to h1 — scoped to the caret's own
+                // line (or the selection) even when there's no selection, so
+                // this never spills into the whole-document fallback above.
+                changed = true;
+                newLine = '# ' + line;
               }
             }
 
